@@ -1,0 +1,92 @@
+# Company list for the aggregator.
+#
+# Adding a company whose ATS already has an adapter is a config change only —
+# no new code. Supported `ats` values: greenhouse | lever | ashby
+# (`playwright` is a Phase 1 stub and will error if enabled).
+#
+# How to find `token_or_slug`:
+#   greenhouse -> the token in boards.greenhouse.io/<token> or job-boards.greenhouse.io/<token>
+#   lever      -> the slug in jobs.lever.co/<slug>
+#   ashby      -> the slug in jobs.ashbyhq.com/<slug>
+#
+# Every entry below was verified live (job counts as of 2026-08-02).
+# Run `python -m scripts.verify_endpoints` to re-check at any time.
+
+companies:
+  # --- Greenhouse ---------------------------------------------------------
+  - company: Stripe
+    ats: greenhouse
+    token_or_slug: stripe
+    careers_url: https://stripe.com/jobs
+
+  - company: Anthropic
+    ats: greenhouse
+    token_or_slug: anthropic
+    careers_url: https://www.anthropic.com/careers
+
+  - company: Databricks
+    ats: greenhouse
+    token_or_slug: databricks
+    careers_url: https://www.databricks.com/company/careers
+
+  - company: Figma
+    ats: greenhouse
+    token_or_slug: figma
+    careers_url: https://www.figma.com/careers/
+
+  - company: Discord
+    ats: greenhouse
+    token_or_slug: discord
+    careers_url: https://discord.com/careers
+
+  - company: Airtable
+    ats: greenhouse
+    token_or_slug: airtable
+    enabled: false
+
+  - company: Coinbase
+    ats: greenhouse
+    token_or_slug: coinbase
+    enabled: false
+
+  - company: Robinhood
+    ats: greenhouse
+    token_or_slug: robinhood
+    enabled: false
+
+  # --- Lever --------------------------------------------------------------
+  - company: Palantir
+    ats: lever
+    token_or_slug: palantir
+    careers_url: https://www.palantir.com/careers/
+
+  - company: Spotify
+    ats: lever
+    token_or_slug: spotify
+    careers_url: https://www.lifeatspotify.com/jobs
+
+  # --- Ashby --------------------------------------------------------------
+  - company: OpenAI
+    ats: ashby
+    token_or_slug: openai
+    careers_url: https://openai.com/careers/
+
+  - company: Linear
+    ats: ashby
+    token_or_slug: linear
+    careers_url: https://linear.app/careers
+
+  - company: Ramp
+    ats: ashby
+    token_or_slug: ramp
+    careers_url: https://ramp.com/careers
+
+  - company: Notion
+    ats: ashby
+    token_or_slug: notion
+    careers_url: https://www.notion.so/careers
+
+  - company: Cursor
+    ats: ashby
+    token_or_slug: cursor
+    enabled: false

@@ -1,0 +1,17 @@
+companies:
+  - company: Stripe
+    ats: greenhouse
+    token_or_slug: stripe
+  - company: Palantir
+    ats: lever
+    token_or_slug: palantir
+  - company: Linear
+    ats: ashby
+    token_or_slug: linear
+  - company: Ignored Co
+    ats: not-a-real-ats
+    token_or_slug: nope
+  - company: Disabled Co
+    ats: greenhouse
+    token_or_slug: disabled
+    enabled: false

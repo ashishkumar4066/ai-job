@@ -1,0 +1,434 @@
+@import "tailwindcss";
+
+/* Class-based dark mode (set on <html> before first paint). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Semantic vars flip between themes; `@theme inline` maps them to Tailwind
+   utilities by reference, so `bg-panel` resolves correctly in both modes.
+--------------------------------------------------------------------------- */
+/* ONE palette.
+ *
+ * A single brand hue (indigo, 264) carries every interactive state, and the
+ * neutrals are that same hue held at very low chroma so greys read as part of
+ * the family rather than as a second colour. Only two colours ever break the
+ * monochrome, and each has exactly one job:
+ *   --highlight (amber)  "new since last visit", nothing else
+ *   --danger    (red)    closed postings and errors, nothing else
+ *
+ * To re-skin the whole app, change --brand-hue and the accent lines below.
+ */
+:root {
+  --brand-hue: 264;
+
+  --bg: oklch(98.2% 0.004 var(--brand-hue));
+  --bg-elevated: oklch(100% 0 0);
+  --panel: oklch(100% 0 0 / 0.74);
+  --panel-strong: oklch(100% 0 0 / 0.9);
+  --panel-hover: oklch(100% 0 0 / 0.97);
+  /* Popovers float over dense text, so they need far more opacity than a
+     panel — blur alone does not stop high-contrast rows bleeding through. */
+  --popover: oklch(99% 0.004 var(--brand-hue) / 0.97);
+  --border: oklch(30% 0.03 var(--brand-hue) / 0.11);
+  --border-strong: oklch(30% 0.03 var(--brand-hue) / 0.18);
+
+  --text: oklch(22% 0.028 var(--brand-hue));
+  --text-muted: oklch(47% 0.024 var(--brand-hue));
+  --text-subtle: oklch(61% 0.02 var(--brand-hue));
+
+  --accent: oklch(52% 0.2 var(--brand-hue));
+  --accent-strong: oklch(44% 0.19 var(--brand-hue));
+  --accent-soft: oklch(52% 0.2 var(--brand-hue) / 0.11);
+  --accent-text: oklch(46% 0.19 var(--brand-hue));
+
+  --highlight: oklch(64% 0.15 70);
+  --danger: oklch(56% 0.19 22);
+
+  --aurora-1: oklch(72% 0.15 var(--brand-hue) / 0.42);
+  --aurora-2: oklch(78% 0.1 var(--brand-hue) / 0.3);
+  --aurora-3: oklch(70% 0.13 var(--brand-hue) / 0.24);
+
+  --shadow-panel: 0 1px 2px oklch(25% 0.03 var(--brand-hue) / 0.05),
+    0 12px 32px -12px oklch(25% 0.03 var(--brand-hue) / 0.15);
+}
+
+.dark {
+  --brand-hue: 264;
+
+  --bg: oklch(16.5% 0.017 var(--brand-hue));
+  --bg-elevated: oklch(20.5% 0.02 var(--brand-hue));
+  --panel: oklch(100% 0 0 / 0.045);
+  --panel-strong: oklch(100% 0 0 / 0.08);
+  --panel-hover: oklch(100% 0 0 / 0.075);
+  --popover: oklch(22% 0.022 var(--brand-hue) / 0.97);
+  --border: oklch(100% 0 0 / 0.085);
+  --border-strong: oklch(100% 0 0 / 0.15);
+
+  --text: oklch(96% 0.006 var(--brand-hue));
+  --text-muted: oklch(73% 0.018 var(--brand-hue));
+  --text-subtle: oklch(59% 0.022 var(--brand-hue));
+
+  --accent: oklch(66% 0.17 var(--brand-hue));
+  --accent-strong: oklch(56% 0.19 var(--brand-hue));
+  --accent-soft: oklch(66% 0.17 var(--brand-hue) / 0.17);
+  --accent-text: oklch(79% 0.13 var(--brand-hue));
+
+  --highlight: oklch(80% 0.13 72);
+  --danger: oklch(70% 0.16 20);
+
+  --aurora-1: oklch(52% 0.2 var(--brand-hue) / 0.4);
+  --aurora-2: oklch(46% 0.17 var(--brand-hue) / 0.3);
+  --aurora-3: oklch(50% 0.18 var(--brand-hue) / 0.22);
+
+  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.3), 0 16px 40px -16px oklch(0% 0 0 / 0.6);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-panel-hover: var(--panel-hover);
+  --color-edge: var(--border);
+  --color-edge-strong: var(--border-strong);
+
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-highlight: var(--highlight);
+  --color-danger: var(--danger);
+
+  --font-sans: "Inter var", Inter, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+
+  --radius-panel: 1rem;
+}
+
+/* --------------------------------------------------------------------------- */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden; /* the job list owns the only scroll container */
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Slim, theme-aware scrollbars. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-subtle);
+    background-clip: content-box;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Glassmorphism surfaces
+--------------------------------------------------------------------------- */
+@utility glass {
+  background-color: var(--panel);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border);
+}
+
+@utility glass-strong {
+  background-color: var(--panel-strong);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Floating menus: readable over dense content, still glassy at the edges. */
+@utility glass-popover {
+  background-color: var(--popover);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border-strong);
+  box-shadow:
+    0 2px 6px oklch(0% 0 0 / 0.16),
+    0 24px 48px -16px oklch(0% 0 0 / 0.4);
+}
+
+/* A hairline highlight along the top edge — reads as light catching glass.
+ *
+ * Deliberately sets NO `position`. Custom utilities are emitted after Tailwind's
+ * core ones, so declaring `position: relative` here silently beat the `absolute`
+ * on any popover that combined the two classes, dropping it back into normal
+ * flow. Callers own their own positioning; every consumer is positioned already.
+ */
+.glass-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(100% 0 0 / 0.35) 30%,
+    oklch(100% 0 0 / 0.35) 70%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+@utility text-gradient {
+  /* Same hue at two depths — a tonal shift, not a second colour. */
+  background: linear-gradient(120deg, var(--accent-text), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   Ambient aurora backdrop
+--------------------------------------------------------------------------- */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+.aurora::before {
+  width: 55vw;
+  height: 55vw;
+  top: -18vw;
+  left: -10vw;
+  background: radial-gradient(circle at 30% 30%, var(--aurora-1), transparent 70%);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+
+.aurora::after {
+  width: 48vw;
+  height: 48vw;
+  top: -8vw;
+  right: -12vw;
+  background: radial-gradient(circle at 70% 30%, var(--aurora-2), transparent 70%);
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+
+.aurora-third {
+  position: absolute;
+  width: 40vw;
+  height: 40vw;
+  bottom: -16vw;
+  left: 32%;
+  border-radius: 50%;
+  filter: blur(100px);
+  background: radial-gradient(circle, var(--aurora-3), transparent 70%);
+  animation: drift-c 38s ease-in-out infinite alternate;
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(8vw, 6vh, 0) scale(1.15);
+  }
+}
+@keyframes drift-b {
+  to {
+    transform: translate3d(-7vw, 9vh, 0) scale(1.1);
+  }
+}
+@keyframes drift-c {
+  to {
+    transform: translate3d(6vw, -7vh, 0) scale(1.2);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion
+--------------------------------------------------------------------------- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent-soft);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-slide-in {
+  animation: slide-in-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pulse-ring {
+  animation: pulse-ring 2.4s ease-out infinite;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-strong);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Job description (server HTML from the ATS — normalize its wild markup)
+--------------------------------------------------------------------------- */
+.jd {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+.jd :where(h1, h2, h3, h4) {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 1.75em 0 0.6em;
+  letter-spacing: -0.01em;
+}
+.jd :where(h1):first-child,
+.jd :where(h2):first-child,
+.jd :where(h3):first-child {
+  margin-top: 0;
+}
+.jd p {
+  margin: 0.9em 0;
+}
+.jd :where(ul, ol) {
+  margin: 0.9em 0;
+  padding-left: 1.3em;
+}
+.jd ul {
+  list-style: disc;
+}
+.jd ol {
+  list-style: decimal;
+}
+.jd li {
+  margin: 0.4em 0;
+  padding-left: 0.2em;
+}
+.jd li::marker {
+  color: var(--accent-text);
+}
+.jd a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.jd strong,
+.jd b {
+  color: var(--text);
+  font-weight: 600;
+}
+.jd :where(img, iframe, table) {
+  max-width: 100%;
+}
+.jd table {
+  display: block;
+  overflow-x: auto;
+}
+.jd hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 1.6em 0;
+}
+.jd :where(div:empty, p:empty) {
+  display: none;
+}

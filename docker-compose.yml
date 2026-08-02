@@ -1,0 +1,40 @@
+services:
+  app:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Overrides .env so the DB always lands on the named volume.
+      DATABASE_URL: sqlite+aiosqlite:////data/jobs.db
+      COMPANIES_FILE: /app/companies.yaml
+    volumes:
+      - jobs_data:/data
+      # Edit companies.yaml on the host and restart — no rebuild needed.
+      - ./backend/companies.yaml:/app/companies.yaml:ro
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Postgres is not needed for the SQLite setup. Uncomment this service and set
+  # DATABASE_URL=postgresql+asyncpg://jobs:jobs@db:5432/jobs to switch — the
+  # models are dialect-neutral, so no schema changes are required.
+  # (Also add `asyncpg` to backend/requirements.txt.)
+  # ---------------------------------------------------------------------------
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: jobs
+  #     POSTGRES_PASSWORD: jobs
+  #     POSTGRES_DB: jobs
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U jobs"]
+  #     interval: 10s
+  #     retries: 5
+  #   restart: unless-stopped
+
+volumes:
+  jobs_data:
+  # pg_data:

@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+respx>=0.21.1
+
+# Browser automation. Used to verify the Phase 2A dashboard renders, and the
+# runtime for the Phase 3 autofill fillers.
+#   after installing:  python -m playwright install chromium
+playwright>=1.49.0
