@@ -41,6 +41,7 @@ def _apply_filters(
     department: list[str] | None = None,
     posted_within_days: int | None = None,
     first_seen_after: datetime | None = None,
+    eligibility_pass: bool | None = None,
 ) -> Select:
     """Shared filter builder so /jobs and /meta/facets stay consistent.
 
@@ -57,6 +58,8 @@ def _apply_filters(
         stmt = stmt.where(JobPosting.ats.in_([a.strip().lower() for a in ats]))
     if remote is not None:
         stmt = stmt.where(JobPosting.remote.is_(remote))
+    if eligibility_pass is not None:
+        stmt = stmt.where(JobPosting.eligibility_pass.is_(eligibility_pass))
     if department:
         stmt = stmt.where(
             or_(*(func.lower(JobPosting.department) == d.strip().lower() for d in department))
@@ -137,6 +140,10 @@ async def list_jobs(
     first_seen_after: Annotated[
         datetime | None, Query(description="Only jobs discovered after this instant")
     ] = None,
+    eligibility_pass: Annotated[
+        bool | None,
+        Query(description="true = only jobs that cleared the eligibility filter"),
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
     sort: SortField = "first_seen_at",
@@ -153,6 +160,7 @@ async def list_jobs(
         department=department,
         posted_within_days=posted_within_days,
         first_seen_after=first_seen_after,
+        eligibility_pass=eligibility_pass,
     )
 
     total = await session.scalar(
@@ -205,6 +213,9 @@ async def facets(
     base = _apply_filters(select(func.count()).select_from(JobPosting), status=status)
     total = await session.scalar(base) or 0
     remote_count = await session.scalar(base.where(JobPosting.remote.is_(True))) or 0
+    eligible_count = (
+        await session.scalar(base.where(JobPosting.eligibility_pass.is_(True))) or 0
+    )
 
     week_ago = utcnow() - timedelta(days=7)
     posted_week = (
@@ -237,11 +248,14 @@ async def facets(
         "companies": await grouped(JobPosting.company),
         "ats": await grouped(JobPosting.ats),
         "departments": await grouped(JobPosting.department),
+        "currencies": await grouped(JobPosting.salary_currency),
         "totals": {
             "matching": total,
             "open": open_total,
             "closed": closed_total,
             "remote": remote_count,
+            "eligible": eligible_count,
+            "ineligible": total - eligible_count,
             "posted_last_7d": posted_week,
             "new_since": new_since,
         },

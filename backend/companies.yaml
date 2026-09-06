@@ -1,92 +1,99 @@
-# Company list for the aggregator.
+# Source list for the aggregator. Two adapter families, one interface.
 #
-# Adding a company whose ATS already has an adapter is a config change only —
-# no new code. Supported `ats` values: greenhouse | lever | ashby
-# (`playwright` is a Phase 1 stub and will error if enabled).
+#   A. Aggregator boards (himalayas, remotive) — whole-board feeds that carry
+#      candidate-eligibility metadata. No board token; they take `queries`,
+#      each entry being one set of API params to sweep.
+#   B. Curated ATS (greenhouse, lever, ashby) — one board per company, keyed by
+#      `token_or_slug`. Pre-vetted employers that hire from India and pay USD.
 #
 # How to find `token_or_slug`:
 #   greenhouse -> the token in boards.greenhouse.io/<token> or job-boards.greenhouse.io/<token>
 #   lever      -> the slug in jobs.lever.co/<slug>
 #   ashby      -> the slug in jobs.ashbyhq.com/<slug>
 #
-# Every entry below was verified live (job counts as of 2026-08-02).
+# Eligibility inputs the feeds cannot supply:
+#   us_employer            -> `is_us_employer` for the pay rule. Set it only
+#                             where it is actually true; the filter treats
+#                             unknown (unset) differently from false.
+#   location_eligibility   -> fallback candidate-eligibility, used ONLY when a
+#                             posting's own location strings resolve to nothing.
+#
+# Every entry below was verified live (job counts as of 2026-08-03).
 # Run `python -m scripts.verify_endpoints` to re-check at any time.
 
 companies:
-  # --- Greenhouse ---------------------------------------------------------
-  - company: Stripe
-    ats: greenhouse
-    token_or_slug: stripe
-    careers_url: https://stripe.com/jobs
+  # --- Aggregator boards (primary discovery) -------------------------------
+  - company: Himalayas
+    ats: himalayas
+    careers_url: https://himalayas.app/jobs
+    # Two sweeps, because no single query covers both halves of the location
+    # rule: `worldwide=true` returns unrestricted roles, `country=India`
+    # returns India-eligible ones. Results merge into one board and are
+    # de-duplicated by job, so a job matching both is stored once.
+    queries:
+      - { worldwide: "true", q: "software engineer" }
+      - { worldwide: "true", q: "backend engineer" }
+      - { country: "India", q: "software engineer" }
+      - { country: "India", q: "backend engineer" }
 
-  - company: Anthropic
-    ats: greenhouse
-    token_or_slug: anthropic
-    careers_url: https://www.anthropic.com/careers
+  - company: Remotive
+    ats: remotive
+    careers_url: https://remotive.com/remote-jobs/software-dev
+    # Remotive's terms ask for at most ~4 calls/day. The scheduler runs hourly,
+    # so the cap is enforced here. Do not lower this.
+    min_fetch_interval_minutes: 360
 
-  - company: Databricks
+  # --- Curated ATS: India-friendly, USD-paying, remote-first ---------------
+  - company: GitLab
     ats: greenhouse
-    token_or_slug: databricks
-    careers_url: https://www.databricks.com/company/careers
+    token_or_slug: gitlab
+    careers_url: https://about.gitlab.com/jobs/
+    us_employer: true
 
-  - company: Figma
-    ats: greenhouse
-    token_or_slug: figma
-    careers_url: https://www.figma.com/careers/
+  - company: Zapier
+    ats: ashby
+    token_or_slug: zapier
+    careers_url: https://zapier.com/jobs
+    us_employer: true
 
-  - company: Discord
+  - company: Turing
     ats: greenhouse
-    token_or_slug: discord
-    careers_url: https://discord.com/careers
+    token_or_slug: turing
+    careers_url: https://www.turing.com/careers
+    us_employer: true
 
-  - company: Airtable
-    ats: greenhouse
-    token_or_slug: airtable
+  - company: Deel
+    ats: ashby
+    token_or_slug: deel
+    careers_url: https://www.deel.com/careers
+    us_employer: true
+
+  # Automattic runs its own careers site — no Greenhouse/Lever/Ashby board
+  # answers for it (all three 404). It needs the PlaywrightAdapter, which is
+  # still a Phase 1 stub, so it stays disabled rather than failing every run.
+  - company: Automattic
+    ats: playwright
+    token_or_slug: automattic
+    careers_url: https://automattic.com/work-with-us/
+    us_employer: true
     enabled: false
 
-  - company: Coinbase
-    ats: greenhouse
-    token_or_slug: coinbase
-    enabled: false
-
-  - company: Robinhood
-    ats: greenhouse
-    token_or_slug: robinhood
-    enabled: false
-
-  # --- Lever --------------------------------------------------------------
-  - company: Palantir
-    ats: lever
-    token_or_slug: palantir
-    careers_url: https://www.palantir.com/careers/
-
-  - company: Spotify
-    ats: lever
-    token_or_slug: spotify
-    careers_url: https://www.lifeatspotify.com/jobs
-
-  # --- Ashby --------------------------------------------------------------
-  - company: OpenAI
-    ats: ashby
-    token_or_slug: openai
-    careers_url: https://openai.com/careers/
-
-  - company: Linear
-    ats: ashby
-    token_or_slug: linear
-    careers_url: https://linear.app/careers
-
-  - company: Ramp
-    ats: ashby
-    token_or_slug: ramp
-    careers_url: https://ramp.com/careers
-
-  - company: Notion
-    ats: ashby
-    token_or_slug: notion
-    careers_url: https://www.notion.so/careers
-
-  - company: Cursor
-    ats: ashby
-    token_or_slug: cursor
-    enabled: false
+  # --- Pre-eligibility company list (kept for their existing rows) ---------
+  # These were the Phase 1 / 2A boards. They are US-centric and mostly fail the
+  # India + USD rule, so they no longer run — but their jobs stay in the DB and
+  # in the dashboard. Re-enable any of them if you want it swept again.
+  - { company: Stripe,     ats: greenhouse, token_or_slug: stripe,     enabled: false, us_employer: true }
+  - { company: Anthropic,  ats: greenhouse, token_or_slug: anthropic,  enabled: false, us_employer: true }
+  - { company: Databricks, ats: greenhouse, token_or_slug: databricks, enabled: false, us_employer: true }
+  - { company: Figma,      ats: greenhouse, token_or_slug: figma,      enabled: false, us_employer: true }
+  - { company: Discord,    ats: greenhouse, token_or_slug: discord,    enabled: false, us_employer: true }
+  - { company: Airtable,   ats: greenhouse, token_or_slug: airtable,   enabled: false, us_employer: true }
+  - { company: Coinbase,   ats: greenhouse, token_or_slug: coinbase,   enabled: false, us_employer: true }
+  - { company: Robinhood,  ats: greenhouse, token_or_slug: robinhood,  enabled: false, us_employer: true }
+  - { company: Palantir,   ats: lever,      token_or_slug: palantir,   enabled: false, us_employer: true }
+  - { company: Spotify,    ats: lever,      token_or_slug: spotify,    enabled: false }
+  - { company: OpenAI,     ats: ashby,      token_or_slug: openai,     enabled: false, us_employer: true }
+  - { company: Linear,     ats: ashby,      token_or_slug: linear,     enabled: false, us_employer: true }
+  - { company: Ramp,       ats: ashby,      token_or_slug: ramp,       enabled: false, us_employer: true }
+  - { company: Notion,     ats: ashby,      token_or_slug: notion,     enabled: false, us_employer: true }
+  - { company: Cursor,     ats: ashby,      token_or_slug: cursor,     enabled: false, us_employer: true }

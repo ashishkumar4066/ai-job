@@ -27,6 +27,20 @@ class Notifier(Protocol):
     async def notify_new_jobs(self, jobs: list[JobPosting]) -> int: ...
 
 
+def _format_salary(job: JobPosting) -> str | None:
+    if job.salary_min is None and job.salary_max is None:
+        return None
+
+    def amount(value: float) -> str:
+        return f"{value:,.0f}" if value >= 1000 else f"{value:,.2f}".rstrip("0").rstrip(".")
+
+    currency = f"{job.salary_currency} " if job.salary_currency else ""
+    if job.salary_min is not None and job.salary_max is not None:
+        return f"{currency}{amount(job.salary_min)} – {amount(job.salary_max)}"
+    known = job.salary_min if job.salary_min is not None else job.salary_max
+    return f"{currency}{amount(known)}"  # type: ignore[arg-type]
+
+
 def _format_job(job: JobPosting) -> str:
     location = ", ".join(job.locations[:3]) if job.locations else ("Remote" if job.remote else "—")
     if job.locations and len(job.locations) > 3:
@@ -38,11 +52,24 @@ def _format_job(job: JobPosting) -> str:
         f"🏢 {html.escape(job.company)}",
         f"📍 {html.escape(location)}" + ("  •  🌐 Remote" if job.remote else ""),
     ]
+    if job.location_eligibility:
+        eligible = ", ".join(job.location_eligibility[:6])
+        if len(job.location_eligibility) > 6:
+            eligible += f" (+{len(job.location_eligibility) - 6})"
+        lines.append(f"✅ Eligible: {html.escape(eligible)}")
+    salary = _format_salary(job)
+    if salary:
+        lines.append(f"💰 {html.escape(salary)}")
     if job.department:
         lines.append(f"🗂 {html.escape(job.department)}")
     if job.posted_at:
         lines.append(f"🗓 Posted {job.posted_at:%Y-%m-%d}")
+
     lines.append(f'\n<a href="{html.escape(job.apply_url, quote=True)}">Apply →</a>')
+    # Remotive's terms require naming it as the source wherever its jobs are
+    # surfaced, alongside the link back to its own URL (already `apply_url`).
+    if job.ats == "remotive":
+        lines.append("<i>Source: Remotive</i>")
 
     message = "\n".join(lines)
     return message[:_MAX_MESSAGE_CHARS]

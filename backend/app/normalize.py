@@ -151,6 +151,99 @@ def build_source_key(ats: str, company_key: str, native_id: str) -> str:
     return f"{ats}:{company_key}:{native_id}"
 
 
+# Symbol -> ISO 4217. A bare `$` is read as USD: both aggregator boards are
+# US-centric and quote unqualified dollars in USD. The prefixed variants are
+# listed first so `CA$` never falls through to plain `$`.
+_CURRENCY_SYMBOLS: list[tuple[str, str]] = [
+    ("CA$", "CAD"), ("C$", "CAD"), ("A$", "AUD"), ("AU$", "AUD"),
+    ("NZ$", "NZD"), ("R$", "BRL"), ("S$", "SGD"), ("HK$", "HKD"),
+    ("US$", "USD"), ("$", "USD"),
+    ("€", "EUR"), ("£", "GBP"), ("₹", "INR"), ("¥", "JPY"), ("₽", "RUB"),
+    ("zł", "PLN"), ("R$", "BRL"), ("₪", "ILS"), ("₩", "KRW"),
+]
+
+_CURRENCY_CODES = {
+    "USD", "EUR", "GBP", "INR", "CAD", "AUD", "NZD", "SGD", "CHF", "SEK",
+    "NOK", "DKK", "PLN", "BRL", "MXN", "ZAR", "JPY", "CNY", "HKD", "ILS",
+    "AED", "KRW", "RUB", "TRY", "CZK", "HUF", "RON", "UAH", "PHP", "IDR",
+    "MYR", "THB", "VND", "NGN", "KES", "EGP", "ARS", "CLP", "COP", "PEN",
+}
+
+_CURRENCY_CODE_RE = re.compile(r"\b([A-Z]{3})\b")
+# A number with optional thousands/decimal separators and an optional k suffix.
+_AMOUNT_RE = re.compile(r"(\d[\d.,]*)\s*([kK])?\b")
+
+
+def _parse_amount(digits: str, k_suffix: bool) -> float | None:
+    """Turn one matched amount into a number.
+
+    Separator handling is the fiddly part, because live data mixes conventions
+    inside a single feed: Remotive returns both `$45,000 - $50,000` (comma as
+    thousands) and `$31,2k- $52k` (comma as a decimal point).
+    """
+    text = digits.strip().rstrip(".,")
+    if not text:
+        return None
+
+    if "," in text:
+        tail = text.rsplit(",", 1)[1]
+        if len(tail) == 3 and "." not in tail:
+            text = text.replace(",", "")          # 45,000 -> 45000
+        else:
+            text = text.replace(".", "").replace(",", ".")  # 31,2 -> 31.2
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+
+    if k_suffix:
+        value *= 1000
+    return value
+
+
+def detect_currency(text: str | None) -> str | None:
+    """Find an ISO 4217 code in free text, via an explicit code or a symbol."""
+    if not text:
+        return None
+    for match in _CURRENCY_CODE_RE.finditer(text.upper()):
+        if match.group(1) in _CURRENCY_CODES:
+            return match.group(1)
+    for symbol, code in _CURRENCY_SYMBOLS:
+        if symbol in text:
+            return code
+    return None
+
+
+def parse_salary_text(text: str | None) -> tuple[float | None, float | None, str | None]:
+    """Parse a free-text pay string into `(min, max, currency)`.
+
+    Remotive has no structured salary at all — only strings like `$150k - $230k`,
+    `$18 - $22/hr` or `OTE $25k - $35k`. Values are returned exactly as quoted:
+    an hourly range stays hourly, because nothing downstream needs the rate
+    normalized and inventing an annualization factor would be a guess.
+    """
+    if not text or not text.strip():
+        return None, None, None
+
+    currency = detect_currency(text)
+
+    amounts: list[float] = []
+    for match in _AMOUNT_RE.finditer(text):
+        value = _parse_amount(match.group(1), bool(match.group(2)))
+        if value is not None and value > 0:
+            amounts.append(value)
+        if len(amounts) == 2:
+            break
+
+    if not amounts:
+        return None, None, currency
+    if len(amounts) == 1:
+        return amounts[0], None, currency
+
+    low, high = sorted(amounts[:2])
+    return low, high, currency
+
+
 def parse_iso_datetime(value: Any) -> datetime | None:
     """Parse an ISO-8601 string to aware UTC. Naive input is assumed UTC."""
     if value is None or isinstance(value, bool):

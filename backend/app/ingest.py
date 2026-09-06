@@ -24,13 +24,14 @@ import time
 from datetime import datetime
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters import BaseAdapter, get_adapter
 from app.companies import load_companies
 from app.config import Settings, get_settings
 from app.db import session_scope
+from app.eligibility import FilterConfig, evaluate, load_filters
 from app.models import IngestRun, JobPosting, utcnow
 from app.normalize import content_hash
 from app.notify import Notifier, build_notifier
@@ -64,12 +65,34 @@ class FetchOutcome:
         return self.error is None
 
 
+def _apply_eligibility(postings: list[NormalizedJob], filters: FilterConfig) -> int:
+    """The eligibility + currency stage: after normalize, before persist.
+
+    Mutates each posting in place with the verdict and its reasons. Nothing is
+    dropped — a failing job is stored flagged, so the rules stay auditable and
+    tunable against real data. Returns how many passed.
+    """
+    eligible = 0
+    for posting in postings:
+        result = evaluate(
+            location_eligibility=posting.location_eligibility,
+            salary_currency=posting.salary_currency,
+            is_us_employer=posting.is_us_employer,
+            filters=filters,
+        )
+        posting.eligibility_pass = result.passed
+        posting.eligibility_reasons = result.reasons
+        eligible += int(result.passed)
+    return eligible
+
+
 async def _fetch_one(
     company: CompanyConfig,
     client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
+    filters: FilterConfig,
 ) -> FetchOutcome:
-    """Fetch + normalize one board. Never raises — errors are returned."""
+    """Fetch + normalize + filter one board. Never raises — errors are returned."""
     started = time.perf_counter()
     adapter: BaseAdapter | None = None
     async with semaphore:
@@ -77,6 +100,7 @@ async def _fetch_one(
             adapter = get_adapter(company.ats, client=client)
             raws = await adapter.fetch(company)
             postings = adapter.normalize_all(raws, company)
+            eligible = _apply_eligibility(postings, filters)
             elapsed = int((time.perf_counter() - started) * 1000)
             log.info(
                 "ingest.fetched",
@@ -86,6 +110,7 @@ async def _fetch_one(
                     "ats": company.ats,
                     "raw": len(raws),
                     "normalized": len(postings),
+                    "eligible": eligible,
                     "duration_ms": elapsed,
                 },
             )
@@ -159,6 +184,7 @@ async def _persist_source(
 
     postings = _dedupe(outcome.postings or [], company.source_id)
     result.fetched = len(postings)
+    result.eligible = sum(1 for p in postings if p.eligibility_pass)
     seen_keys: set[str] = set()
 
     for posting in postings:
@@ -187,6 +213,14 @@ async def _persist_source(
                     last_seen_at=run_ts,
                     status="open",
                     content_hash=digest,
+                    location_eligibility=posting.location_eligibility,
+                    timezone_restrictions=posting.timezone_restrictions,
+                    salary_min=posting.salary_min,
+                    salary_max=posting.salary_max,
+                    salary_currency=posting.salary_currency,
+                    is_us_employer=posting.is_us_employer,
+                    eligibility_pass=posting.eligibility_pass,
+                    eligibility_reasons=posting.eligibility_reasons,
                     raw_json=posting.raw_json,
                 )
             )
@@ -217,6 +251,18 @@ async def _persist_source(
             row.content_hash = digest
             row.raw_json = posting.raw_json
             result.updated += 1
+
+        # The verdict is refreshed on every run regardless of `content_hash`,
+        # because editing `filters.yaml` must re-decide existing rows even
+        # though the posting itself never changed.
+        row.location_eligibility = posting.location_eligibility
+        row.timezone_restrictions = posting.timezone_restrictions
+        row.salary_min = posting.salary_min
+        row.salary_max = posting.salary_max
+        row.salary_currency = posting.salary_currency
+        row.is_us_employer = posting.is_us_employer
+        row.eligibility_pass = posting.eligibility_pass
+        row.eligibility_reasons = posting.eligibility_reasons
 
     # --- Closure by disappearance ------------------------------------------
     adapter_suspicious = outcome.adapter.empty_result_is_suspicious if outcome.adapter else True
@@ -256,19 +302,57 @@ async def _persist_source(
     return result
 
 
-async def _new_jobs_for_run(session: AsyncSession, run_ts: datetime) -> list[JobPosting]:
-    """New jobs = rows whose `first_seen_at` is exactly this run's stamp."""
+async def _new_jobs_for_run(
+    session: AsyncSession, run_ts: datetime, *, eligible_only: bool = False
+) -> list[JobPosting]:
+    """New jobs = rows whose `first_seen_at` is exactly this run's stamp.
+
+    `eligible_only` is the alert gate: ineligible jobs are still stored and
+    still counted as new, they just never reach Telegram.
+    """
+    query = select(JobPosting).where(
+        JobPosting.first_seen_at == run_ts, JobPosting.status == "open"
+    )
+    if eligible_only:
+        query = query.where(JobPosting.eligibility_pass.is_(True))
+
     return list(
-        (
-            await session.execute(
-                select(JobPosting)
-                .where(JobPosting.first_seen_at == run_ts, JobPosting.status == "open")
-                .order_by(JobPosting.company, JobPosting.title)
-            )
-        )
+        (await session.execute(query.order_by(JobPosting.company, JobPosting.title)))
         .scalars()
         .all()
     )
+
+
+async def _last_fetch_times(session: AsyncSession) -> dict[str, datetime]:
+    """Most recent successful fetch per source, from the rows it wrote.
+
+    Used only by the `min_fetch_interval_minutes` throttle. Deriving it from
+    `max(last_seen_at)` avoids a second bookkeeping table, and is exact: every
+    successful fetch stamps `last_seen_at` on every posting it saw.
+    """
+    rows = await session.execute(
+        select(JobPosting.source_id, func.max(JobPosting.last_seen_at)).group_by(
+            JobPosting.source_id
+        )
+    )
+    return {source_id: seen for source_id, seen in rows.all() if seen is not None}
+
+
+def _is_throttled(
+    company: CompanyConfig, last_fetch: dict[str, datetime], now: datetime
+) -> bool:
+    """True when a source's configured minimum fetch gap has not elapsed.
+
+    Remotive's terms ask for at most ~4 calls a day while the scheduler runs
+    hourly, so the cap has to live here rather than in the schedule.
+    """
+    interval = company.min_fetch_interval_minutes
+    if not interval:
+        return False
+    previous = last_fetch.get(company.source_id)
+    if previous is None:
+        return False
+    return (now - previous).total_seconds() < interval * 60
 
 
 async def run_ingest(
@@ -324,12 +408,45 @@ async def run_ingest(
     )
 
     try:
-        semaphore = asyncio.Semaphore(settings.ingest_concurrency)
-        outcomes = await asyncio.gather(
-            *(_fetch_one(company, http_client, semaphore) for company in companies)
+        filters = load_filters(settings.filters_file)
+        log.info(
+            "ingest.filters",
+            extra={
+                "allowed_locations": filters.allowed_locations,
+                "required_currency": filters.required_currency,
+            },
         )
 
+        async with session_scope() as session:
+            last_fetch = await _last_fetch_times(session)
+
         results: list[SourceResultOut] = []
+        due: list[CompanyConfig] = []
+        for company in companies:
+            if _is_throttled(company, last_fetch, run_ts):
+                log.info(
+                    "ingest.source_throttled",
+                    extra={
+                        "source_id": company.source_id,
+                        "min_interval_minutes": company.min_fetch_interval_minutes,
+                    },
+                )
+                results.append(
+                    SourceResultOut(
+                        source_id=company.source_id,
+                        company=company.company,
+                        ats=company.ats,
+                        throttled=True,
+                    )
+                )
+                continue
+            due.append(company)
+
+        semaphore = asyncio.Semaphore(settings.ingest_concurrency)
+        outcomes = await asyncio.gather(
+            *(_fetch_one(company, http_client, semaphore, filters) for company in due)
+        )
+
         for outcome in outcomes:
             if not outcome.ok:
                 results.append(
@@ -367,20 +484,23 @@ async def run_ingest(
                     )
                 )
 
+        # Only jobs that cleared the eligibility filter are alertable. The
+        # rest are stored and browsable, they just do not buzz the phone.
         async with session_scope() as session:
-            new_rows = await _new_jobs_for_run(session, run_ts)
+            alertable = await _new_jobs_for_run(session, run_ts, eligible_only=True)
 
         notified = 0
-        if notify and new_rows:
+        if notify and alertable:
             active_notifier = notifier or build_notifier(settings, client=http_client)
             try:
-                notified = await active_notifier.notify_new_jobs(new_rows)
+                notified = await active_notifier.notify_new_jobs(alertable)
             except Exception:
                 # Alerts are best-effort; the data is already committed.
                 log.exception("ingest.notify_failed")
 
         totals = {
             "fetched": sum(r.fetched for r in results),
+            "eligible": sum(r.eligible for r in results),
             "new": sum(r.new for r in results),
             "updated": sum(r.updated for r in results),
             "closed": sum(r.closed for r in results),
@@ -393,6 +513,7 @@ async def run_ingest(
             if run is not None:
                 run.finished_at = finished_at
                 run.fetched = totals["fetched"]
+                run.eligible = totals["eligible"]
                 run.new = totals["new"]
                 run.updated = totals["updated"]
                 run.closed = totals["closed"]

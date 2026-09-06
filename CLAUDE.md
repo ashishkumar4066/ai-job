@@ -63,30 +63,69 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
 
 ## PHASE 1 — Aggregator
 
-**Goal:** a backend that fetches current postings from all configured companies, normalizes and stores them, detects new jobs, and pushes Telegram alerts. This is the foundation — get it correct before any UI.
+**Goal:** a backend that fetches current postings from all configured sources, normalizes and stores them, **filters them for my eligibility (India-based, USD pay)**, detects new eligible jobs, and pushes Telegram alerts. This is the foundation — get it correct before any UI.
 
 **Build:**
 
-- `adapters/base.py` — `BaseAdapter` (abstract). Interface:
+- `adapters/base.py` — `BaseAdapter` (abstract). One interface, two adapter families behind it:
   ```python
   class BaseAdapter(ABC):
-      ats: str
-      async def fetch(self, company: CompanyConfig) -> list[RawJob]: ...
-      def normalize(self, raw: RawJob, company: CompanyConfig) -> JobPosting: ...
+      source: str  # "greenhouse" | "lever" | "ashby" | "himalayas" | "remotive"
+      async def fetch(self, cfg: SourceConfig) -> list[RawJob]: ...
+      def normalize(self, raw: RawJob, cfg: SourceConfig) -> JobPosting: ...
   ```
-- Concrete adapters (start with these three — most API-friendly):
+  `SourceConfig` generalizes the old `CompanyConfig`: a curated ATS entry carries `{ company, ats, token_or_slug }`; an aggregator entry carries the board slug + its query params. Ingest, dedupe, closure and alerting must not branch on which family a job came from.
+
+  `source_key` stays `"{source}:{company}:{job_id}"` — for aggregator boards, `source` is the board slug (`himalayas`, `remotive`) and `company` is the employer name from the feed.
+
+### A. Aggregator-board adapters (primary — broad discovery, eligibility-tagged)
+
+- `HimalayasAdapter` → `GET https://himalayas.app/jobs/api/search` (free, no key).
+  Params: `q`, `country`, `worldwide`, `seniority`, `employment_type`, `company`, `timezone`, `sort`, `page`.
+  **Primary source**, because each job carries candidate-location eligibility and currency directly: country restrictions, timezone restrictions, a worldwide flag, and structured salary (`min`, `max`, `currency`).
+  Rate-limited → **exponential backoff on HTTP 429**.
+  (Browse feed `GET https://himalayas.app/jobs/api` returns max 20/page; page it with `offset`.)
+- `RemotiveAdapter` → `GET https://remotive.com/api/remote-jobs?category=software-dev` (free, no key). Secondary feed.
+  Constraints, non-negotiable: listings are **delayed 24h**; we **must persist and display Remotive's own job URL** (it becomes `apply_url` for Remotive-sourced rows) and **attribute Remotive as the source** in the UI; **do not repost Remotive jobs to third parties**.
+
+### B. Curated ATS adapters (high-signal supplement — pre-vetted employers)
+
+- Keep `GreenhouseAdapter`, `LeverAdapter`, `AshbyAdapter`, now driven by a curated `companies.yaml` of **India-friendly, USD-paying, remote-first** employers. Pre-vetting is the point: these companies are known-good, so eligibility is unambiguous rather than inferred.
   - `GreenhouseAdapter` → `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true`
   - `LeverAdapter` → `GET https://api.lever.co/v0/postings/{company}?mode=json`
   - `AshbyAdapter` → Ashby public job-board posting API (**verify exact endpoint/shape live**)
-  - `PlaywrightAdapter` — interface + stub only for now (custom sites, later)
+  - Seed list: `deel`, `gitlab`, `zapier`, `automattic`, `turing`.
+- `PlaywrightAdapter` — interface + stub only for now (custom sites, later).
+
+**Verify each live endpoint's real JSON shape before writing field mappings** (principle 8) — including the Himalayas param names above, which are unversioned like everything else here.
+
+### Schema
+
 - `JobPosting` model + table:
-  `id`, `source_key`, `ats`, `company`, `title`, `locations[]`, `remote`, `department`, `apply_url` (canonical ATS URL), `description_html`, `description_text`, `posted_at`, `updated_at`, `first_seen_at`, `last_seen_at`, `status` (`open|closed`), `raw_json`.
-- `ingest.py` — for each company in `companies.yaml`: run its adapter → upsert by `source_key` (refresh `last_seen_at` + changed fields), insert new rows with `first_seen_at=now`, then mark any previously-open job for that source **not seen this run** as `closed`.
+  `id`, `source_key`, `ats`, `company`, `title`, `locations[]`, `remote`, `department`, `apply_url` (canonical ATS URL, or Remotive's job URL for Remotive rows), `description_html`, `description_text`, `posted_at`, `updated_at`, `first_seen_at`, `last_seen_at`, `status` (`open|closed`), `raw_json`.
+- **New fields:** `location_eligibility[]` (ISO country codes and/or `"worldwide"`), `timezone_restrictions`, `salary_min`, `salary_max`, `salary_currency`, `is_us_employer` (derived), `eligibility_pass` (bool), `eligibility_reasons[]`.
+  - `is_us_employer` is derived, not fetched: curated `companies.yaml` entries may set it explicitly; aggregator rows derive it from the feed's company-location/HQ field when present, else leave it unknown (`None` — distinct from `false`, because the pay rule below keys off "unknown").
+  - Alembic migration for the added columns.
+
+### Ingestion
+
+- `ingest.py` — for each entry in `companies.yaml` / the aggregator source config: run its adapter → **eligibility filter (below)** → upsert by `source_key` (refresh `last_seen_at` + changed fields), insert new rows with `first_seen_at=now`, then mark any previously-open job for that source **not seen this run** as `closed`.
+- **New ingestion stage — eligibility + currency filter.** Runs **after `normalize`, before a job is marked active.** Retain a job as **eligible** only if BOTH hold:
+  1. **Location:** `location_eligibility` includes `IN` **OR** `worldwide` (treat `"global"` / `"anywhere"` as worldwide).
+  2. **Pay:** `salary_currency == "USD"` **OR** (`is_us_employer == true` **AND** currency unknown).
+
+  Jobs that fail are **still stored**, flagged `eligibility_pass = false` with populated `eligibility_reasons[]`. **Nothing is silently dropped** — the rules stay auditable and tunable against real data.
+- Filter config in `config/filters.yaml`:
+  ```yaml
+  allowed_locations: [IN, worldwide]
+  required_currency: USD
+  allow_us_employer_when_currency_unknown: true
+  ```
 - **New-job detection:** rows whose `first_seen_at == this run`.
-- `notify/telegram.py` — send each new job (title, company, location, apply_url).
+- `notify/telegram.py` — send each new job (title, company, location, apply_url). **Only `eligibility_pass = true` jobs trigger alerts.**
 - `scheduler.py` — APScheduler job running ingest every N minutes (configurable).
 - FastAPI: `GET /jobs` (filters: company, ats, remote, q, status), `GET /jobs/{id}`, `POST /ingest/run` (manual trigger).
-- `companies.yaml` — list of `{ company, ats, token_or_slug }`.
+- `companies.yaml` — curated ATS list of `{ company, ats, token_or_slug }`.
 - Docker + compose (app + postgres). Alembic migration for the schema.
 
 **Acceptance criteria:**
@@ -95,7 +134,11 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
 - Delete a job from a fixture and re-run → that job flips to `closed`, not deleted.
 - Force one adapter to throw → the other adapters still complete and persist.
 - A genuinely new fixture job appears in `GET /jobs` and triggers **exactly one** Telegram message.
-- All three live ATS endpoints verified: a short script prints fetched count per company and it matches that company's public career page.
+- All five live source endpoints verified: a short script prints fetched count per source and it matches that source's public listing page.
+- Himalayas and Remotive adapters each return normalized jobs from a **recorded fixture**, and the shared interface handles both with **no downstream special-casing**.
+- A worldwide-eligible USD job **passes** the filter; a US-candidates-only remote job is flagged `eligibility_pass = false` with a **location** reason.
+- **Only** `eligibility_pass = true` jobs generate alerts.
+- Remotive jobs retain and display Remotive's canonical URL and attribution.
 
 ---
 

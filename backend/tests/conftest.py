@@ -15,6 +15,7 @@ import pytest
 
 from app.config import get_settings
 from app.db import dispose_engine, get_engine, get_session_factory
+from app.eligibility import get_filters
 from app.models import Base
 from app.notify import NullNotifier
 from app.schemas import CompanyConfig
@@ -38,9 +39,12 @@ async def db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[N
     monkeypatch.setenv("RUN_SCHEDULER", "false")
     monkeypatch.setenv("NOTIFICATIONS_ENABLED", "false")
     monkeypatch.setenv("COMPANIES_FILE", str(FIXTURE_DIR / "companies_test.yaml"))
+    monkeypatch.setenv("FILTERS_FILE", str(FIXTURE_DIR / "filters_test.yaml"))
     monkeypatch.setenv("HTTP_MAX_RETRIES", "0")
+    monkeypatch.setenv("RATE_LIMIT_MAX_RETRIES", "0")
 
     get_settings.cache_clear()
+    get_filters.cache_clear()
     await dispose_engine()
 
     engine = get_engine()
@@ -51,6 +55,7 @@ async def db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[N
 
     await dispose_engine()
     get_settings.cache_clear()
+    get_filters.cache_clear()
 
 
 @pytest.fixture

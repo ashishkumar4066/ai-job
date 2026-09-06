@@ -1,0 +1,8 @@
+{
+  "comments": "13/03/2026: The API has been updated to include the companySlug field in the response.",
+  "updatedAt": 1785504555,
+  "offset": 20,
+  "limit": 20,
+  "totalCount": 5,
+  "jobs": []
+}

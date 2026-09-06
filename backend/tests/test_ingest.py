@@ -86,7 +86,13 @@ class TestIdempotency:
         assert first.closed == 0
         rows_after_first = await count_jobs(session_factory)
         assert rows_after_first == 9
-        assert len(notifier.messages) == 9
+
+        # All 9 are stored; only the eligible ones alert. Two of Linear's roles
+        # are Europe-only, which the test filter does not allow, so they are
+        # kept with `eligibility_pass = false` rather than dropped.
+        assert first.eligible == 6
+        assert await count_jobs(session_factory, eligibility_pass=False) == 3
+        assert len(notifier.messages) == first.eligible
 
         notifier_two = CountingNotifier()
         second = await run_ingest(notifier=notifier_two)

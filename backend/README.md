@@ -1,19 +1,69 @@
 # Phase 1 — Aggregator
 
-Fetches live postings from every company in `companies.yaml`, normalizes them
-into one schema, stores them in SQLite, detects genuinely-new jobs, and pushes
-Telegram alerts.
+Fetches live postings from every source in `companies.yaml`, normalizes them
+into one schema, **filters them for eligibility (India-based candidate, USD
+pay)**, stores them in SQLite, detects genuinely-new jobs, and pushes Telegram
+alerts for the eligible ones.
 
 ## Supported platforms
 
+Two adapter families, one interface — nothing downstream branches on which.
+
+**A. Aggregator boards** — broad discovery, eligibility-tagged:
+
+| Source | Endpoint | Verified live |
+|---|---|---|
+| **Himalayas** (primary) | `GET https://himalayas.app/jobs/api/search` | ✅ 770 postings |
+| **Remotive** (secondary) | `GET https://remotive.com/api/remote-jobs?category=software-dev` | ✅ 33 postings |
+
+Himalayas is primary because it publishes candidate eligibility and pay as
+structured data (`locationRestrictions`, `timezoneRestrictions`, `minSalary` /
+`maxSalary` / `currency`). It pages with `page` (**not** `offset`), rate-limits
+with HTTP 429, and its `totalCount` cannot drive pagination — see the module
+docstring for the full list of verified quirks.
+
+Remotive carries **terms-of-use obligations**: its own job URL is stored as
+`apply_url` and Remotive is named as the source wherever a job is surfaced,
+jobs are never reposted to third parties, listings are 24h delayed, and calls
+are capped at ~4/day via `min_fetch_interval_minutes: 360`.
+
+**B. Curated ATS** — pre-vetted India-friendly, USD-paying, remote-first employers:
+
 | ATS | Endpoint | Verified live |
 |---|---|---|
-| **Greenhouse** | `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` | ✅ 5 boards |
-| **Lever** | `GET https://api.lever.co/v0/postings/{slug}?mode=json` | ✅ 2 boards |
-| **Ashby** | `GET https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true` | ✅ 4 boards |
+| **Greenhouse** | `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` | ✅ GitLab 185, Turing 27 |
+| **Lever** | `GET https://api.lever.co/v0/postings/{slug}?mode=json` | ✅ |
+| **Ashby** | `GET https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true` | ✅ Zapier 14, Deel 0 |
 | Playwright | — | stub only (fails loudly if enabled) |
 
-All three are public, unauthenticated JSON APIs with no pagination.
+All are public, unauthenticated JSON APIs. Only Himalayas paginates.
+
+## Eligibility filter
+
+Runs **after `normalize`, before a job is marked active**. A job is eligible
+only if BOTH hold:
+
+1. **Location** — `location_eligibility` includes `IN` or `worldwide`
+   (`global` / `anywhere` normalize to `worldwide`).
+2. **Pay** — `salary_currency == USD`, or the currency is unknown **and** the
+   employer is known to be US-based.
+
+Jobs that fail are **still stored**, flagged `eligibility_pass = false` with the
+deciding `eligibility_reasons` — nothing is silently dropped, so the rules stay
+auditable and tunable. Only `eligibility_pass = true` jobs generate alerts.
+
+Tune the rules in [`config/filters.yaml`](config/filters.yaml) and re-run
+ingest; existing rows are re-decided even though their content never changed.
+
+```yaml
+allowed_locations: [IN, worldwide]
+required_currency: USD
+allow_us_employer_when_currency_unknown: true
+```
+
+The feeds cannot tell us everything, so `companies.yaml` supplies the rest:
+`us_employer: true` feeds the pay rule, and `location_eligibility` is a
+fallback used only when a posting's own locations resolve to nothing.
 
 ## Quick start
 
@@ -43,7 +93,7 @@ With Docker (from the repo root): `docker compose up --build`.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/jobs` | Filters: `company` (repeatable), `ats` (repeatable), `department` (repeatable), `remote`, `status`, `q`, `q_scope`, `posted_within_days`, `first_seen_after`, `limit`, `offset`, `sort`, `order` |
+| `GET` | `/jobs` | Filters: `company` (repeatable), `ats` (repeatable), `department` (repeatable), `remote`, `status`, `eligibility_pass`, `q`, `q_scope`, `posted_within_days`, `first_seen_after`, `limit`, `offset`, `sort`, `order` |
 | `GET` | `/jobs/{id}` | Full description; `?include_raw=true` returns the original ATS payload |
 | `GET` | `/meta/facets` | Filter options with counts + headline stats (backs the dashboard dropdowns) |
 | `POST` | `/ingest/run` | Manual trigger; `?notify=false` to skip alerts. 409 if a run is in flight |

@@ -13,6 +13,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Float,
     Index,
     Integer,
     String,
@@ -91,11 +92,33 @@ class JobPosting(Base):
     # writes and seeds the Phase 2 validation cache.
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
 
+    # --- Eligibility --------------------------------------------------------
+    # Where a candidate may be based: ISO-3166-1 alpha-2 codes and/or the
+    # `worldwide` sentinel. Empty means the source gave us nothing to go on.
+    location_eligibility: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    timezone_restrictions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    salary_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_currency: Mapped[str | None] = mapped_column(String(8), nullable=True, index=True)
+
+    # Tri-state: None = unknown. The pay rule treats unknown differently from a
+    # known-false, so this must stay nullable.
+    is_us_employer: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    # Verdict of the filter stage. False never means "dropped" — the row is
+    # always stored; `eligibility_reasons` records what decided it.
+    eligibility_pass: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
+    eligibility_reasons: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
     raw_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     __table_args__ = (
         Index("ix_job_postings_source_status", "source_id", "status"),
         Index("ix_job_postings_status_posted", "status", "posted_at"),
+        Index("ix_job_postings_eligible_status", "eligibility_pass", "status"),
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
@@ -112,6 +135,8 @@ class IngestRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(UtcDateTime, nullable=True)
 
     fetched: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # How many fetched postings cleared the eligibility filter.
+    eligible: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     new: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     updated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     closed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

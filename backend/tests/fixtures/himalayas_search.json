@@ -1,0 +1,264 @@
+{
+  "comments": "13/03/2026: The API has been updated to include the companySlug field in the response.",
+  "updatedAt": 1785504555,
+  "offset": 0,
+  "limit": 20,
+  "totalCount": 5,
+  "jobs": [
+    {
+      "title": "Engineering - Software Engineer",
+      "excerpt": "Aline is the bridge between senior care and technology, built to strengthen connection where it matters most.",
+      "companyName": "Aline",
+      "companySlug": "aline",
+      "companyLogo": "",
+      "employmentType": "Full Time",
+      "minSalary": 100000,
+      "maxSalary": 100000,
+      "salaryPeriod": "annual",
+      "seniority": [
+        "Mid-level"
+      ],
+      "currency": "USD",
+      "locationRestrictions": [],
+      "timezoneRestrictions": [
+        -11,
+        -10,
+        -9.5,
+        -9,
+        -8,
+        -7,
+        -6,
+        -5,
+        -4,
+        -3.5,
+        -3,
+        -2,
+        -1,
+        0,
+        1,
+        2,
+        3,
+        3.5,
+        4,
+        4.5,
+        5,
+        5.5,
+        5.75,
+        6,
+        6.5,
+        7,
+        8,
+        8.75,
+        9,
+        9.5,
+        10,
+        10.5,
+        11,
+        12,
+        12.75,
+        13,
+        14
+      ],
+      "categories": [
+        "Software-Engineer",
+        "Web-Developer",
+        "Backend-Engineer",
+        "Full-Stack-Developer",
+        "PHP-Developer",
+        "Engineering---Software-Engineering",
+        "Software-Developer",
+        "Software-Engineer-Jobs",
+        "Software-Engineering-Jobs",
+        "Software-Engineering",
+        "Software-Eng",
+        "Software-Design-Engineer",
+        "Software-Systems-Engineer",
+        "IT-Software-Engineer",
+        "Developer"
+      ],
+      "parentCategories": [
+        "Developer"
+      ],
+      "description": "<p><a href=\"https://himalayas.app/companies/aline\">Aline</a> is the bridge between senior care and technology, built to strengthen connection where it matters most. Our all-in-one platform brings together sales, marketing, operations, and engagement tools, empowering senior living communities to work smarter, communicate clearly, and deliver care with heart.</p><p>Rooted in industry expertise and ",
+      "pubDate": 1785325859,
+      "expiryDate": 1790509857,
+      "applicationLink": "https://himalayas.app/companies/aline/jobs/engineering-software-engineer",
+      "guid": "https://himalayas.app/companies/aline/jobs/engineering-software-engineer"
+    },
+    {
+      "title": "Staff Software Engineer - Platform",
+      "excerpt": "Who we areSamsara (NYSE: IOT) is the pioneer of the Connected Operations™ Cloud, which is a platform that enables organizations that depend on physical operatio",
+      "companyName": "Samsara",
+      "companySlug": "samsara",
+      "companyLogo": "https://cdn-images.himalayas.app/ipyxawvtrc5dl5owsm0gmjjbj7w3",
+      "employmentType": "Full Time",
+      "minSalary": 162400,
+      "maxSalary": 290000,
+      "salaryPeriod": "annual",
+      "seniority": [
+        "Senior"
+      ],
+      "currency": "USD",
+      "locationRestrictions": [
+        "United States"
+      ],
+      "timezoneRestrictions": [
+        -10,
+        -9,
+        -8,
+        -7,
+        -6,
+        -5,
+        14
+      ],
+      "categories": [
+        "Platform-Engineering",
+        "Software-Engineer",
+        "Backend-Engineering",
+        "Software-Architecture",
+        "Distributed-Systems",
+        "Staff-Software-Engineering",
+        "Staff-Platform-Engineer",
+        "Staff-Software-Engineer---Backend",
+        "Staff-Engineer-Jobs",
+        "Staff-Software-Developer",
+        "Staff-Engineering-Jobs"
+      ],
+      "parentCategories": [
+        "Developer"
+      ],
+      "description": "<div class=\"content-intro\">\n<h3>Who we are</h3>\n<p><a href=\"https://himalayas.app/companies/samsara\">Samsara</a> (NYSE: IOT) is the pioneer of the Connected Operations™ Cloud, which is a platform that enables organizations that depend on physical operations to harness Internet of Things (IoT) data to develop actionable insights and improve their operations. At <a href=\"https://himalayas.app/compan",
+      "pubDate": 1785395453,
+      "expiryDate": 1790579453,
+      "applicationLink": "https://himalayas.app/companies/samsara/jobs/staff-software-engineer-platform",
+      "guid": "https://himalayas.app/companies/samsara/jobs/staff-software-engineer-platform"
+    },
+    {
+      "title": "Software Engineer - Backend Engineer (India)",
+      "excerpt": "Alkira is reinventing networking for the AI era.  We're looking for a Software Engineer - Backend Engineer who wants to own products from blank page to producti",
+      "companyName": "Alkira, Inc.",
+      "companySlug": "alkira-inc",
+      "companyLogo": "https://cdn-images.himalayas.app/7nlpckf7j6fmvb7yv8kavczmnnjx",
+      "employmentType": "Full Time",
+      "minSalary": null,
+      "maxSalary": null,
+      "salaryPeriod": "annual",
+      "seniority": [
+        "Mid-level"
+      ],
+      "currency": null,
+      "locationRestrictions": [
+        "India"
+      ],
+      "timezoneRestrictions": [
+        5.5
+      ],
+      "categories": [
+        "Backend-Engineering",
+        "Software-Engineering",
+        "Distributed-Systems-Engineering",
+        "Cloud-Networking-Engineering",
+        "API-Development",
+        "Java-Backend-Engineer",
+        "Mid-Level-Backend-Software-Engineer",
+        "Software-Engineer"
+      ],
+      "parentCategories": [
+        "Developer"
+      ],
+      "description": "<p>Alkira is reinventing networking for the AI era. We're looking for a Software Engineer - Backend Engineer who wants to own products from blank page to production — and operate what you ship. You'll build net-new capabilities and maintain the distributed systems behind Alkira's CSX (Cloud Services Exchange). Ownership here means both shipping the 0→1 and maintaining them.</p><p>To learn more abo",
+      "pubDate": 1785373749,
+      "expiryDate": 1790557749,
+      "applicationLink": "https://himalayas.app/companies/alkira-inc/jobs/software-engineer-backend-engineer-india",
+      "guid": "https://himalayas.app/companies/alkira-inc/jobs/software-engineer-backend-engineer-india"
+    },
+    {
+      "title": "Software Engineer - 11573",
+      "excerpt": "Coupa makes margins multiply through its community-generated AI and industry-leading total spend management platform for businesses large and small.",
+      "companyName": "Coupa Software, Inc.",
+      "companySlug": "coupa-software-inc",
+      "companyLogo": "https://cdn-images.himalayas.app/540vzyzjdifz6m156kwda48vh0br",
+      "employmentType": "Full Time",
+      "minSalary": 173000,
+      "maxSalary": 241467,
+      "salaryPeriod": "annual",
+      "seniority": [
+        "Mid-level"
+      ],
+      "currency": "PLN",
+      "locationRestrictions": [
+        "Poland"
+      ],
+      "timezoneRestrictions": [
+        1
+      ],
+      "categories": [
+        "Software-Developer",
+        "Software-Engineering",
+        "Platform-Engineering",
+        "Backend-Development",
+        "SaaS-Development",
+        "Infrastructure-Engineering",
+        "Software-Engineer",
+        "Software-Engineer-Jobs",
+        "IT-Software-Engineer",
+        "Software-Engineer-I",
+        "Software-Engineering-Jobs",
+        "Software-Engineer-II",
+        "Java-Software-Engineer"
+      ],
+      "parentCategories": [
+        "Developer"
+      ],
+      "description": "<div>Coupa makes margins multiply through its community-generated AI and industry-leading total spend management platform for businesses large and small. Coupa AI is informed by trillions of dollars of direct and indirect spend data across a global network of 10M+ buyers and suppliers. We empower you with the ability to predict, prescribe, and automate smarter, more profitable business decisions t",
+      "pubDate": 1783233706,
+      "expiryDate": 1788417706,
+      "applicationLink": "https://himalayas.app/companies/coupa-software-inc/jobs/software-engineer-11573",
+      "guid": "https://himalayas.app/companies/coupa-software-inc/jobs/software-engineer-11573"
+    },
+    {
+      "title": "Software Engineer",
+      "excerpt": "Are you passionate about building scalable software solutions and solving complex technical challenges?",
+      "companyName": "Valce Talent Solutions",
+      "companySlug": "valce-talent-solutions",
+      "companyLogo": "",
+      "employmentType": "Full Time",
+      "minSalary": null,
+      "maxSalary": null,
+      "salaryPeriod": "annual",
+      "seniority": [
+        "Senior"
+      ],
+      "currency": null,
+      "locationRestrictions": [
+        "Mexico"
+      ],
+      "timezoneRestrictions": [
+        -8,
+        -7,
+        -6,
+        -5
+      ],
+      "categories": [
+        "Engineering",
+        "Software-Engineering",
+        "Software-Development",
+        "Enterprise-Software-Development",
+        "Backend-Development",
+        "Software-Engineer",
+        "IT-Software-Engineer",
+        "Software-Engineer-Jobs",
+        "Software-Developer",
+        "Software-Engineering-Jobs"
+      ],
+      "parentCategories": [
+        "Developer"
+      ],
+      "description": "<p>Are you passionate about building scalable software solutions and solving complex technical challenges?</p><p>We're looking for an experienced <strong>Software Engineer</strong>to join a collaborative engineering team focused on delivering high-quality enterprise software products.</p><h3>What You'll Do</h3><ul>\n<li><p>Design, develop, test, and maintain enterprise software applications.</p></l",
+      "pubDate": 1784418518,
+      "expiryDate": 1789602517,
+      "applicationLink": "https://himalayas.app/companies/valce-talent-solutions/jobs/software-engineer",
+      "guid": "https://himalayas.app/companies/valce-talent-solutions/jobs/software-engineer"
+    }
+  ]
+}

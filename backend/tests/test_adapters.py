@@ -228,7 +228,14 @@ class TestAshbyAdapter:
 # ------------------------------------------------------------------ Registry
 class TestRegistry:
     def test_supported_ats(self) -> None:
-        assert set(supported_ats()) == {"greenhouse", "lever", "ashby", "playwright"}
+        assert set(supported_ats()) == {
+            "greenhouse",
+            "lever",
+            "ashby",
+            "himalayas",
+            "remotive",
+            "playwright",
+        }
 
     def test_aliases_resolve(self) -> None:
         assert isinstance(get_adapter("GH"), GreenhouseAdapter)

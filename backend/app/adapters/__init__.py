@@ -1,7 +1,14 @@
 """Adapter registry.
 
+Two families, one interface:
+
+  * **Curated ATS** — Greenhouse, Lever, Ashby. One board per company, driven
+    by a `companies.yaml` entry with a board token.
+  * **Aggregator boards** — Himalayas, Remotive. Whole-board feeds carrying
+    candidate-eligibility metadata, driven by query params rather than a token.
+
 Adding a company on an already-supported ATS is a `companies.yaml` edit.
-Adding a *new* ATS means one module here plus one line in `_REGISTRY`.
+Adding a *new* source means one module here plus one line in `_REGISTRY`.
 """
 
 from __future__ import annotations
@@ -11,15 +18,23 @@ import httpx
 from app.adapters.ashby import AshbyAdapter
 from app.adapters.base import AdapterError, BaseAdapter
 from app.adapters.greenhouse import GreenhouseAdapter
+from app.adapters.himalayas import HimalayasAdapter
 from app.adapters.lever import LeverAdapter
 from app.adapters.playwright_adapter import PlaywrightAdapter
+from app.adapters.remotive import RemotiveAdapter
 
 _REGISTRY: dict[str, type[BaseAdapter]] = {
     GreenhouseAdapter.ats: GreenhouseAdapter,
     LeverAdapter.ats: LeverAdapter,
     AshbyAdapter.ats: AshbyAdapter,
+    HimalayasAdapter.ats: HimalayasAdapter,
+    RemotiveAdapter.ats: RemotiveAdapter,
     PlaywrightAdapter.ats: PlaywrightAdapter,
 }
+
+# Sources that aggregate many employers onto one board. Their `company` column
+# holds the employer from the feed, not the board name.
+AGGREGATOR_SOURCES = frozenset({HimalayasAdapter.ats, RemotiveAdapter.ats})
 
 # Aliases people naturally write in config.
 _ALIASES = {
@@ -28,7 +43,14 @@ _ALIASES = {
     "lever.co": "lever",
     "ashbyhq": "ashby",
     "ashby_hq": "ashby",
+    "himalayas.app": "himalayas",
+    "remotive.com": "remotive",
+    "remotive.io": "remotive",
 }
+
+
+def is_aggregator(ats: str) -> bool:
+    return canonical_ats(ats) in AGGREGATOR_SOURCES
 
 
 def canonical_ats(ats: str) -> str:
@@ -61,14 +83,18 @@ def register_adapter(adapter_cls: type[BaseAdapter]) -> None:
 
 
 __all__ = [
+    "AGGREGATOR_SOURCES",
     "AdapterError",
     "AshbyAdapter",
     "BaseAdapter",
     "GreenhouseAdapter",
+    "HimalayasAdapter",
     "LeverAdapter",
     "PlaywrightAdapter",
+    "RemotiveAdapter",
     "canonical_ats",
     "get_adapter",
+    "is_aggregator",
     "is_supported_ats",
     "register_adapter",
     "supported_ats",

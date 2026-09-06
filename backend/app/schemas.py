@@ -26,20 +26,45 @@ def slugify(value: str) -> str:
 # --------------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------------
-class CompanyConfig(BaseModel):
-    """One entry from `companies.yaml`.
+class SourceConfig(BaseModel):
+    """One entry from `companies.yaml` — either family of adapter.
 
-    Adding a company whose ATS already has an adapter is a config change only.
+    A **curated ATS** entry is `{company, ats, token_or_slug}`; adding a company
+    whose ATS already has an adapter is a config change only.
+
+    An **aggregator board** entry (Himalayas, Remotive) needs no board token —
+    it carries `queries` instead, the set of API parameter dicts to sweep. Both
+    shapes travel through the same adapter interface, so nothing downstream
+    branches on which family a job came from.
     """
 
     model_config = ConfigDict(frozen=True)
 
     company: str
     ats: str
-    token_or_slug: str
+    # Aggregator boards have no per-company token, so this is optional.
+    token_or_slug: str = ""
     enabled: bool = True
     # Optional override for the public careers page (used only in log context).
     careers_url: str | None = None
+
+    # --- Eligibility inputs -------------------------------------------------
+    # Curated entries are pre-vetted, so the config can assert what the feed
+    # cannot tell us. `us_employer` is the `is_us_employer` input for the pay
+    # rule; aggregator feeds leave it None (unknown), which is deliberately
+    # distinct from False.
+    us_employer: bool | None = None
+    # Fallback candidate-eligibility for a pre-vetted company, used only when a
+    # posting's own location strings resolve to nothing.
+    location_eligibility: list[str] = Field(default_factory=list)
+
+    # --- Aggregator-board options -------------------------------------------
+    # Query parameter sets to sweep. Each dict is one API call (paged out by
+    # the adapter); results are merged and de-duplicated across the set.
+    queries: list[dict[str, Any]] = Field(default_factory=list)
+    # Minimum gap between fetches, for boards whose terms cap request volume
+    # (Remotive asks for at most ~4 calls/day). None = fetch every run.
+    min_fetch_interval_minutes: int | None = None
 
     @field_validator("ats")
     @classmethod
@@ -53,8 +78,17 @@ class CompanyConfig(BaseModel):
 
     @property
     def source_id(self) -> str:
-        """Identifies one (ats, company) board — the unit of the closure sweep."""
+        """Identifies one board — the unit of the closure sweep.
+
+        For an aggregator this is the whole board (`himalayas:himalayas`), not
+        one query: a job found by two queries in the same sweep is one job, and
+        `source_key` is globally unique.
+        """
         return f"{self.ats}:{self.key}"
+
+
+# The historical name, kept so existing call sites and tests keep working.
+CompanyConfig = SourceConfig
 
 
 # --------------------------------------------------------------------------
@@ -90,6 +124,22 @@ class JobPosting(BaseModel):
     updated_at: datetime | None = None
     raw_json: dict[str, Any] = Field(default_factory=dict)
 
+    # --- Eligibility ---------------------------------------------------------
+    # ISO-3166-1 alpha-2 codes and/or the `worldwide` sentinel: where a
+    # candidate may be based. Empty means the source told us nothing.
+    location_eligibility: list[str] = Field(default_factory=list)
+    # Human-readable timezone constraints ("UTC+05:30", "European timezones").
+    timezone_restrictions: list[str] = Field(default_factory=list)
+    salary_min: float | None = None
+    salary_max: float | None = None
+    salary_currency: str | None = None
+    # Tri-state on purpose: None = unknown, which the pay rule treats
+    # differently from a known-false.
+    is_us_employer: bool | None = None
+    # Set by the filter stage in `ingest`, never by an adapter.
+    eligibility_pass: bool = False
+    eligibility_reasons: list[str] = Field(default_factory=list)
+
     @property
     def primary_location(self) -> str:
         if self.locations:
@@ -118,6 +168,15 @@ class JobOut(BaseModel):
     last_seen_at: datetime
     status: JobStatus
 
+    location_eligibility: list[str]
+    timezone_restrictions: list[str]
+    salary_min: float | None
+    salary_max: float | None
+    salary_currency: str | None
+    is_us_employer: bool | None
+    eligibility_pass: bool
+    eligibility_reasons: list[str]
+
 
 class JobDetailOut(JobOut):
     description_html: str | None
@@ -143,8 +202,13 @@ class SourceResultOut(BaseModel):
     updated: int = 0
     closed: int = 0
     errored: int = 0
+    # How many of `fetched` cleared the eligibility filter this run.
+    eligible: int = 0
     ok: bool = True
     skipped_closure_sweep: bool = False
+    # True when the source was not contacted at all because its configured
+    # minimum fetch interval had not elapsed (see `min_fetch_interval_minutes`).
+    throttled: bool = False
     error: str | None = None
     duration_ms: int = 0
 
@@ -154,6 +218,7 @@ class IngestRunOut(BaseModel):
     started_at: datetime
     finished_at: datetime | None
     fetched: int
+    eligible: int = 0
     new: int
     updated: int
     closed: int

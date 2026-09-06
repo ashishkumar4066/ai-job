@@ -67,7 +67,14 @@ class TestShippedConfig:
     def test_repo_companies_file_is_valid(self) -> None:
         configs = load_companies(REPO_COMPANIES, include_disabled=True)
         assert len(configs) >= 10
-        assert {c.ats for c in configs} <= {"greenhouse", "lever", "ashby"}
+        assert {c.ats for c in configs} <= {
+            "greenhouse",
+            "lever",
+            "ashby",
+            "himalayas",
+            "remotive",
+            "playwright",
+        }
 
     def test_source_ids_are_unique(self) -> None:
         configs = load_companies(REPO_COMPANIES, include_disabled=True)

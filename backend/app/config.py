@@ -28,10 +28,20 @@ class Settings(BaseSettings):
 
     # --- Ingestion ----------------------------------------------------------
     companies_file: Path = Field(default=BACKEND_ROOT / "companies.yaml")
+    # Eligibility + currency rules applied between normalize and persist.
+    filters_file: Path = Field(default=BACKEND_ROOT / "config" / "filters.yaml")
     ingest_interval_minutes: int = Field(default=60, ge=1)
     run_scheduler: bool = Field(default=True)
     http_timeout_seconds: float = Field(default=30.0, gt=0)
     http_max_retries: int = Field(default=2, ge=0)
+    # HTTP 429 gets its own budget: a rate limit means "later", not "broken",
+    # so it must not burn the retry allowance reserved for real errors.
+    rate_limit_max_retries: int = Field(default=4, ge=0)
+    rate_limit_base_delay_seconds: float = Field(default=1.0, gt=0)
+    # Hard cap on pages an aggregator sweep will walk, per query. Himalayas
+    # reports a `totalCount` that does not match what it will actually page
+    # out, so paging stops on an empty page — this bounds a runaway sweep.
+    aggregator_max_pages: int = Field(default=25, ge=1)
     # Per-source concurrency cap so a 50-company run does not open 50 sockets.
     ingest_concurrency: int = Field(default=5, ge=1)
 

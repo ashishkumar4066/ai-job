@@ -1,0 +1,14 @@
+# Filter config for the test suite.
+#
+# `US` is allowed here on purpose: the recorded ATS fixtures are US boards
+# (Stripe / Palantir / Linear), and the ingest tests are about idempotency,
+# closure and alert-exactly-once — not about eligibility. Keeping them eligible
+# under a test-scoped config means those tests keep testing what they were
+# written to test, while the real `config/filters.yaml` stays untouched.
+#
+# The eligibility rules themselves are tested against the shipped config in
+# `test_eligibility.py`.
+
+allowed_locations: [US, IN, worldwide]
+required_currency: USD
+allow_us_employer_when_currency_unknown: true

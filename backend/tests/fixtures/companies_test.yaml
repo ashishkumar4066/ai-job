@@ -1,13 +1,22 @@
+# `us_employer` is set so the recorded US boards clear the pay rule (their
+# fixtures quote no salary, so currency is unknown). Paired with the `US` entry
+# in filters_test.yaml, this keeps the ingest tests focused on ingestion.
 companies:
   - company: Stripe
     ats: greenhouse
     token_or_slug: stripe
+    us_employer: true
+    location_eligibility: [worldwide]
   - company: Palantir
     ats: lever
     token_or_slug: palantir
+    us_employer: true
+    location_eligibility: [worldwide]
   - company: Linear
     ats: ashby
     token_or_slug: linear
+    us_employer: true
+    location_eligibility: [worldwide]
   - company: Ignored Co
     ats: not-a-real-ats
     token_or_slug: nope
