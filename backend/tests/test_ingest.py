@@ -42,24 +42,34 @@ def mock_all_boards(
     greenhouse_status: int = 200,
     lever_status: int = 200,
     ashby_status: int = 200,
-) -> None:
-    """Serve the three recorded fixtures. No live endpoint is ever touched."""
-    respx.get(GH_ENDPOINT).mock(
-        return_value=httpx.Response(
-            greenhouse_status,
-            json=greenhouse if greenhouse is not None else load_fixture("greenhouse_stripe.json"),
-        )
-    )
-    respx.get(LEVER_ENDPOINT).mock(
-        return_value=httpx.Response(
-            lever_status, json=lever if lever is not None else load_fixture("lever_palantir.json")
-        )
-    )
-    respx.get(ASHBY_ENDPOINT).mock(
-        return_value=httpx.Response(
-            ashby_status, json=ashby if ashby is not None else load_fixture("ashby_linear.json")
-        )
-    )
+) -> dict[str, respx.Route]:
+    """Serve the three recorded fixtures. No live endpoint is ever touched.
+
+    Returns the routes so a caller can assert on call counts — the way to tell
+    a skipped sweep from a sweep that simply found nothing new.
+    """
+    return {
+        "greenhouse": respx.get(GH_ENDPOINT).mock(
+            return_value=httpx.Response(
+                greenhouse_status,
+                json=greenhouse
+                if greenhouse is not None
+                else load_fixture("greenhouse_stripe.json"),
+            )
+        ),
+        "lever": respx.get(LEVER_ENDPOINT).mock(
+            return_value=httpx.Response(
+                lever_status,
+                json=lever if lever is not None else load_fixture("lever_palantir.json"),
+            )
+        ),
+        "ashby": respx.get(ASHBY_ENDPOINT).mock(
+            return_value=httpx.Response(
+                ashby_status,
+                json=ashby if ashby is not None else load_fixture("ashby_linear.json"),
+            )
+        ),
+    }
 
 
 async def count_jobs(session_factory: Any, **filters: Any) -> int:

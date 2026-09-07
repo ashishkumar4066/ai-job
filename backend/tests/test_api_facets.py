@@ -131,3 +131,57 @@ class TestDepartmentFilter:
                 await seeded.get("/jobs", params=[("department", first), ("department", second)])
             ).json()
             assert both["total"] == departments[0]["count"] + departments[1]["count"]
+
+
+class TestEligibilityGate:
+    """The dashboard's default view hides rows the eligibility filter rejected.
+
+    `/jobs` has always accepted `eligibility_pass`; `/meta/facets` did not, and
+    that gap is the bug this class pins. A facet list built without the gate
+    offers companies whose every posting is filtered out, so selecting one
+    yields an empty table and the filter reads as broken.
+    """
+
+    async def test_jobs_and_facets_agree_under_the_gate(
+        self, seeded: httpx.AsyncClient
+    ) -> None:
+        params = {"eligibility_pass": "true"}
+        jobs = (await seeded.get("/jobs", params={**params, "limit": "200"})).json()
+        facets = (await seeded.get("/meta/facets", params=params)).json()
+
+        assert facets["totals"]["matching"] == jobs["total"]
+        # Every facet option must be reachable: its count is drawn from the
+        # same gated set the table is.
+        by_company: dict[str, int] = {}
+        for job in jobs["items"]:
+            by_company[job["company"]] = by_company.get(job["company"], 0) + 1
+        assert {e["value"]: e["count"] for e in facets["companies"]} == by_company
+
+    async def test_gate_off_is_a_superset_of_gate_on(
+        self, seeded: httpx.AsyncClient
+    ) -> None:
+        ungated = (await seeded.get("/meta/facets")).json()["totals"]["matching"]
+        gated = (
+            await seeded.get("/meta/facets", params={"eligibility_pass": "true"})
+        ).json()["totals"]["matching"]
+        assert gated <= ungated
+
+    async def test_the_eligible_split_describes_the_board_not_the_query(
+        self, seeded: httpx.AsyncClient
+    ) -> None:
+        """`eligible`/`ineligible` must read the same with the gate on or off.
+
+        Deriving them from the gated base would report ineligible = 0 whenever
+        the dashboard sits in its default state — a statistic that only ever
+        restates the query that produced it.
+        """
+        ungated = (await seeded.get("/meta/facets")).json()["totals"]
+        gated = (
+            await seeded.get("/meta/facets", params={"eligibility_pass": "true"})
+        ).json()["totals"]
+
+        assert gated["eligible"] == ungated["eligible"]
+        assert gated["ineligible"] == ungated["ineligible"]
+        # ...while `matching` DOES follow the query, because it describes the
+        # rows on screen.
+        assert gated["matching"] == gated["eligible"]

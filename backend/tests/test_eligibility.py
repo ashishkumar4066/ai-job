@@ -1,8 +1,8 @@
-"""Eligibility + currency filter tests — the Phase 1 acceptance criteria.
+"""Eligibility filter tests — the Phase 1 acceptance criteria.
 
-These run against the **shipped** `config/filters.yaml` (IN + worldwide, USD),
-not the permissive test config the ingest suite uses, so they assert the rules
-that actually ship.
+These run against the **shipped** `config/filters.yaml` (IN + worldwide,
+remote-only, INR 20L/yr floor), not the permissive test config the ingest suite
+uses, so they assert the rules that actually ship.
 """
 
 from __future__ import annotations
@@ -28,13 +28,24 @@ def verdict(
     filters: FilterConfig,
     *,
     locations: list[str],
+    remote: bool | None = True,
     currency: str | None = None,
-    us_employer: bool | None = None,
+    salary_min: float | None = None,
+    salary_max: float | None = None,
+    # Rule 4 is exercised in `test_roles.py`. These tests isolate the location,
+    # remote and pay rules, so they hold the role constant at something that
+    # unambiguously passes — a title and a JD that state nothing about years.
+    title: str = "Senior Software Engineer",
+    description_text: str | None = None,
 ):
     return evaluate(
         location_eligibility=locations,
+        remote=remote,
+        salary_min=salary_min,
+        salary_max=salary_max,
         salary_currency=currency,
-        is_us_employer=us_employer,
+        title=title,
+        description_text=description_text,
         filters=filters,
     )
 
@@ -44,8 +55,13 @@ class TestShippedFilterConfig:
     def test_repo_file_exists_and_matches_the_spec(self, filters: FilterConfig) -> None:
         assert SHIPPED_FILTERS.exists()
         assert filters.allowed_locations == ["IN", WORLDWIDE]
-        assert filters.required_currency == "USD"
-        assert filters.allow_us_employer_when_currency_unknown is True
+        # Off by design: `location_eligibility` already implies remote-from-India,
+        # and `detect_remote` under-reports (GitLab, an all-remote employer,
+        # returns remote=false on 42 rows).
+        assert filters.require_remote is False
+        assert filters.min_annual_salary_inr == 2_000_000
+        assert filters.fx_to_inr["INR"] == 1.0
+        assert filters.fx_to_inr["USD"] > 1
 
     def test_missing_file_degrades_to_defaults(self, tmp_path: Path) -> None:
         # Losing the config must not stop ingestion.
@@ -55,85 +71,177 @@ class TestShippedFilterConfig:
     def test_malformed_file_degrades_to_defaults(self, tmp_path: Path) -> None:
         path = tmp_path / "filters.yaml"
         path.write_text("just a string, not a mapping\n", encoding="utf-8")
-        assert load_filters(path).required_currency == "USD"
+        assert load_filters(path).min_annual_salary_inr == 2_000_000
 
     def test_config_is_normalized(self) -> None:
-        loaded = FilterConfig(allowed_locations=["in", "Worldwide", "in"], required_currency="usd")
+        loaded = FilterConfig(
+            allowed_locations=["in", "Worldwide", "in"], fx_to_inr={"usd": 90, " eur ": 95}
+        )
         assert loaded.allowed_locations == ["IN", WORLDWIDE]
-        assert loaded.required_currency == "USD"
+        assert loaded.fx_to_inr == {"USD": 90.0, "EUR": 95.0}
 
 
-# -------------------------------------------------------- The two rules
+# -------------------------------------------------------- The three rules
 class TestLocationRule:
-    def test_worldwide_usd_job_passes(self, filters: FilterConfig) -> None:
-        """Acceptance: a worldwide-eligible USD job passes the filter."""
-        result = verdict(filters, locations=[WORLDWIDE], currency="USD")
+    def test_worldwide_job_passes(self, filters: FilterConfig) -> None:
+        """Acceptance: a worldwide-eligible remote job passes the filter."""
+        result = verdict(filters, locations=[WORLDWIDE])
 
         assert result.passed is True
         assert any(r.startswith("location_ok") for r in result.reasons)
-        assert any(r.startswith("pay_ok") for r in result.reasons)
 
-    def test_india_eligible_usd_job_passes(self, filters: FilterConfig) -> None:
-        assert verdict(filters, locations=["IN"], currency="USD").passed is True
+    def test_india_eligible_job_passes(self, filters: FilterConfig) -> None:
+        assert verdict(filters, locations=["IN"]).passed is True
 
     def test_us_only_remote_job_is_flagged_with_a_location_reason(
         self, filters: FilterConfig
     ) -> None:
         """Acceptance: a US-candidates-only remote job fails on location."""
-        result = verdict(filters, locations=["US"], currency="USD")
+        result = verdict(filters, locations=["US"])
 
         assert result.passed is False
         location_reasons = [r for r in result.reasons if r.startswith("location_blocked")]
         assert location_reasons, "the failure must name location as the cause"
         assert "US" in location_reasons[0]
-        # The pay half was fine; only location blocked it.
-        assert any(r.startswith("pay_ok") for r in result.reasons)
+        # Only location blocked it; the other two rules were satisfied.
+        assert any(r.startswith("remote_ok") for r in result.reasons)
 
     def test_a_region_containing_india_passes(self, filters: FilterConfig) -> None:
         codes, _, _ = resolve_eligibility(["APAC"])
-        assert verdict(filters, locations=codes, currency="USD").passed is True
+        assert verdict(filters, locations=codes).passed is True
+
+    def test_office_location_does_not_decide_eligibility(self, filters: FilterConfig) -> None:
+        """A London employer that hires India-based remote staff is eligible.
+
+        Real row: Innovify's "Full-Stack AI Engineer" is `locations: ["London"]`
+        with `acceptedRemoteLocationNames: ["India"]`. Eligibility keys off who
+        they will hire, never the office address.
+        """
+        assert verdict(filters, locations=["IN"], remote=True).passed is True
 
     def test_missing_eligibility_data_fails_with_an_explicit_reason(
         self, filters: FilterConfig
     ) -> None:
-        result = verdict(filters, locations=[], currency="USD")
+        result = verdict(filters, locations=[])
         assert result.passed is False
         assert any(r.startswith("location_unknown") for r in result.reasons)
 
 
-class TestPayRule:
-    def test_non_usd_currency_is_blocked(self, filters: FilterConfig) -> None:
-        result = verdict(filters, locations=[WORLDWIDE], currency="PLN")
-        assert result.passed is False
-        assert any("PLN" in r and r.startswith("pay_blocked") for r in result.reasons)
+class TestRemoteRule:
+    """The rule ships disabled; these cover it for when it is switched on.
 
-    def test_unknown_currency_passes_for_a_known_us_employer(
-        self, filters: FilterConfig
+    It is off in `config/filters.yaml` because `detect_remote()` under-reports —
+    GitLab is all-remote yet 42 of its Greenhouse rows come back `remote=false`,
+    and gating on that silently drops 190 India-eligible jobs.
+    """
+
+    @pytest.fixture
+    def strict(self) -> FilterConfig:
+        return FilterConfig(require_remote=True)
+
+    def test_onsite_role_is_blocked(self, strict: FilterConfig) -> None:
+        result = verdict(strict, locations=["IN"], remote=False)
+        assert result.passed is False
+        assert any(r.startswith("remote_blocked") for r in result.reasons)
+
+    def test_unknown_remote_flag_is_blocked(self, strict: FilterConfig) -> None:
+        assert verdict(strict, locations=["IN"], remote=None).passed is False
+
+    def test_remote_role_passes(self, strict: FilterConfig) -> None:
+        assert verdict(strict, locations=["IN"], remote=True).passed is True
+
+    def test_the_shipped_config_does_not_gate_on_remote(self, filters: FilterConfig) -> None:
+        assert verdict(filters, locations=["IN"], remote=False).passed is True
+
+
+class TestPayRule:
+    def test_unstated_salary_passes_and_is_flagged(self, filters: FilterConfig) -> None:
+        """~84% of postings state no pay; dropping them would empty the board."""
+        result = verdict(filters, locations=["IN"])
+        assert result.passed is True
+        assert any(r.startswith("pay_unstated") for r in result.reasons)
+
+    def test_a_currency_without_an_amount_is_still_unstated(self, filters: FilterConfig) -> None:
+        result = verdict(filters, locations=["IN"], currency="USD")
+        assert result.passed is True
+        assert any(r.startswith("pay_unstated") for r in result.reasons)
+
+    @pytest.mark.parametrize("currency", ["USD", "EUR", "GBP", "INR"])
+    def test_any_currency_is_acceptable_above_the_floor(
+        self, filters: FilterConfig, currency: str
     ) -> None:
-        result = verdict(filters, locations=[WORLDWIDE], currency=None, us_employer=True)
+        """Employer nationality and currency are irrelevant — only the amount."""
+        result = verdict(filters, locations=["IN"], currency=currency, salary_max=10_000_000)
         assert result.passed is True
 
-    def test_unknown_currency_and_unknown_employer_is_blocked(
+    def test_inr_below_the_floor_is_blocked(self, filters: FilterConfig) -> None:
+        # Real row: Idyaite, "Sr. Consultant - Full Stack Engineer", INR 6L-7.2L.
+        result = verdict(
+            filters, locations=["IN"], currency="INR", salary_min=600_000, salary_max=720_000
+        )
+        assert result.passed is False
+        assert any(r.startswith("pay_blocked") for r in result.reasons)
+
+    def test_the_top_of_a_range_decides(self, filters: FilterConfig) -> None:
+        """"INR 15L - 30L" is worth surfacing even though its floor is low."""
+        result = verdict(
+            filters, locations=["IN"], currency="INR", salary_min=1_500_000, salary_max=3_000_000
+        )
+        assert result.passed is True
+
+    def test_usd_above_the_floor_passes(self, filters: FilterConfig) -> None:
+        # Real row: The Prompt Academy, "Software Engineer", $110k-$140k.
+        result = verdict(
+            filters, locations=[WORLDWIDE], currency="USD", salary_min=110_000, salary_max=140_000
+        )
+        assert result.passed is True
+
+    def test_an_unconvertible_currency_passes_rather_than_guessing(
         self, filters: FilterConfig
     ) -> None:
-        result = verdict(filters, locations=[WORLDWIDE], currency=None, us_employer=None)
-        assert result.passed is False
-        assert any("employer origin unknown" in r for r in result.reasons)
+        """Being unable to price a job is not evidence that it pays badly."""
+        result = verdict(filters, locations=["IN"], currency="XYZ", salary_max=99)
+        assert result.passed is True
+        assert any(r.startswith("pay_unknown_currency") for r in result.reasons)
 
-    def test_unknown_currency_and_non_us_employer_is_blocked(
-        self, filters: FilterConfig
-    ) -> None:
-        result = verdict(filters, locations=[WORLDWIDE], currency=None, us_employer=False)
-        assert result.passed is False
-        assert any("not US-based" in r for r in result.reasons)
+    def test_all_three_rules_must_hold(self, filters: FilterConfig) -> None:
+        assert verdict(filters, locations=["US"], remote=False).passed is False
 
-    def test_the_us_employer_escape_hatch_can_be_switched_off(self) -> None:
-        strict = FilterConfig(allow_us_employer_when_currency_unknown=False)
-        result = verdict(strict, locations=[WORLDWIDE], currency=None, us_employer=True)
+
+class TestSalaryPeriodInference:
+    """An hourly or monthly rate must not be read as an annual figure.
+
+    Without this, Search Atlas's "$25 - $30" (an hourly rate worth ~INR 55L/yr)
+    compares as INR 2,640/yr and is dropped — a good job discarded for a reason
+    no human would ever see.
+    """
+
+    def test_hourly_usd_is_annualized_and_passes(self, filters: FilterConfig) -> None:
+        result = verdict(filters, locations=["IN"], currency="USD", salary_min=25, salary_max=30)
+        assert result.passed is True, result.reasons
+        assert any("hourly" in r for r in result.reasons)
+
+    def test_a_genuinely_low_hourly_rate_still_fails(self, filters: FilterConfig) -> None:
+        # $3/hr -> ~INR 5.5L/yr, under the floor even after annualizing.
+        result = verdict(filters, locations=["IN"], currency="USD", salary_max=3)
         assert result.passed is False
 
-    def test_both_rules_must_hold(self, filters: FilterConfig) -> None:
-        assert verdict(filters, locations=["US"], currency="PLN").passed is False
+    def test_monthly_inr_is_annualized(self, filters: FilterConfig) -> None:
+        # Real row: "INR 30,000 - 40,000" is monthly -> INR 4.8L/yr, still low.
+        result = verdict(filters, locations=["IN"], currency="INR", salary_max=40_000)
+        assert result.passed is False
+        assert any("monthly" in r for r in result.reasons)
+
+    def test_monthly_usd_clears_the_floor(self, filters: FilterConfig) -> None:
+        # $2,000/mo -> $24k/yr -> ~INR 21L/yr.
+        result = verdict(filters, locations=["IN"], currency="USD", salary_max=2_000)
+        assert result.passed is True
+        assert any("monthly" in r for r in result.reasons)
+
+    def test_an_annual_figure_is_left_alone(self, filters: FilterConfig) -> None:
+        result = verdict(filters, locations=["IN"], currency="USD", salary_max=120_000)
+        assert result.passed is True
+        assert not any("read as" in r for r in result.reasons)
 
 
 # ------------------------------------------------------------- Geo resolution

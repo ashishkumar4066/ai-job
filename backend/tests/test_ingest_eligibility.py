@@ -80,10 +80,10 @@ class TestNothingIsDropped:
         )
 
         rows = await all_rows(session_factory)
-        # 5 Himalayas + 6 Remotive fixture jobs, all persisted.
-        assert len(rows) == 11
-        assert result.fetched == 11
-        assert result.new == 11
+        # 5 Himalayas + 7 Remotive fixture jobs, all persisted.
+        assert len(rows) == 12
+        assert result.fetched == 12
+        assert result.new == 12
 
         failed = [r for r in rows if not r.eligibility_pass]
         assert failed, "the fixtures include jobs that must fail"
@@ -125,9 +125,16 @@ class TestNothingIsDropped:
         assert passing.salary_currency == "USD"
 
     @respx.mock
-    async def test_india_job_without_a_currency_fails_on_pay(
+    async def test_india_job_without_a_salary_passes_and_is_flagged(
         self, shipped_filters: None, session_factory: Any
     ) -> None:
+        """An unstated salary is not a disqualification, only a fact to surface.
+
+        Roughly 84% of real postings state no pay at all, so blocking on it
+        would discard most of the board. The row passes carrying an explicit
+        `pay_unstated` reason, which is what the dashboard renders as
+        "not stated".
+        """
         mock_aggregators()
         await run_ingest(companies=[HIMALAYAS_SOURCE], notify=False)
 
@@ -135,8 +142,9 @@ class TestNothingIsDropped:
         india_job = next(r for r in rows if r.company == "Alkira, Inc.")
 
         assert india_job.location_eligibility == ["IN"]
-        assert india_job.eligibility_pass is False, "location fine, but no currency"
-        assert any(r.startswith("pay_blocked") for r in india_job.eligibility_reasons)
+        assert india_job.eligibility_pass is True
+        assert any(r.startswith("pay_unstated") for r in india_job.eligibility_reasons)
+        assert india_job.salary_min is None and india_job.salary_max is None
 
 
 class TestAlertGate:
@@ -169,29 +177,30 @@ class TestAlertGate:
     ) -> None:
         """Editing filters.yaml must re-evaluate jobs whose content never changed."""
         strict = tmp_path / "strict.yaml"
-        strict.write_text("allowed_locations: [IN]\nrequired_currency: USD\n", encoding="utf-8")
+        # A country no fixture job is eligible for, so nothing clears location.
+        strict.write_text("allowed_locations: [JP]\n", encoding="utf-8")
         monkeypatch.setenv("FILTERS_FILE", str(strict))
         get_settings.cache_clear()
         get_filters.cache_clear()
 
         mock_aggregators()
         first = await run_ingest(companies=[HIMALAYAS_SOURCE], notify=False)
-        assert first.eligible == 0, "worldwide is not allowed under the strict config"
+        assert first.eligible == 0, "no fixture job is eligible for JP"
 
         loose = tmp_path / "loose.yaml"
-        loose.write_text(
-            "allowed_locations: [IN, worldwide]\nrequired_currency: USD\n", encoding="utf-8"
-        )
+        loose.write_text("allowed_locations: [IN, worldwide]\n", encoding="utf-8")
         monkeypatch.setenv("FILTERS_FILE", str(loose))
         get_settings.cache_clear()
         get_filters.cache_clear()
 
         second = await run_ingest(companies=[HIMALAYAS_SOURCE], notify=False)
         assert second.new == 0, "no job changed, so nothing is newly discovered"
-        assert second.eligible == 1, "but the worldwide job is now eligible"
+        assert second.eligible > 0, "but IN/worldwide jobs are now eligible"
 
         rows = await all_rows(session_factory)
         assert next(r for r in rows if r.company == "Aline").eligibility_pass is True
+        # The US-only job stays blocked under either config.
+        assert next(r for r in rows if r.company == "Samsara").eligibility_pass is False
 
 
 class TestRemotiveAttribution:
@@ -222,7 +231,11 @@ class TestRemotiveAttribution:
         await run_ingest(companies=[REMOTIVE_SOURCE], notify=False)
 
         rows = [r for r in await all_rows(session_factory) if r.eligibility_pass]
-        assert rows, "at least one Remotive fixture job must pass"
+        # Exactly one fixture row is both a wanted role and India-eligible
+        # (Kestrel Labs, worldwide). The rest are either not engineering
+        # roles or US/CA-restricted, so this also pins rule 4 against the
+        # shipped config end-to-end.
+        assert [r.company for r in rows] == ["Kestrel Labs"]
 
         message = _format_job(rows[0])
         assert "Source: Remotive" in message
@@ -241,11 +254,11 @@ class TestThrottle:
         )
 
         first = await run_ingest(companies=[capped], notify=False)
-        assert first.fetched == 6
+        assert first.fetched == 7
 
         second = await run_ingest(companies=[capped], notify=False)
         assert second.sources[0].throttled is True
         assert second.fetched == 0
         assert second.closed == 0, "a skipped fetch must never close anything"
         # The rows from the first run are untouched.
-        assert len(await all_rows(session_factory)) == 6
+        assert len(await all_rows(session_factory)) == 7

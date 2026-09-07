@@ -1,0 +1,57 @@
+{
+  "@context": "http://schema.org/",
+  "@type": "JobPosting",
+  "title": "Senior Software Engineer (Cloud Infrastructure)",
+  "identifier": {
+    "@type": "PropertyValue",
+    "name": "YipitData",
+    "value": "4627451"
+  },
+  "employmentType": "FULL_TIME",
+  "hiringOrganization": {
+    "@type": "Organization",
+    "name": "YipitData",
+    "sameAs": "https://yipitdata.com/",
+    "logo": "https://photos.wellfound.com/startups/i/781135-8cf692a975990d53686b4596d17b25ab-medium_jpg.jpg?buster=1589654408",
+    "location": [
+      {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "New York",
+          "addressRegion": "New York",
+          "addressCountry": "United States"
+        },
+        "latitude": 40.7128,
+        "longitude": -74.0059
+      },
+      {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressRegion": "New York",
+          "addressCountry": "United States"
+        },
+        "latitude": 43.2994,
+        "longitude": -74.2179
+      }
+    ]
+  },
+  "image": "https://photos.wellfound.com/startups/i/781135-8cf692a975990d53686b4596d17b25ab-medium_jpg.jpg?buster=1589654408",
+  "industry": "Financial Services, Analytics, Software, Finance Technology, Data, and Fin Tech",
+  "directApply": true,
+  "description": "<p>We are hiring a <strong>Senior Software Engineer</strong>.</p>",
+  "datePosted": "2026-08-24T20:10:16Z",
+  "jobLocationType": "TELECOMMUTE",
+  "baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": {
+      "@type": "QuantitativeValue",
+      "unitText": "YEAR",
+      "minValue": 168000.0,
+      "maxValue": 185000.0
+    }
+  },
+  "jobBenefits": "Open vacation policy."
+}

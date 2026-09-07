@@ -19,6 +19,11 @@ export interface Job {
   first_seen_at: string;
   last_seen_at: string;
   status: JobStatus;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  eligibility_pass: boolean;
+  eligibility_reasons: string[];
 }
 
 export interface JobDetail extends Job {
@@ -54,6 +59,51 @@ export interface Facets {
   last_ingest_finished_at: string | null;
 }
 
+/* ------------------------------------------------------------------ Ingest */
+
+export type IngestState = "fresh" | "running" | "idle";
+export type SourceState = "pending" | "fetching" | "done" | "failed" | "throttled";
+
+export interface SourceProgress {
+  source_id: string;
+  company: string;
+  ats: string;
+  state: SourceState;
+  fetched: number;
+  new: number;
+  eligible: number;
+  error: string | null;
+}
+
+export interface IngestRunSummary {
+  run_id: number;
+  started_at: string;
+  finished_at: string | null;
+  fetched: number;
+  eligible: number;
+  new: number;
+  updated: number;
+  closed: number;
+  errored: number;
+  notified: number;
+}
+
+/** Answer shape of both POST /ingest/refresh and GET /ingest/status. */
+export interface IngestStatus {
+  state: IngestState;
+  skipped: boolean;
+  reason: string | null;
+  run_id: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+  last_finished_at: string | null;
+  sources_total: number;
+  sources_done: number;
+  sources: SourceProgress[];
+  result: IngestRunSummary | null;
+  error: string | null;
+}
+
 export interface Health {
   status: string;
   jobs_total: number;
@@ -76,6 +126,19 @@ export interface Filters {
   status: StatusFilter;
   postedWithinDays: number | null;
   newOnly: boolean;
+  /**
+   * Show only jobs that cleared the backend eligibility filter — India-
+   * eligible, pays at or above the floor when it says, and a wanted
+   * engineering role at the right level.
+   *
+   * Defaults to `true`, which is the one filter here that hides rows by
+   * default. That is deliberate: ingest stores every posting it sees and
+   * flags the misses rather than dropping them, so the audit trail survives,
+   * but the dashboard is a place to find work, not to review the filter.
+   * Turning this off is how you inspect what the rules cut, and the drawer
+   * shows `eligibility_reasons` for any row.
+   */
+  matchesPrefs: boolean;
   sort: SortField;
   order: SortOrder;
 }
@@ -90,6 +153,7 @@ export const DEFAULT_FILTERS: Filters = {
   status: "open",
   postedWithinDays: null,
   newOnly: false,
+  matchesPrefs: true,
   sort: "first_seen_at",
   order: "desc",
 };

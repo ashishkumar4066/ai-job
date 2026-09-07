@@ -19,6 +19,7 @@ const PARAM = {
   status: "status",
   posted: "posted",
   newOnly: "new",
+  matchesPrefs: "prefs",
   sort: "sort",
   order: "order",
   job: "job",
@@ -48,6 +49,8 @@ export function parseFilters(search: string): Filters {
     status: status && STATUSES.includes(status) ? status : "open",
     postedWithinDays: Number.isFinite(postedDays) && postedDays > 0 ? postedDays : null,
     newOnly: params.get(PARAM.newOnly) === "1",
+    // Defaults ON, so its ABSENCE means on and `prefs=0` means off.
+    matchesPrefs: params.get(PARAM.matchesPrefs) !== "0",
     sort: sort && SORTS.includes(sort) ? sort : "first_seen_at",
     order: order === "asc" ? "asc" : "desc",
   };
@@ -69,6 +72,7 @@ export function serializeFilters(filters: Filters, jobId: number | null): string
     params.set(PARAM.posted, String(filters.postedWithinDays));
   }
   if (filters.newOnly) params.set(PARAM.newOnly, "1");
+  if (!filters.matchesPrefs) params.set(PARAM.matchesPrefs, "0");
   if (filters.sort !== DEFAULT_FILTERS.sort) params.set(PARAM.sort, filters.sort);
   if (filters.order !== DEFAULT_FILTERS.order) params.set(PARAM.order, filters.order);
   if (jobId !== null) params.set(PARAM.job, String(jobId));
@@ -95,6 +99,9 @@ export function countActive(filters: Filters): number {
   if (filters.status !== DEFAULT_FILTERS.status) count++;
   if (filters.postedWithinDays !== null) count++;
   if (filters.newOnly) count++;
+  // Counted only when turned OFF: the badge tracks deviation from the
+  // default view, and this filter is on in the default view.
+  if (!filters.matchesPrefs) count++;
   return count;
 }
 

@@ -4,17 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#000000" />
     <title>Job Radar — personal aggregator</title>
+    <style>
+      /* Painted before the stylesheet arrives, so the very first frame is
+         already black rather than the browser's white. */
+      html {
+        background: #000;
+      }
+      html:not(.dark) {
+        background: #f6f3fa;
+      }
+    </style>
     <script>
       // Applied before first paint so the theme never flashes.
+      //
+      // Dark is the default, not the OS preference: this app is designed in
+      // black and violet, and a light-mode desktop should not decide that the
+      // first thing a new visitor sees is the transposition.
       (function () {
         try {
           var stored = localStorage.getItem("jr:theme");
-          var dark =
-            stored === "dark" ||
-            (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
-          document.documentElement.classList.toggle("dark", dark);
-        } catch (_) {}
+          document.documentElement.classList.toggle("dark", stored !== "light");
+        } catch (_) {
+          document.documentElement.classList.add("dark");
+        }
       })();
     </script>
   </head>

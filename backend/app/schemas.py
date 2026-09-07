@@ -225,3 +225,47 @@ class IngestRunOut(BaseModel):
     errored: int
     notified: int
     sources: list[SourceResultOut] = Field(default_factory=list)
+
+
+class SourceProgressOut(BaseModel):
+    """One board's live state inside a run that has not finished yet."""
+
+    source_id: str
+    company: str
+    ats: str
+    state: Literal["pending", "fetching", "done", "failed", "throttled"]
+    fetched: int = 0
+    new: int = 0
+    eligible: int = 0
+    error: str | None = None
+
+
+class IngestStatusOut(BaseModel):
+    """What `POST /ingest/refresh` and `GET /ingest/status` both answer with.
+
+    `state` is the only field the dashboard needs to decide whether to keep
+    waiting:
+
+      * `fresh`   — the sweep was skipped, stored data already covers the
+                    requested window; render immediately.
+      * `running` — a run is in flight (this request may or may not have
+                    started it); keep polling.
+      * `idle`    — nothing is running; `result` / `error` describe the last
+                    run this process drove.
+    """
+
+    state: Literal["fresh", "running", "idle"]
+    # True when this call deliberately did not start a sweep.
+    skipped: bool = False
+    reason: str | None = None
+    run_id: int | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    # Newest `finished_at` across all runs ever recorded, from the database —
+    # survives a restart, unlike the in-memory fields above.
+    last_finished_at: datetime | None = None
+    sources_total: int = 0
+    sources_done: int = 0
+    sources: list[SourceProgressOut] = Field(default_factory=list)
+    result: IngestRunOut | None = None
+    error: str | None = None

@@ -64,8 +64,12 @@ async def check(
         for job in postings:
             verdict = evaluate(
                 location_eligibility=job.location_eligibility,
+                remote=job.remote,
+                salary_min=job.salary_min,
+                salary_max=job.salary_max,
                 salary_currency=job.salary_currency,
-                is_us_employer=job.is_us_employer,
+                title=job.title,
+                description_text=job.description_text,
                 filters=filters,
             )
             job.eligibility_pass = verdict.passed
@@ -122,8 +126,8 @@ async def main() -> int:
     filters = load_filters(settings.filters_file)
     print(f"Verifying {len(companies)} source(s) live…")
     print(
-        f"Filter: locations={filters.allowed_locations} currency={filters.required_currency} "
-        f"us_employer_fallback={filters.allow_us_employer_when_currency_unknown}\n"
+        f"Filter: locations={filters.allowed_locations} remote_only={filters.require_remote} "
+        f"min_pay=INR {filters.min_annual_salary_inr / 100_000:.1f}L/yr\n"
     )
     print(
         f"{'SOURCE':<16} {'ATS':<11} {'SLUG':<14} {'JOBS':>6} {'ELIGIBLE':>9}  "

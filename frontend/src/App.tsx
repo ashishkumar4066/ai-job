@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { AlertTriangle, PlugZap } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useDebounced, useHotkeys, useLastVisit, useTheme } from "@/lib/hooks";
+import { useDailyRefresh } from "@/lib/useDailyRefresh";
 import { useFilters } from "@/lib/useFilters";
 import type { Job } from "@/lib/types";
 import { FilterBar } from "@/components/FilterBar";
 import { JobDrawer } from "@/components/JobDrawer";
 import { JobTable } from "@/components/JobTable";
 import { StatsStrip } from "@/components/StatsStrip";
+import { SyncScreen } from "@/components/SyncScreen";
 import { TopBar } from "@/components/TopBar";
 import { EmptyState, Kbd } from "@/components/primitives";
 
@@ -19,7 +21,10 @@ export default function App() {
   const { lastVisit, markSeenNow } = useLastVisit();
   const { filters, selectedJobId, patch, reset, selectJob, toggleInList, setScope, activeCount } =
     useFilters();
-  const queryClient = useQueryClient();
+
+  // Every visit sweeps the boards once a day; nothing below renders until it
+  // settles, so the table never shows a stale snapshot of the market.
+  const sync = useDailyRefresh();
 
   // Typing stays instant; only the settled value hits the API and the URL.
   const [draftQuery, setDraftQuery] = useState(filters.q);
@@ -46,17 +51,17 @@ export default function App() {
       return loaded < lastPage.total ? loaded : undefined;
     },
     staleTime: 30_000,
+    // Not merely hidden — not requested. Nothing pre-sweep ever reaches the UI.
+    enabled: sync.ready,
   });
 
   const facetsQuery = useQuery({
-    queryKey: ["facets", filters.status, lastVisit],
-    queryFn: () => api.facets(lastVisit, filters.status),
+    // `matchesPrefs` is part of the key: it changes the counts, so a cached
+    // set from the other state would describe rows that are not on screen.
+    queryKey: ["facets", filters.status, filters.matchesPrefs, lastVisit],
+    queryFn: () => api.facets(lastVisit, filters.status, filters.matchesPrefs),
     staleTime: 60_000,
-  });
-
-  const ingest = useMutation({
-    mutationFn: api.runIngest,
-    onSuccess: () => queryClient.invalidateQueries(),
+    enabled: sync.ready,
   });
 
   const jobs: Job[] = useMemo(
@@ -87,7 +92,7 @@ export default function App() {
     k: () => step(-1),
     Escape: () => selectJob(null),
     r: () => {
-      if (!ingest.isPending) ingest.mutate();
+      if (!sync.syncing) sync.refresh();
     },
     t: toggle,
   });
@@ -100,8 +105,13 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col gap-3 p-3 md:p-4">
-      <div className="aurora">
+      {/* Backdrop: violet aurora over near-black, a ruled grid to give the
+          black a sense of surface, and grain to keep the wide gradients from
+          banding. All one fixed layer behind the app. */}
+      <div className="aurora" aria-hidden>
         <div className="aurora-third" />
+        <div className="grid-veil" />
+        <div className="grain" />
       </div>
 
       <TopBar
@@ -111,14 +121,23 @@ export default function App() {
         onScopeChange={setScope}
         dark={dark}
         onToggleTheme={toggle}
-        onRefresh={() => ingest.mutate()}
-        refreshing={ingest.isPending}
-        lastIngest={facetsQuery.data?.last_ingest_finished_at ?? null}
+        onRefresh={sync.refresh}
+        refreshing={sync.syncing}
+        lastIngest={
+          facetsQuery.data?.last_ingest_finished_at ?? sync.status?.last_finished_at ?? null
+        }
         newCount={lastVisit ? (facetsQuery.data?.totals.new_since ?? 0) : 0}
         onShowNew={() => patch({ newOnly: true, sort: "first_seen_at", order: "desc" })}
       />
 
-      {connectionError ? (
+      {!sync.ready ? (
+        <SyncScreen
+          status={sync.status}
+          error={sync.error}
+          onSkip={sync.skipWait}
+          onRetry={sync.refresh}
+        />
+      ) : connectionError ? (
         <div className="glass-strong flex flex-1 items-center justify-center rounded-2xl">
           <EmptyState
             icon={<PlugZap size={24} />}
@@ -127,7 +146,7 @@ export default function App() {
             action={
               <button
                 onClick={() => jobsQuery.refetch()}
-                className="mt-1 rounded-xl bg-accent px-4 py-2 text-[13px] font-medium text-white hover:opacity-90"
+                className="btn-primary mt-1 rounded-xl px-4 py-2 text-[13px] font-semibold"
               >
                 Retry
               </button>
@@ -158,10 +177,10 @@ export default function App() {
             hasLastVisit={Boolean(lastVisit)}
           />
 
-          {ingest.isError && (
-            <div className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-2.5 text-[13px] text-danger">
-              <AlertTriangle size={15} />
-              {(ingest.error as Error).message}
+          {sync.error && (
+            <div className="animate-fade-up flex shrink-0 items-center gap-2 rounded-xl border border-danger/35 bg-danger/10 px-4 py-2.5 text-[13px] text-danger">
+              <AlertTriangle size={15} className="shrink-0" />
+              {sync.error.message}
             </div>
           )}
 
@@ -207,7 +226,10 @@ export default function App() {
                 </span>
               )}
               {lastVisit && (
-                <button onClick={markSeenNow} className="hover:text-ink">
+                <button
+                  onClick={markSeenNow}
+                  className="rounded-md px-1.5 py-0.5 transition-colors hover:bg-panel-hover hover:text-ink"
+                >
                   Mark all as seen
                 </button>
               )}
@@ -216,7 +238,7 @@ export default function App() {
         </>
       )}
 
-      {selectedJobId !== null && (
+      {sync.ready && selectedJobId !== null && (
         <JobDrawer
           jobId={selectedJobId}
           summary={selectedJob}

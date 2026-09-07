@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import router
 from app.config import get_settings
 from app.db import dispose_engine, get_engine
+from app.ingest_state import tracker
 from app.logging_config import configure_logging
 from app.models import Base
 from app.scheduler import shutdown_scheduler, start_scheduler
@@ -48,6 +49,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         shutdown_scheduler()
+        # A dashboard-triggered sweep runs detached from any request, so stop it
+        # before the engine goes away or it writes into a disposed pool.
+        await tracker.cancel()
         await dispose_engine()
 
 

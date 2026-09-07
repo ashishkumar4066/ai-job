@@ -4,89 +4,196 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Design tokens.
+   Registered custom properties.
 
-   Semantic vars flip between themes; `@theme inline` maps them to Tailwind
-   utilities by reference, so `bg-panel` resolves correctly in both modes.
+   Registering makes them animatable and type-checked. `--angle` drives the
+   rotating conic rim; `--spot-*` carry pointer position into a radial
+   highlight without either value snapping between frames.
 --------------------------------------------------------------------------- */
-/* ONE palette.
- *
- * A single brand hue (indigo, 264) carries every interactive state, and the
- * neutrals are that same hue held at very low chroma so greys read as part of
- * the family rather than as a second colour. Only two colours ever break the
- * monochrome, and each has exactly one job:
- *   --highlight (amber)  "new since last visit", nothing else
- *   --danger    (red)    closed postings and errors, nothing else
- *
- * To re-skin the whole app, change --brand-hue and the accent lines below.
- */
-:root {
-  --brand-hue: 264;
-
-  --bg: oklch(98.2% 0.004 var(--brand-hue));
-  --bg-elevated: oklch(100% 0 0);
-  --panel: oklch(100% 0 0 / 0.74);
-  --panel-strong: oklch(100% 0 0 / 0.9);
-  --panel-hover: oklch(100% 0 0 / 0.97);
-  /* Popovers float over dense text, so they need far more opacity than a
-     panel — blur alone does not stop high-contrast rows bleeding through. */
-  --popover: oklch(99% 0.004 var(--brand-hue) / 0.97);
-  --border: oklch(30% 0.03 var(--brand-hue) / 0.11);
-  --border-strong: oklch(30% 0.03 var(--brand-hue) / 0.18);
-
-  --text: oklch(22% 0.028 var(--brand-hue));
-  --text-muted: oklch(47% 0.024 var(--brand-hue));
-  --text-subtle: oklch(61% 0.02 var(--brand-hue));
-
-  --accent: oklch(52% 0.2 var(--brand-hue));
-  --accent-strong: oklch(44% 0.19 var(--brand-hue));
-  --accent-soft: oklch(52% 0.2 var(--brand-hue) / 0.11);
-  --accent-text: oklch(46% 0.19 var(--brand-hue));
-
-  --highlight: oklch(64% 0.15 70);
-  --danger: oklch(56% 0.19 22);
-
-  --aurora-1: oklch(72% 0.15 var(--brand-hue) / 0.42);
-  --aurora-2: oklch(78% 0.1 var(--brand-hue) / 0.3);
-  --aurora-3: oklch(70% 0.13 var(--brand-hue) / 0.24);
-
-  --shadow-panel: 0 1px 2px oklch(25% 0.03 var(--brand-hue) / 0.05),
-    0 12px 32px -12px oklch(25% 0.03 var(--brand-hue) / 0.15);
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@property --spot-x {
+  syntax: "<percentage>";
+  initial-value: 50%;
+  inherits: false;
+}
+@property --spot-y {
+  syntax: "<percentage>";
+  initial-value: 0%;
+  inherits: false;
 }
 
+/* ---------------------------------------------------------------------------
+   Design tokens — BLACK + VIOLET.
+
+   The app is designed dark: black ground, violet everything else. One brand hue
+   (violet, 295) carries every interactive state, with a companion (285) used
+   only as the far end of gradients, so highlights read as light bending through
+   glass rather than as a second brand colour. Neutrals are that same hue held
+   at low chroma, so the greys belong to the family instead of sitting beside it.
+
+   The light theme below is a faithful transposition, not the design target —
+   see the .dark block for the palette this was drawn against.
+
+   Exactly three colours ever break the violet monochrome, each with one job:
+     --highlight (amber)  "new since last visit"
+     --danger    (red)    closed postings and errors
+     --mint      (green)  a source that fetched successfully
+
+   To re-skin the whole app, change --brand-hue and --brand-hue-2.
+--------------------------------------------------------------------------- */
+:root {
+  --brand-hue: 295;
+  --brand-hue-2: 285;
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: oklch(97.4% 0.007 var(--brand-hue));
+  --bg-deep: oklch(93.5% 0.014 var(--brand-hue));
+  --bg-elevated: oklch(100% 0 0);
+  --panel: oklch(100% 0 0 / 0.7);
+  --panel-strong: oklch(100% 0 0 / 0.88);
+  --panel-hover: oklch(100% 0 0 / 0.97);
+  /* Popovers open across dense rows, so they are the one surface that is
+     fully opaque. Blur cannot save them: a backdrop-filter element nested
+     inside another one (the filter bar is itself glass) gets the ancestor's
+     group buffer as its backdrop, which is empty everywhere the popover
+     overflows — so the rows below show through sharp and unfiltered. The glass
+     read here comes from the border, the sheen and the shadow instead. */
+  --popover: oklch(99.5% 0.004 var(--brand-hue));
+
+  /* The tint painted over glass: light pooling at the top-left, falling off. */
+  --glass-tint: linear-gradient(
+    150deg,
+    oklch(100% 0 0 / 0.55),
+    oklch(100% 0 0 / 0.15) 42%,
+    oklch(100% 0 0 / 0.35)
+  );
+  --edge-light: oklch(100% 0 0 / 0.9);
+
+  --border: oklch(32% 0.04 var(--brand-hue) / 0.12);
+  --border-strong: oklch(32% 0.04 var(--brand-hue) / 0.2);
+
+  /* Ink */
+  --text: oklch(20% 0.03 var(--brand-hue));
+  --text-muted: oklch(46% 0.026 var(--brand-hue));
+  --text-subtle: oklch(60% 0.022 var(--brand-hue));
+
+  /* Brand */
+  --accent: oklch(52% 0.24 var(--brand-hue));
+  --accent-strong: oklch(43% 0.23 var(--brand-hue-2));
+  --accent-soft: oklch(52% 0.24 var(--brand-hue) / 0.1);
+  --accent-text: oklch(45% 0.23 var(--brand-hue));
+  --accent-glow: oklch(52% 0.24 var(--brand-hue) / 0.35);
+
+  /* Signals */
+  --highlight: oklch(62% 0.16 68);
+  --danger: oklch(55% 0.2 22);
+  --mint: oklch(58% 0.14 162);
+
+  /* Ambient backdrop */
+  --aurora-1: oklch(72% 0.17 var(--brand-hue) / 0.3);
+  --aurora-2: oklch(78% 0.12 var(--brand-hue-2) / 0.22);
+  --aurora-3: oklch(70% 0.15 var(--brand-hue) / 0.22);
+  --veil-line: oklch(32% 0.04 var(--brand-hue) / 0.05);
+  --grain-opacity: 0.03;
+  --grain-blend: multiply;
+
+  /* Layered elevation — several short shadows read as real depth where one
+     long blur reads as a smudge. */
+  --shadow-sm: 0 1px 2px oklch(25% 0.04 var(--brand-hue) / 0.06);
+  --shadow-panel:
+    0 1px 2px oklch(25% 0.04 var(--brand-hue) / 0.05),
+    0 4px 8px -4px oklch(25% 0.04 var(--brand-hue) / 0.07),
+    0 16px 40px -16px oklch(25% 0.04 var(--brand-hue) / 0.18);
+  --shadow-float:
+    0 2px 6px oklch(25% 0.04 var(--brand-hue) / 0.1),
+    0 12px 24px -8px oklch(25% 0.04 var(--brand-hue) / 0.16),
+    0 32px 64px -24px oklch(25% 0.04 var(--brand-hue) / 0.3);
+}
+
+/* ---------------------------------------------------------------------------
+   DARK — the theme this app is designed in. Black + violet, literally.
+
+   The ground is true black (#000), not a dark grey and not a dark navy. Every
+   surface above it is black plus a few percent of light, so the panels stay
+   black and only the *edges* and the *accents* carry colour. That is what makes
+   the violet read as violet: it is the only chromatic thing on screen.
+
+   Two consequences worth knowing before editing:
+     - Borders are violet, not white-alpha. A white hairline on black reads grey
+       and drains the palette; a violet one at the same lightness reads as the
+       edge of a lit pane.
+     - Elevation is a violet glow, not a black shadow. Black shadows are
+       invisible on black — there is nothing darker to cast onto.
+--------------------------------------------------------------------------- */
 .dark {
-  --brand-hue: 264;
+  --brand-hue: 295;
+  --brand-hue-2: 285;
+  color-scheme: dark;
 
-  --bg: oklch(16.5% 0.017 var(--brand-hue));
-  --bg-elevated: oklch(20.5% 0.02 var(--brand-hue));
-  --panel: oklch(100% 0 0 / 0.045);
-  --panel-strong: oklch(100% 0 0 / 0.08);
-  --panel-hover: oklch(100% 0 0 / 0.075);
-  --popover: oklch(22% 0.022 var(--brand-hue) / 0.97);
-  --border: oklch(100% 0 0 / 0.085);
-  --border-strong: oklch(100% 0 0 / 0.15);
+  --bg: oklch(0% 0 0);
+  --bg-deep: oklch(0% 0 0);
+  --bg-elevated: oklch(11% 0.028 var(--brand-hue));
+  --panel: oklch(100% 0 0 / 0.032);
+  --panel-strong: oklch(100% 0 0 / 0.055);
+  --panel-hover: oklch(100% 0 0 / 0.085);
+  --popover: oklch(9% 0.024 var(--brand-hue));
 
-  --text: oklch(96% 0.006 var(--brand-hue));
-  --text-muted: oklch(73% 0.018 var(--brand-hue));
-  --text-subtle: oklch(59% 0.022 var(--brand-hue));
+  /* Violet light raking across black glass, rather than a white gloss. Kept
+     deliberately faint: the panels have to stay black. Push these alphas up and
+     every surface turns purple, which is a different palette entirely. */
+  --glass-tint: linear-gradient(
+    150deg,
+    oklch(70% 0.22 var(--brand-hue) / 0.05),
+    oklch(70% 0.22 var(--brand-hue) / 0.006) 46%,
+    oklch(70% 0.22 var(--brand-hue-2) / 0.028)
+  );
+  --edge-light: oklch(80% 0.16 var(--brand-hue) / 0.22);
 
-  --accent: oklch(66% 0.17 var(--brand-hue));
-  --accent-strong: oklch(56% 0.19 var(--brand-hue));
-  --accent-soft: oklch(66% 0.17 var(--brand-hue) / 0.17);
-  --accent-text: oklch(79% 0.13 var(--brand-hue));
+  --border: oklch(70% 0.2 var(--brand-hue) / 0.16);
+  --border-strong: oklch(72% 0.21 var(--brand-hue) / 0.34);
 
-  --highlight: oklch(80% 0.13 72);
-  --danger: oklch(70% 0.16 20);
+  --text: oklch(98% 0.005 var(--brand-hue));
+  --text-muted: oklch(76% 0.03 var(--brand-hue));
+  --text-subtle: oklch(60% 0.04 var(--brand-hue));
 
-  --aurora-1: oklch(52% 0.2 var(--brand-hue) / 0.4);
-  --aurora-2: oklch(46% 0.17 var(--brand-hue) / 0.3);
-  --aurora-3: oklch(50% 0.18 var(--brand-hue) / 0.22);
+  --accent: oklch(62% 0.26 var(--brand-hue));
+  --accent-strong: oklch(50% 0.27 var(--brand-hue-2));
+  --accent-soft: oklch(62% 0.26 var(--brand-hue) / 0.2);
+  --accent-text: oklch(84% 0.17 var(--brand-hue));
+  --accent-glow: oklch(62% 0.26 var(--brand-hue) / 0.8);
 
-  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.3), 0 16px 40px -16px oklch(0% 0 0 / 0.6);
+  --highlight: oklch(84% 0.16 78);
+  --danger: oklch(70% 0.19 20);
+  --mint: oklch(80% 0.17 165);
+
+  /* Saturated, but small and pushed off the top corners: the aurora crowns the
+     black, it does not wash over it. The job list must sit on black. */
+  --aurora-1: oklch(50% 0.3 var(--brand-hue) / 0.5);
+  --aurora-2: oklch(45% 0.28 var(--brand-hue-2) / 0.4);
+  --aurora-3: oklch(46% 0.29 var(--brand-hue) / 0.22);
+  --veil-line: oklch(70% 0.2 var(--brand-hue) / 0.05);
+  --grain-opacity: 0.055;
+  --grain-blend: overlay;
+
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.6);
+  --shadow-panel:
+    0 1px 2px oklch(0% 0 0 / 0.9),
+    0 8px 24px -12px oklch(0% 0 0 / 0.9),
+    0 24px 64px -28px oklch(62% 0.26 var(--brand-hue) / 0.3);
+  --shadow-float:
+    0 2px 8px oklch(0% 0 0 / 0.9),
+    0 20px 40px -16px oklch(0% 0 0 / 0.95),
+    0 48px 96px -40px oklch(62% 0.26 var(--brand-hue) / 0.4);
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
   --color-bg-elevated: var(--bg-elevated);
   --color-panel: var(--panel);
   --color-panel-strong: var(--panel-strong);
@@ -104,9 +211,11 @@
   --color-accent-text: var(--accent-text);
   --color-highlight: var(--highlight);
   --color-danger: var(--danger);
+  --color-mint: var(--mint);
 
-  --font-sans: "Inter var", Inter, ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans:
+    "InterVariable", "Inter var", Inter, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
 
   --radius-panel: 1rem;
@@ -121,30 +230,51 @@
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
+    /* Painted before React mounts, so the first frame is already black. */
+    background-color: var(--bg-deep);
   }
 
   body {
-    background-color: var(--bg);
+    background-color: transparent;
     color: var(--text);
     font-family: var(--font-sans);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    font-optical-sizing: auto;
+    letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    accent-color: var(--accent);
     overflow: hidden; /* the job list owns the only scroll container */
   }
 
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
   ::selection {
-    background: var(--accent-soft);
+    background: color-mix(in oklch, var(--accent) 34%, transparent);
     color: var(--text);
   }
 
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 8px;
   }
 
-  /* Slim, theme-aware scrollbars. */
+  /* Slim, theme-aware scrollbars — the standard properties first, then WebKit
+     for its finer control over the track. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -166,31 +296,53 @@
 
 /* ---------------------------------------------------------------------------
    Glassmorphism surfaces
+
+   Three tiers, differing in how much they let through: `glass` for chrome
+   floating over the aurora, `glass-strong` for containers that must stay
+   readable over it, `glass-popover` for menus opening across dense rows.
+   Each carries an inset top highlight — the edge of a real pane catching light.
 --------------------------------------------------------------------------- */
 @utility glass {
   background-color: var(--panel);
+  background-image: var(--glass-tint);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid var(--border);
+  box-shadow:
+    inset 0 1px 0 var(--edge-light),
+    var(--shadow-sm);
 }
 
 @utility glass-strong {
   background-color: var(--panel-strong);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-panel);
-}
-
-/* Floating menus: readable over dense content, still glassy at the edges. */
-@utility glass-popover {
-  background-color: var(--popover);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background-image: var(--glass-tint);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
   border: 1px solid var(--border-strong);
   box-shadow:
-    0 2px 6px oklch(0% 0 0 / 0.16),
-    0 24px 48px -16px oklch(0% 0 0 / 0.4);
+    inset 0 1px 0 var(--edge-light),
+    var(--shadow-panel);
+}
+
+/* No backdrop-filter here on purpose — see the --popover comment. It would be
+   paid for on every open and blur nothing. */
+@utility glass-popover {
+  background-color: var(--popover);
+  background-image: var(--glass-tint);
+  border: 1px solid var(--border-strong);
+  box-shadow:
+    inset 0 1px 0 var(--edge-light),
+    var(--shadow-float);
+}
+
+/* backdrop-filter is what sells the glass; without it these panels are merely
+   washed out over the aurora. Fall back to opaque surfaces. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background-color: var(--bg-elevated);
+    background-image: none;
+  }
 }
 
 /* A hairline highlight along the top edge — reads as light catching glass.
@@ -208,23 +360,137 @@
   background: linear-gradient(
     90deg,
     transparent,
-    oklch(100% 0 0 / 0.35) 30%,
-    oklch(100% 0 0 / 0.35) 70%,
+    oklch(100% 0 0 / 0.4) 25%,
+    oklch(100% 0 0 / 0.45) 50%,
+    oklch(100% 0 0 / 0.4) 75%,
     transparent
   );
   pointer-events: none;
+  z-index: 1;
+}
+
+/* Pointer-tracked highlight. JS writes --spot-x/--spot-y (see useSpotlight);
+   because both are registered properties the gradient interpolates instead of
+   snapping. Uses ::after so it can coexist with .glass-sheen's ::before. */
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    240px circle at var(--spot-x) var(--spot-y),
+    color-mix(in oklch, var(--accent) 20%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  /* Content inside a spotlit card carries `relative z-[1]`, so the glow pools
+     behind the text instead of tinting it. */
+  z-index: 0;
+}
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+/* Rotating conic rim. mask-composite paints the gradient only inside the 1px
+   border band, leaving the fill beneath untouched. */
+.rim::after {
+  content: "";
+  position: absolute;
+  /* inset:0 (not -1px) so the band lands on the innermost pixel of the border
+     box — an `overflow: hidden` parent would clip anything drawn outside it. */
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0deg,
+    var(--accent) 45deg,
+    color-mix(in oklch, var(--accent) 55%, white) 90deg,
+    transparent 165deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.rim:hover::after,
+.rim:focus-within::after,
+.rim-on::after {
+  opacity: 0.95;
+  animation: rim-spin 4s linear infinite;
+}
+
+@keyframes rim-spin {
+  to {
+    --angle: 360deg;
+  }
 }
 
 @utility text-gradient {
   /* Same hue at two depths — a tonal shift, not a second colour. */
-  background: linear-gradient(120deg, var(--accent-text), var(--accent));
+  background: linear-gradient(120deg, var(--accent-text) 10%, var(--accent) 90%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+/* Primary action: violet gradient with a specular band that sweeps on hover. */
+@utility btn-primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-image: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: white;
+  border: 1px solid color-mix(in oklch, var(--accent) 60%, transparent);
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.25),
+    0 6px 20px -8px var(--accent-glow);
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.15s ease;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, oklch(100% 0 0 / 0.3) 48%, transparent 66%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.btn-primary:hover {
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.3),
+    0 10px 30px -8px var(--accent-glow);
+}
+.btn-primary:hover::after {
+  animation: sheen-sweep 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-primary:active {
+  transform: scale(0.985);
+}
+
+@keyframes sheen-sweep {
+  to {
+    transform: translateX(120%);
+  }
+}
+
 /* ---------------------------------------------------------------------------
-   Ambient aurora backdrop
+   Ambient backdrop — aurora + grid veil + grain
+
+   Back to front: a near-black radial base, three drifting violet blobs, a faint
+   ruled grid masked to a soft ellipse, and film grain over the whole UI.
 --------------------------------------------------------------------------- */
 .aurora {
   position: fixed;
@@ -232,6 +498,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  background: radial-gradient(125% 90% at 50% -10%, var(--bg) 42%, var(--bg-deep) 100%);
 }
 
 .aurora::before,
@@ -244,33 +511,63 @@
 }
 
 .aurora::before {
-  width: 55vw;
-  height: 55vw;
-  top: -18vw;
-  left: -10vw;
+  width: 44vw;
+  height: 44vw;
+  top: -26vw;
+  left: -12vw;
   background: radial-gradient(circle at 30% 30%, var(--aurora-1), transparent 70%);
   animation: drift-a 26s ease-in-out infinite alternate;
 }
 
 .aurora::after {
-  width: 48vw;
-  height: 48vw;
-  top: -8vw;
-  right: -12vw;
+  width: 38vw;
+  height: 38vw;
+  top: -22vw;
+  right: -10vw;
   background: radial-gradient(circle at 70% 30%, var(--aurora-2), transparent 70%);
   animation: drift-b 32s ease-in-out infinite alternate;
 }
 
 .aurora-third {
   position: absolute;
-  width: 40vw;
-  height: 40vw;
-  bottom: -16vw;
+  width: 36vw;
+  height: 36vw;
+  bottom: -24vw;
   left: 32%;
   border-radius: 50%;
   filter: blur(100px);
   background: radial-gradient(circle, var(--aurora-3), transparent 70%);
   animation: drift-c 38s ease-in-out infinite alternate;
+}
+
+/* Architectural grid: gives the black something to be measured against, so it
+   reads as a surface rather than as absence. */
+.grid-veil {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--veil-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--veil-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(125% 80% at 50% 0%, #000 18%, transparent 76%);
+  -webkit-mask-image: radial-gradient(125% 80% at 50% 0%, #000 18%, transparent 76%);
+}
+
+/* Film grain, painted into the backdrop rather than over the UI.
+ *
+ * Over the UI it would look marginally better, but a blended full-screen layer
+ * forces the compositor to redo the whole viewport on every frame the
+ * virtualized job list scrolls. In the backdrop it costs nothing after the
+ * first paint and still does the job that matters — breaking up the banding in
+ * those very wide aurora gradients, which the translucent panels show through
+ * anyway. Kept far below the level at which it could touch text legibility. */
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @keyframes drift-a {
@@ -295,7 +592,7 @@
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -306,11 +603,20 @@
 @keyframes slide-in-right {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(28px);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -325,21 +631,45 @@
     box-shadow: 0 0 0 0 var(--accent-soft);
   }
   70% {
-    box-shadow: 0 0 0 6px transparent;
+    box-shadow: 0 0 0 8px transparent;
   }
   100% {
     box-shadow: 0 0 0 0 transparent;
   }
 }
 
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.4);
+  }
+}
+
 .animate-fade-up {
-  animation: fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade-in {
+  animation: fade-in 0.25s ease both;
 }
 .animate-slide-in {
-  animation: slide-in-right 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slide-in-right 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .animate-pulse-ring {
   animation: pulse-ring 2.4s ease-out infinite;
+}
+.animate-breathe {
+  animation: breathe 2.6s ease-in-out infinite;
+}
+
+/* Staggered entrance — set --i per child. */
+.stagger {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
 }
 
 .skeleton {
@@ -352,7 +682,12 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--accent) 16%, var(--border-strong)),
+    transparent
+  );
   animation: shimmer 1.6s infinite;
 }
 
@@ -380,7 +715,7 @@
   font-weight: 600;
   font-size: 1rem;
   margin: 1.75em 0 0.6em;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 .jd :where(h1):first-child,
 .jd :where(h2):first-child,
@@ -411,6 +746,11 @@
   color: var(--accent-text);
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  transition: text-decoration-color 0.2s;
+}
+.jd a:hover {
+  text-decoration-color: var(--accent);
 }
 .jd strong,
 .jd b {

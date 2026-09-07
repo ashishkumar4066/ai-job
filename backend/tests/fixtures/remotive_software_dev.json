@@ -1,7 +1,7 @@
 {
   "00-warning": "Remotive main domain moved to remotive.com ! Please make your API calls on remotive.com/api/remote-jobs instead of remotive.io now ;) Legacy endpoint remotive.io/api/remote-jobs will be terminated in June 2022. Thank you!",
   "0-legal-notice": "Legal warning - Hey, thanks for using Remotive's API, we appreciate it! Please note that API documentation and access is granted so that developers can share our jobs further. Please do not submit Remotive jobs to third Party websites, including but not limited to: Jooble, Neuvoo, Google Jobs, LinkedIn Jobs. Please link back to the URL found on Remotive AND mention Remotive as a source in order to Remotive to get traffic from your listing. If you don't do that, we'll terminate your API access, sorry! Jobs displayed are delayed by 24 hours, the goal being that jobs are attributed to Remotive on various platforms. Displaying our jobs in order to collect signups/email addresses to show a listing constitutes a breach of our terms of services. We offer a private, paid-for API, please email us at hello(at)remotive(dot)io for more information (starting budget is $5k/mo). Please find out terms of services on https://remotive.com/api-documentation. Please note that there is absolutely no need to request Remotive Job data too frequently. Typically, you only need to GET Remotive job data through this API a couple of times a day (we advise max. 4 times a day). Our data is not changing much faster than that anyway. Note that excessive requests will be blocked. Many thanks (Rodolphe & the Remotive team!)",
-  "job-count": 6,
+  "job-count": 7,
   "jobs": [
     {
       "id": 2091068,
@@ -188,6 +188,29 @@
       "salary": "$50-$75 /hour",
       "description": "<p class=\"p1\" style=\"font-variant-numeric: normal; font-variant-east-asian: normal; font-stretch: normal; line-height: normal; color: #000000;\">Our organization is seeking content writers to create articles and blog posts on a variety of topics.</p>\n<p class=\"p1\" style=\"font-variant-numeric: normal; font-variant-east-asian: normal; font-stretch: normal; line-height: normal; color: #000000;\"> </p>\n",
       "company_logo_url": "https://remotive.com/job/1185979/logo"
+    },
+    {
+      "id": 2091510,
+      "url": "https://remotive.com/remote-jobs/software-development/senior-backend-engineer-2091510",
+      "title": "Senior Backend Engineer",
+      "company_name": "Kestrel Labs",
+      "company_logo": "https://remotive.com/job/2091510/logo",
+      "category": "Software Development",
+      "tags": [
+        "python",
+        "django",
+        "postgresql",
+        "aws",
+        "docker",
+        "api",
+        "backend"
+      ],
+      "job_type": "full_time",
+      "publication_date": "2026-07-16T09:12:44",
+      "candidate_required_location": "Worldwide",
+      "salary": "$120k - $160k",
+      "description": "<p>We are looking for a Senior Backend Engineer to join our fully distributed team. You will design and ship the services behind our public API.</p><p>Requirements: 5+ years of professional backend engineering experience, strong Python, and comfort owning a service end to end.</p>",
+      "company_logo_url": "https://remotive.com/job/2091510/logo"
     }
   ]
 }

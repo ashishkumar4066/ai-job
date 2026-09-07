@@ -234,6 +234,7 @@ class TestRegistry:
             "ashby",
             "himalayas",
             "remotive",
+            "wellfound",
             "playwright",
         }
 

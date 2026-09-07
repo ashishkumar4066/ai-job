@@ -1,18 +1,131 @@
-# Eligibility + currency filter.
+# Eligibility filter.
 #
 # Applied during ingestion, after `normalize` and before a job is marked
-# active. A job is retained as eligible only if BOTH rules hold:
+# active. A job is retained as eligible only if ALL FOUR rules hold:
 #
 #   1. Location — `location_eligibility` includes one of `allowed_locations`.
-#                 "global" / "anywhere" are normalized to `worldwide`.
-#   2. Pay      — `salary_currency` == `required_currency`, OR the currency is
-#                 unknown and the employer is known to be US-based (when
-#                 `allow_us_employer_when_currency_unknown` is true).
+#                 This is about who the employer will HIRE, not where its
+#                 office is: a London company that accepts India-based remote
+#                 candidates passes, because the field is derived from the
+#                 posting's accepted-candidate locations.
+#   2. Remote   — the role must be remote (or onsite-or-remote).
+#   3. Pay      — an UNSTATED salary passes (and is surfaced in the UI as
+#                 "not stated"). A STATED salary must annualize to at least
+#                 `min_annual_salary_inr`.
+#   4. Role     — the title must name a wanted engineering role family, must
+#                 not be junior or leadership, and any STATED years-of-
+#                 experience requirement must fall inside `role.min_years` ..
+#                 `role.max_years`. See the `role:` block at the bottom.
 #
 # Jobs that fail are still stored, flagged `eligibility_pass: false` with the
 # deciding reasons — nothing is silently dropped. Only jobs that pass generate
 # Telegram alerts. Tune here, then re-run ingest; no code change needed.
 
 allowed_locations: [IN, worldwide]
-required_currency: USD
-allow_us_employer_when_currency_unknown: true
+
+# OFF on purpose, even though the goal is remote work — rule 1 already delivers
+# it. `location_eligibility` records who the employer will HIRE, so a job that
+# lists IN or worldwide is by definition open to a candidate sitting in India.
+#
+# The `remote` column, by contrast, is `detect_remote()`: a regex hunting for
+# "remote"/"wfh"/"anywhere" in the location string. It is documented as
+# best-effort and it under-reports badly. GitLab is a 100%-remote company whose
+# Greenhouse rows say "Bengaluru"; 42 of them come back `remote = false`.
+# Switching this on drops 190 India-eligible jobs, most of them false
+# negatives — a silent loss of exactly the kind this filter exists to prevent.
+#
+# Flip to true once `detect_remote` is trustworthy (Phase 2B stabilization).
+require_remote: false
+
+# Pay floor in INR per year. Jobs with no stated salary are NOT held to this —
+# they pass and are flagged, because ~84% of postings state no pay at all and
+# dropping them would discard most of the board.
+min_annual_salary_inr: 2000000
+
+# Rates used to convert a foreign salary to INR before comparing it to the
+# floor. Deliberately a static table, not a live FX call: this is a coarse
+# threshold, not an accounting figure, and a network dependency here would be
+# one more thing that can fail mid-ingest. Re-check these occasionally.
+fx_to_inr:
+  INR: 1.0
+  USD: 88.0
+  EUR: 95.0
+  GBP: 112.0
+  CAD: 64.0
+  AUD: 58.0
+  SGD: 66.0
+  CHF: 100.0
+  ZAR: 4.8
+  PLN: 22.0
+
+# A salary with no stated period has to be read from its magnitude, because
+# `parse_salary_text` recovers numbers but not always a period:
+#   below hourly_below   -> an hourly rate  (x 2080)
+#   below monthly_below  -> a monthly rate  (x 12)
+#   otherwise            -> already annual
+# Without this, "$25 - $30/hr" (~INR 55L/yr) reads as INR 2,640/yr and is
+# dropped — the exact silent-drop failure this filter exists to prevent.
+#
+# Thresholds are in NATIVE currency units, never INR-equivalent, because pay
+# conventions differ per currency and converting first destroys the signal: a
+# monthly INR 40,000 is about $454, indistinguishable from a US hourly rate
+# once converted, but unmistakable in rupees. INR listings are also written
+# annually far more often than monthly ("INR 12L - 30L"), so its band sits
+# higher.
+salary_period_bands:
+  default: { hourly_below: 500, monthly_below: 20000 }
+  INR: { hourly_below: 5000, monthly_below: 100000 }
+
+# --------------------------------------------------------------------------
+# Rule 4 — role family and seniority.
+#
+# The other three rules read structured fields a board hands us. This one has
+# only the title and the JD prose, so it is the only rule that reads English
+# and the only one whose mistakes are worth auditing. Failures are flagged and
+# kept, never dropped, so `role_*` reasons show exactly what the rules cut.
+#
+# The API-level half of this lives in `companies.yaml`: Himalayas is swept with
+# `seniority=Mid-level,Senior`, so entry-level and director rows are never
+# fetched at all. This block is the safety net for every source that cannot
+# filter server-side.
+# --------------------------------------------------------------------------
+role:
+  enabled: true
+
+  # Which role families count as wanted. Names are the keys of `ROLE_FAMILIES`
+  # in `app/roles.py`; an unrecognized name is logged and ignored rather than
+  # silently narrowing the filter.
+  #
+  # `product_engineer` is on because it is startup shorthand for a full-stack
+  # engineer who owns a product surface (Linear's "Senior / Staff Product
+  # Engineer"), not a different job.
+  #
+  # Deliberately OFF — real engineering, different specialization. Add a name
+  # here to include it; nothing else changes.
+  #   devops_sre (22 live rows)  data (32)  security (64)  mobile (35)  qa (38)
+  families:
+    - software
+    - staff
+    - backend
+    - frontend
+    - fullstack
+    - ai_ml
+    - platform
+    - application
+    - product_engineer
+
+  exclude_junior: true
+  exclude_leadership: true
+  exclude_non_engineering: true
+
+  # Bounds on a STATED years-of-experience requirement, inclusive. An UNSTATED
+  # requirement passes, exactly as an unstated salary does — most JDs name no
+  # figure, and holding them to one would discard most of the board.
+  #
+  # `max_years: 8` gives a 5-7 year candidate one year of stretch and no more.
+  # It cuts 145 rows, 116 of them Staff-titled: Databricks asks 12-15 years for
+  # Staff, Stripe asks 10. That is a real bar, not a naming quirk, so the title
+  # being wanted does not rescue it. Staff roles that state 8 or fewer years —
+  # or state nothing — still pass.
+  min_years: 2
+  max_years: 8

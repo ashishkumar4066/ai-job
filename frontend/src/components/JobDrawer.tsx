@@ -1,20 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Building2,
+  ArrowUpRight,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronUp,
   Clock,
-  ExternalLink,
   Globe2,
   Layers,
+  Link2,
   MapPin,
   Server,
+  Wallet,
   X,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { absoluteDate, relativeTime, titleCase } from "@/lib/format";
+import { absoluteDate, formatSalary, relativeTime, titleCase } from "@/lib/format";
 import type { Job } from "@/lib/types";
 import { Badge, CompanyAvatar, cx } from "./primitives";
 
@@ -41,6 +43,8 @@ export function JobDrawer({
     staleTime: 5 * 60_000,
   });
 
+  const [copied, setCopied] = useState(false);
+
   // Escape closes the drawer, matching the browser-back behaviour.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -50,13 +54,16 @@ export function JobDrawer({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  // Reset the copy confirmation when you navigate to another job.
+  useEffect(() => setCopied(false), [jobId]);
+
   const job = data ?? summary;
 
   return (
     <>
       <div
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[3px] transition-opacity"
+        className="animate-fade-in fixed inset-0 z-40 bg-black/55 backdrop-blur-[4px]"
         aria-hidden
       />
 
@@ -64,19 +71,25 @@ export function JobDrawer({
         role="dialog"
         aria-modal="true"
         aria-label={job?.title ?? "Job details"}
-        className="glass-strong animate-slide-in fixed top-0 right-0 z-50 flex h-full w-full max-w-[640px] flex-col rounded-l-3xl border-l border-edge-strong"
+        className="glass-strong animate-slide-in fixed top-0 right-0 z-50 flex h-full w-full max-w-[660px] flex-col rounded-l-3xl border-l border-edge-strong"
       >
+        {/* Violet bloom at the top of the panel — the drawer's own light source. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 rounded-tl-3xl bg-[radial-gradient(80%_100%_at_50%_0%,var(--accent-soft),transparent_75%)]"
+        />
+
         {/* Header */}
-        <div className="flex items-start gap-3 border-b border-edge px-5 py-4">
-          {job && <CompanyAvatar name={job.company} size={42} />}
+        <div className="relative flex items-start gap-3 border-b border-edge px-5 py-4">
+          {job && <CompanyAvatar name={job.company} size={44} />}
           <div className="min-w-0 flex-1">
             {job ? (
               <>
-                <h2 className="text-[17px] leading-snug font-semibold tracking-tight text-ink">
+                <h2 className="text-[18px] leading-snug font-semibold tracking-[-0.02em] text-ink">
                   {job.title}
                 </h2>
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
-                  <span className="font-medium">{job.company}</span>
+                  <span className="font-medium text-ink">{job.company}</span>
                   <span className="opacity-40">·</span>
                   <span className="capitalize">{job.ats}</span>
                   {job.status === "closed" && <Badge tone="danger">Closed</Badge>}
@@ -97,7 +110,7 @@ export function JobDrawer({
               disabled={!hasPrev}
               aria-label="Previous job (k)"
               title="Previous job — k"
-              className="grid size-8 place-items-center rounded-lg border border-edge text-muted transition-colors hover:bg-panel-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
+              className="grid size-8 place-items-center rounded-lg border border-edge bg-panel text-muted transition-all hover:bg-panel-hover hover:text-ink disabled:opacity-25 disabled:hover:bg-panel"
             >
               <ChevronUp size={15} />
             </button>
@@ -106,14 +119,14 @@ export function JobDrawer({
               disabled={!hasNext}
               aria-label="Next job (j)"
               title="Next job — j"
-              className="grid size-8 place-items-center rounded-lg border border-edge text-muted transition-colors hover:bg-panel-hover hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
+              className="grid size-8 place-items-center rounded-lg border border-edge bg-panel text-muted transition-all hover:bg-panel-hover hover:text-ink disabled:opacity-25 disabled:hover:bg-panel"
             >
               <ChevronDown size={15} />
             </button>
             <button
               onClick={onClose}
               aria-label="Close (Esc)"
-              className="ml-1 grid size-8 place-items-center rounded-lg border border-edge text-muted transition-colors hover:bg-panel-hover hover:text-ink"
+              className="ml-1 grid size-8 place-items-center rounded-lg border border-edge bg-panel text-muted transition-all hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
             >
               <X size={15} />
             </button>
@@ -122,13 +135,28 @@ export function JobDrawer({
 
         {/* Meta grid */}
         {job && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-edge px-5 py-4 sm:grid-cols-3">
+          <div className="relative grid grid-cols-2 gap-x-4 gap-y-3.5 border-b border-edge px-5 py-4 sm:grid-cols-3">
             <Meta
               icon={job.remote ? <Globe2 size={13} /> : <MapPin size={13} />}
               label="Location"
               value={job.locations.length ? job.locations.join(" · ") : job.remote ? "Remote" : "—"}
             />
             <Meta icon={<Layers size={13} />} label="Department" value={job.department ?? "—"} />
+            {/* The hint carries the filter's own pay reasoning — including when
+                it read a bare number as an hourly or monthly rate — so a
+                surprising verdict can be checked rather than just trusted. */}
+            <Meta
+              icon={<Wallet size={13} />}
+              label="Salary"
+              value={
+                formatSalary(job.salary_min, job.salary_max, job.salary_currency) ?? "Not stated"
+              }
+              hint={job.eligibility_reasons
+                .find((reason) => reason.startsWith("pay_"))
+                ?.split(":")
+                .slice(1)
+                .join(":")}
+            />
             <Meta
               icon={<CalendarDays size={13} />}
               label="Posted"
@@ -164,7 +192,7 @@ export function JobDrawer({
               ))}
             </div>
           ) : isError ? (
-            <p className="rounded-xl border border-danger/25 bg-danger/10 p-4 text-[13px] text-danger">
+            <p className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-[13px] text-danger">
               Couldn't load this description: {(error as Error).message}
             </p>
           ) : data?.description_html ? (
@@ -174,31 +202,38 @@ export function JobDrawer({
           ) : data?.description_text ? (
             <p className="jd whitespace-pre-wrap">{data.description_text}</p>
           ) : (
-            <p className="text-[13px] text-subtle">
-              This posting has no description on the board.
-            </p>
+            <p className="text-[13px] text-subtle">This posting has no description on the board.</p>
           )}
         </div>
 
         {/* Footer */}
         {job && (
-          <div className="flex items-center gap-3 border-t border-edge px-5 py-4">
+          <div className="flex items-center gap-2.5 border-t border-edge bg-panel-strong/30 px-5 py-4">
             <a
               href={job.apply_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-strong px-4 py-2.5 text-[14px] font-semibold text-white shadow-[0_8px_24px_-10px_var(--accent)] transition-all hover:opacity-95 active:scale-[0.99]"
+              className="btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-semibold"
             >
-              <Building2 size={15} />
               Apply on {titleCase(job.ats)}
-              <ExternalLink size={14} />
+              <ArrowUpRight size={15} />
             </a>
             <button
-              onClick={() => navigator.clipboard?.writeText(job.apply_url)}
-              className="rounded-xl border border-edge bg-panel px-3.5 py-2.5 text-[13px] font-medium text-muted transition-colors hover:bg-panel-hover hover:text-ink"
+              onClick={() => {
+                navigator.clipboard?.writeText(job.apply_url);
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1800);
+              }}
+              className={cx(
+                "flex items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-medium transition-all duration-200",
+                copied
+                  ? "border-mint/40 bg-mint/12 text-mint"
+                  : "border-edge bg-panel text-muted hover:bg-panel-hover hover:text-ink",
+              )}
               title="Copy the application link"
             >
-              Copy link
+              {copied ? <Check size={14} /> : <Link2 size={14} />}
+              {copied ? "Copied" : "Copy link"}
             </button>
           </div>
         )}
@@ -222,8 +257,8 @@ function Meta({
 }) {
   return (
     <div className="min-w-0">
-      <p className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-subtle uppercase">
-        <span className="opacity-70">{icon}</span>
+      <p className="flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">
+        <span className="text-accent-text opacity-80">{icon}</span>
         {label}
       </p>
       <p

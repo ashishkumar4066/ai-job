@@ -79,12 +79,20 @@ class BaseAdapter(ABC):
         *,
         params: dict[str, Any] | None = None,
         company: CompanyConfig | None = None,
+        method: str = "GET",
+        json_body: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
-        """GET + JSON decode, retrying transient failures with backoff.
+        """Request + JSON decode, retrying transient failures with backoff.
 
         429 gets its own retry budget and exponential backoff: Himalayas rate
         limits, and a rate limit is a "come back later", not the permanent
         config error that other 4xx codes signal.
+
+        Defaults to GET. `method`/`json_body`/`headers` exist for the one
+        source that has no GET-able API: Wellfound is reached through
+        Firecrawl's POST /scrape, and it needs this same retry and rate-limit
+        handling rather than a private copy of it.
         """
         settings = get_settings()
         client = await self._get_client()
@@ -97,7 +105,9 @@ class BaseAdapter(ABC):
         while attempt < attempts:
             attempt += 1
             try:
-                response = await client.get(url, params=params)
+                response = await client.request(
+                    method, url, params=params, json=json_body, headers=headers
+                )
 
                 if response.status_code == 429:
                     if rate_limited >= rate_limit_budget:
@@ -106,8 +116,9 @@ class BaseAdapter(ABC):
                             ats=self.ats,
                             company=company.company if company else "",
                         )
-                    delay = self._retry_after_seconds(response) or (
-                        settings.rate_limit_base_delay_seconds * (2**rate_limited)
+                    delay = self._retry_after_seconds(response) or min(
+                        settings.rate_limit_base_delay_seconds * (2**rate_limited),
+                        settings.rate_limit_max_delay_seconds,
                     )
                     rate_limited += 1
                     attempt -= 1  # a rate limit must not consume the error budget

@@ -6,9 +6,24 @@
 # under a test-scoped config means those tests keep testing what they were
 # written to test, while the real `config/filters.yaml` stays untouched.
 #
+# `require_remote` is off for the same reason: the recorded fixtures include
+# onsite roles, and gating them here would silently shrink the corpus those
+# tests count against.
+#
 # The eligibility rules themselves are tested against the shipped config in
 # `test_eligibility.py`.
 
 allowed_locations: [US, IN, worldwide]
-required_currency: USD
-allow_us_employer_when_currency_unknown: true
+require_remote: false
+min_annual_salary_inr: 2000000
+
+# Off for the same reason. The recorded fixtures are whole real boards, so most
+# of their rows are designers, account executives and program managers — the
+# role rule correctly rejects them, which would drop the eligible corpus these
+# tests count against from 6 rows to 2 and make every count assertion a
+# restatement of the role regex rather than of ingest behaviour.
+#
+# Rule 4 is tested directly in `test_roles.py`, and end-to-end through ingest
+# against the shipped config in `test_ingest_eligibility.py`.
+role:
+  enabled: false

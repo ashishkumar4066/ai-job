@@ -1,0 +1,13 @@
+{
+  "props": {
+    "pageProps": {
+      "apolloState": {
+        "data": {
+          "ROOT_QUERY": {
+            "__typename": "Query"
+          }
+        }
+      }
+    }
+  }
+}

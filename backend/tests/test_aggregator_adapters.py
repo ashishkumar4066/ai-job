@@ -209,7 +209,7 @@ class TestRemotiveAdapter:
         async with httpx.AsyncClient() as client:
             raws = await RemotiveAdapter(client=client).fetch(remotive_source)
 
-        assert len(raws) == 6
+        assert len(raws) == 7
         # The documented category param is sent even though the live API
         # currently ignores it.
         assert route.calls[0].request.url.params["category"] == "software-dev"

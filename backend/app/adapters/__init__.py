@@ -22,6 +22,7 @@ from app.adapters.himalayas import HimalayasAdapter
 from app.adapters.lever import LeverAdapter
 from app.adapters.playwright_adapter import PlaywrightAdapter
 from app.adapters.remotive import RemotiveAdapter
+from app.adapters.wellfound import WellfoundAdapter
 
 _REGISTRY: dict[str, type[BaseAdapter]] = {
     GreenhouseAdapter.ats: GreenhouseAdapter,
@@ -29,12 +30,15 @@ _REGISTRY: dict[str, type[BaseAdapter]] = {
     AshbyAdapter.ats: AshbyAdapter,
     HimalayasAdapter.ats: HimalayasAdapter,
     RemotiveAdapter.ats: RemotiveAdapter,
+    WellfoundAdapter.ats: WellfoundAdapter,
     PlaywrightAdapter.ats: PlaywrightAdapter,
 }
 
 # Sources that aggregate many employers onto one board. Their `company` column
 # holds the employer from the feed, not the board name.
-AGGREGATOR_SOURCES = frozenset({HimalayasAdapter.ats, RemotiveAdapter.ats})
+AGGREGATOR_SOURCES = frozenset(
+    {HimalayasAdapter.ats, RemotiveAdapter.ats, WellfoundAdapter.ats}
+)
 
 # Aliases people naturally write in config.
 _ALIASES = {
@@ -46,6 +50,9 @@ _ALIASES = {
     "himalayas.app": "himalayas",
     "remotive.com": "remotive",
     "remotive.io": "remotive",
+    "wellfound.com": "wellfound",
+    "angellist": "wellfound",
+    "angel.co": "wellfound",
 }
 
 
@@ -92,6 +99,7 @@ __all__ = [
     "LeverAdapter",
     "PlaywrightAdapter",
     "RemotiveAdapter",
+    "WellfoundAdapter",
     "canonical_ats",
     "get_adapter",
     "is_aggregator",

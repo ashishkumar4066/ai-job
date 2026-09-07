@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
@@ -15,16 +14,26 @@ from app.adapters import supported_ats
 from app.companies import CompanyConfigError, load_companies
 from app.config import get_settings
 from app.db import get_session
-from app.ingest import run_ingest
+from app.ingest import is_fresh, run_ingest
+from app.ingest_state import RunProgress, tracker
 from app.models import IngestRun, JobPosting, utcnow
-from app.schemas import IngestRunOut, JobDetailOut, JobListOut, JobOut
+from app.schemas import (
+    IngestRunOut,
+    IngestStatusOut,
+    JobDetailOut,
+    JobListOut,
+    JobOut,
+    SourceProgressOut,
+)
 
 log = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Serializes manual + scheduled runs so two ingests never interleave writes.
-_ingest_lock = asyncio.Lock()
+# Serializes manual, scheduled and page-load runs so two ingests never
+# interleave writes. The lock lives on the tracker because the background
+# refresh path needs to observe it as well as hold it.
+_ingest_lock = tracker.lock
 
 SortField = Literal["posted_at", "first_seen_at", "last_seen_at", "title", "company"]
 
@@ -194,27 +203,50 @@ async def facets(
     since: Annotated[
         datetime | None, Query(description="Instant used for the 'new since' count")
     ] = None,
+    eligibility_pass: Annotated[
+        bool | None,
+        Query(description="true = count only jobs that cleared the eligibility filter"),
+    ] = None,
 ) -> dict[str, object]:
     """Filter options with counts, plus headline stats.
 
     One request backs every dropdown in the dashboard, so the UI never has to
     guess which companies or departments actually have jobs.
+
+    `eligibility_pass` must be threaded through here and not only into /jobs:
+    the dashboard hides ineligible rows by default, and a facet list built
+    without the same gate offers companies whose every posting is filtered out.
+    Selecting one then yields an empty table, which reads as a broken filter.
     """
 
     async def grouped(column) -> list[dict[str, object]]:
         stmt = _apply_filters(
-            select(column, func.count().label("n")), status=status
+            select(column, func.count().label("n")),
+            status=status,
+            eligibility_pass=eligibility_pass,
         ).where(column.is_not(None))
         rows = await session.execute(
             stmt.group_by(column).order_by(func.count().desc(), column.asc())
         )
         return [{"value": value, "count": count} for value, count in rows if value]
 
-    base = _apply_filters(select(func.count()).select_from(JobPosting), status=status)
+    base = _apply_filters(
+        select(func.count()).select_from(JobPosting),
+        status=status,
+        eligibility_pass=eligibility_pass,
+    )
     total = await session.scalar(base) or 0
     remote_count = await session.scalar(base.where(JobPosting.remote.is_(True))) or 0
+
+    # Deliberately NOT derived from `base`. With the gate on, `base` already
+    # excludes every ineligible row, so counting within it would report
+    # ineligible = 0 and make the split describe the query rather than the
+    # board. This pair always answers "of the jobs at this status, how many
+    # clear the filter?", which is the only reading that stays useful.
+    split_base = _apply_filters(select(func.count()).select_from(JobPosting), status=status)
+    split_total = await session.scalar(split_base) or 0
     eligible_count = (
-        await session.scalar(base.where(JobPosting.eligibility_pass.is_(True))) or 0
+        await session.scalar(split_base.where(JobPosting.eligibility_pass.is_(True))) or 0
     )
 
     week_ago = utcnow() - timedelta(days=7)
@@ -255,7 +287,7 @@ async def facets(
             "closed": closed_total,
             "remote": remote_count,
             "eligible": eligible_count,
-            "ineligible": total - eligible_count,
+            "ineligible": split_total - eligible_count,
             "posted_last_7d": posted_week,
             "new_since": new_since,
         },
@@ -282,13 +314,123 @@ async def get_job(
 async def trigger_ingest(
     notify: Annotated[bool, Query(description="Send Telegram alerts for new jobs")] = True,
 ) -> IngestRunOut:
-    if _ingest_lock.locked():
+    if tracker.busy:
         raise HTTPException(status_code=409, detail="an ingest run is already in progress")
     async with _ingest_lock:
         try:
             return await run_ingest(notify=notify, settings=get_settings())
         except CompanyConfigError as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+async def _build_status(
+    session: AsyncSession,
+    *,
+    state: Literal["fresh", "running", "idle"] | None = None,
+    skipped: bool = False,
+    reason: str | None = None,
+) -> IngestStatusOut:
+    """Snapshot the tracker, plus the durable 'last run ever' from the DB.
+
+    `last_finished_at` comes from `ingest_runs` rather than the tracker so the
+    same-day check still works after a restart, when nothing is in memory.
+    """
+    last_finished = await session.scalar(select(func.max(IngestRun.finished_at)))
+    resolved = state or ("running" if tracker.busy else "idle")
+    progress: RunProgress | None = None if resolved == "fresh" else tracker.progress
+
+    return IngestStatusOut(
+        state=resolved,
+        skipped=skipped,
+        reason=reason,
+        run_id=progress.run_id if progress else None,
+        started_at=progress.started_at if progress else None,
+        finished_at=progress.finished_at if progress else None,
+        last_finished_at=last_finished,
+        sources_total=progress.total if progress else 0,
+        sources_done=progress.done if progress else 0,
+        sources=[
+            SourceProgressOut(
+                source_id=entry.source_id,
+                company=entry.company,
+                ats=entry.ats,
+                state=entry.state,
+                fetched=entry.fetched,
+                new=entry.new,
+                eligible=entry.eligible,
+                error=entry.error,
+            )
+            for entry in (progress.sources if progress else [])
+        ],
+        result=tracker.result,
+        error=tracker.error,
+    )
+
+
+@router.post("/ingest/refresh", response_model=IngestStatusOut, tags=["ingest"])
+async def refresh_ingest(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    fresh_since: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Skip the sweep when the last run finished at or after this instant. "
+                "Defaults to now minus `refresh_window_hours` (24), so the boards are "
+                "contacted at most once a day and every later visit renders straight "
+                "from storage. The dashboard sends nothing and takes that default."
+            )
+        ),
+    ] = None,
+    notify: Annotated[
+        bool, Query(description="Send Telegram alerts for jobs this run discovers")
+    ] = False,
+    force: Annotated[bool, Query(description="Sweep even if the data is already fresh")] = False,
+) -> IngestStatusOut:
+    """Start a sweep of every configured board, unless one is not needed.
+
+    Returns immediately in all three cases — the run itself continues in the
+    background and is followed with `GET /ingest/status`. Holding the request
+    open for the length of a real sweep (Wellfound alone can take a minute)
+    would give the caller a timeout instead of an answer.
+    """
+    if not force:
+        # Freshness is checked *before* the busy check on purpose. A page load
+        # that lands while the scheduler happens to be sweeping still has fresh
+        # stored data, and blocking its first paint behind an hour-long tick is
+        # exactly the "it fetches every time I refresh" symptom.
+        cutoff = fresh_since
+        if cutoff is not None and cutoff.tzinfo is None:
+            cutoff = cutoff.replace(tzinfo=UTC)
+        last_finished = await is_fresh(session, cutoff)
+        if last_finished is not None:
+            return await _build_status(
+                session,
+                state="fresh",
+                skipped=True,
+                reason=f"last sweep finished {last_finished.isoformat()}",
+            )
+
+    if tracker.busy:
+        # Someone got here first — the scheduler, another tab, or a reload
+        # mid-run. Attach to that run rather than queueing a second sweep.
+        return await _build_status(
+            session, state="running", reason="a sweep was already in progress"
+        )
+
+    settings = get_settings()
+    tracker.start(
+        lambda progress: run_ingest(notify=notify, settings=settings, progress=progress)
+    )
+    log.info("ingest.refresh_started", extra={"notify": notify, "forced": force})
+    return await _build_status(session, state="running", reason="sweep started")
+
+
+@router.get("/ingest/status", response_model=IngestStatusOut, tags=["ingest"])
+async def ingest_status(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> IngestStatusOut:
+    """Poll target for a refresh in flight; `state` leaves 'running' when done."""
+    return await _build_status(session)
 
 
 @router.get("/ingest/runs", tags=["ingest"])

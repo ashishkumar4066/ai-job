@@ -85,6 +85,20 @@ def ashby_company() -> CompanyConfig:
 
 
 @pytest.fixture(autouse=True)
+async def _reset_ingest_tracker() -> AsyncIterator[None]:
+    """The tracker is a process-wide singleton; stop one test's run leaking
+    'a sweep is already in progress' into the next."""
+    from app.ingest_state import tracker
+
+    yield
+    await tracker.cancel()
+    tracker._task = None
+    tracker._progress = None
+    tracker._result = None
+    tracker._error = None
+
+
+@pytest.fixture(autouse=True)
 def _reset_adapter_registry() -> Iterator[None]:
     """Undo any test-local adapter registrations."""
     from app import adapters

@@ -1,4 +1,4 @@
-import type { Facets, Filters, Health, JobDetail, JobList } from "./types";
+import type { Facets, Filters, Health, IngestStatus, JobDetail, JobList } from "./types";
 
 /**
  * In dev, Vite proxies /api -> http://127.0.0.1:8000 (see vite.config.ts).
@@ -16,12 +16,16 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, params?: URLSearchParams): Promise<T> {
+async function request<T>(
+  path: string,
+  params?: URLSearchParams,
+  init?: RequestInit,
+): Promise<T> {
   const url = params?.toString() ? `${BASE}${path}?${params}` : `${BASE}${path}`;
 
   let response: Response;
   try {
-    response = await fetch(url, { headers: { Accept: "application/json" } });
+    response = await fetch(url, { headers: { Accept: "application/json" }, ...init });
   } catch {
     throw new ApiError(
       "Can't reach the API. Is the backend running on port 8000?",
@@ -59,6 +63,10 @@ export function filtersToParams(
   for (const department of filters.departments) params.append("department", department);
   if (filters.remote !== null) params.set("remote", String(filters.remote));
   params.set("status", filters.status);
+  // Only ever sent as `true`. Omitting it means "no eligibility constraint",
+  // which is what showing everything requires — sending `false` would invert
+  // the filter and show *only* the rejects.
+  if (filters.matchesPrefs) params.set("eligibility_pass", "true");
   if (filters.postedWithinDays !== null) {
     params.set("posted_within_days", String(filters.postedWithinDays));
   }
@@ -79,23 +87,33 @@ export const api = {
 
   job: (id: number) => request<JobDetail>(`/jobs/${id}`),
 
-  facets: (lastVisit: string | null, status: string) => {
+  // `matchesPrefs` is passed through so the dropdown counts describe the rows
+  // actually on screen. Without it a company with 40 postings and no eligible
+  // ones still offers "Acme (40)", which selects and yields an empty table.
+  facets: (lastVisit: string | null, status: string, matchesPrefs: boolean) => {
     const params = new URLSearchParams({ status });
     if (lastVisit) params.set("since", lastVisit);
+    if (matchesPrefs) params.set("eligibility_pass", "true");
     return request<Facets>("/meta/facets", params);
   },
 
   health: () => request<Health>("/health"),
 
-  runIngest: async (): Promise<{ new: number; fetched: number; errored: number }> => {
-    const response = await fetch(`${BASE}/ingest/run?notify=false`, { method: "POST" });
-    if (!response.ok) {
-      const message =
-        response.status === 409
-          ? "An ingest run is already in progress."
-          : `Ingest failed (${response.status})`;
-      throw new ApiError(message, response.status);
-    }
-    return response.json();
+  /**
+   * Ask the backend to sweep every board.
+   *
+   * The freshness window is entirely the backend's: it skips the sweep when the
+   * last run finished less than 24h ago, so the boards are contacted once a day
+   * no matter how often the page is opened. A rolling window needs nothing from
+   * this side — no clock, no timezone — so nothing is sent. `force` is the
+   * manual refresh button, and is the only way to sweep inside the window.
+   * Returns as soon as the run *starts* — follow it with `ingestStatus`.
+   */
+  refreshIngest: (options?: { force?: boolean }) => {
+    const params = new URLSearchParams();
+    if (options?.force) params.set("force", "true");
+    return request<IngestStatus>("/ingest/refresh", params, { method: "POST" });
   },
+
+  ingestStatus: () => request<IngestStatus>("/ingest/status"),
 };

@@ -49,22 +49,24 @@ export function MultiSelect({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className={cx(
-          "flex h-9 items-center gap-2 rounded-xl border px-3 text-[13px] font-medium transition-all duration-150",
+          "flex h-9 items-center gap-2 rounded-xl border px-3 text-[13px] font-medium transition-all duration-200",
           count > 0
-            ? "border-accent/40 bg-accent-soft text-accent-text"
-            : "border-edge bg-panel text-muted hover:bg-panel-hover hover:text-ink",
+            ? "border-accent/45 bg-accent-soft text-accent-text shadow-[0_4px_14px_-8px_var(--accent-glow)]"
+            : open
+              ? "border-edge-strong bg-panel-hover text-ink"
+              : "border-edge bg-panel text-muted hover:border-edge-strong hover:bg-panel-hover hover:text-ink",
         )}
       >
         <span className="opacity-70">{icon}</span>
         <span>{label}</span>
         {count > 0 && (
-          <span className="grid size-[18px] place-items-center rounded-full bg-accent text-[10px] font-semibold text-white">
+          <span className="grid size-[18px] place-items-center rounded-full bg-gradient-to-b from-accent to-accent-strong text-[10px] font-semibold text-white shadow-[inset_0_1px_0_oklch(100%_0_0_/_0.3)]">
             {count}
           </span>
         )}
         <ChevronDown
           size={14}
-          className={cx("opacity-50 transition-transform duration-200", open && "rotate-180")}
+          className={cx("opacity-50 transition-transform duration-300", open && "rotate-180")}
         />
       </button>
 
@@ -100,19 +102,23 @@ export function MultiSelect({
                     onClick={() => onToggle(option.value)}
                     className={cx(
                       "group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors",
-                      active ? "bg-accent-soft text-ink" : "text-muted hover:bg-panel-hover hover:text-ink",
+                      active
+                        ? "bg-accent-soft text-ink"
+                        : "text-muted hover:bg-panel-hover hover:text-ink",
                     )}
                   >
                     <span
                       className={cx(
-                        "grid size-[16px] shrink-0 place-items-center rounded-[5px] border transition-all",
-                        active ? "border-accent bg-accent text-white" : "border-edge-strong",
+                        "grid size-[16px] shrink-0 place-items-center rounded-[5px] border transition-all duration-200",
+                        active
+                          ? "border-accent bg-gradient-to-b from-accent to-accent-strong text-white shadow-[0_2px_8px_-3px_var(--accent-glow)]"
+                          : "border-edge-strong group-hover:border-accent/50",
                       )}
                     >
                       {active && <Check size={11} strokeWidth={3} />}
                     </span>
                     <span className="flex-1 truncate">{option.value}</span>
-                    <span className="shrink-0 font-mono text-[11px] text-subtle">
+                    <span className="shrink-0 font-mono text-[11px] text-subtle tabular-nums">
                       {option.count}
                     </span>
                   </button>

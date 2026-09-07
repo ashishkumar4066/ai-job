@@ -55,17 +55,53 @@ export function compactNumber(value: number): string {
   return new Intl.NumberFormat("en", { notation: "compact" }).format(value);
 }
 
+/**
+ * Render a posting's pay, or `null` when it stated none.
+ *
+ * `null` is the common case — about 84% of postings carry no salary at all —
+ * and the caller is expected to render that as a visible "Not stated" rather
+ * than an empty cell, because an unstated salary never disqualifies a job and
+ * so has to be legible as a real state rather than a gap.
+ *
+ * Amounts are shown as-is in their source currency. The backend annualizes and
+ * converts to INR only to compare against the pay floor; doing that here would
+ * put a guessed number in front of the user and invite trusting it.
+ */
+export function formatSalary(
+  min: number | null,
+  max: number | null,
+  currency: string | null,
+): string | null {
+  const lo = min ?? max;
+  if (lo == null || !currency) return null;
+
+  const money = (value: number) =>
+    new Intl.NumberFormat("en", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+      notation: value >= 10_000 ? "compact" : "standard",
+    }).format(value);
+
+  const hi = max ?? null;
+  return hi != null && hi !== lo ? `${money(lo)} – ${money(hi)}` : money(lo);
+}
+
 export function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 /** Brand hue (see --brand-hue in index.css) and how far chips may stray from it. */
-const BRAND_HUE = 264;
-const HUE_SPREAD = 70;
+const BRAND_HUE = 295;
+const HUE_SPREAD = 38;
 
 /**
  * Deterministic chip colour per company, constrained to a band around the brand
  * hue so the list stays one palette instead of a rainbow.
+ *
+ * The band is deliberately narrow: at the old +/-35 degrees the chips reached
+ * blue and teal, which is a third and fourth colour in a palette that has two.
+ * +/-19 keeps every chip recognisably violet while still separating companies.
  */
 export function companyHue(name: string): number {
   let hash = 0;

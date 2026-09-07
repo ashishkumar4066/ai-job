@@ -26,15 +26,30 @@ companies:
   - company: Himalayas
     ats: himalayas
     careers_url: https://himalayas.app/jobs
-    # Two sweeps, because no single query covers both halves of the location
-    # rule: `worldwide=true` returns unrestricted roles, `country=India`
-    # returns India-eligible ones. Results merge into one board and are
-    # de-duplicated by job, so a job matching both is stored once.
+    # Two axes, multiplied out. No single query covers both halves of the
+    # location rule (`worldwide=true` returns unrestricted roles, `country=India`
+    # returns India-eligible ones), and `q` matches one phrase at a time.
+    # Results merge into one board and are de-duplicated by job, so a job
+    # matching several queries is stored once.
+    #
+    # `seniority` is the API-level half of the role filter — entry-level rows
+    # are never fetched, so they cost nothing to store or re-score. Verified
+    # live: the param accepts a comma-separated list, and the vocabulary is
+    # exactly `Entry-level | Mid-level | Senior | Manager | Director |
+    # Executive`. Anything else 400s (`Lead` does), so do not invent values.
+    # `q=software engineer` returns totalCount 300 unfiltered, 274 with
+    # `Mid-level,Senior` — the cut is real but small here, because the deeper
+    # noise is role families, which `q` already constrains.
     queries:
-      - { worldwide: "true", q: "software engineer" }
-      - { worldwide: "true", q: "backend engineer" }
-      - { country: "India", q: "software engineer" }
-      - { country: "India", q: "backend engineer" }
+      - { worldwide: "true", q: "software engineer", seniority: "Mid-level,Senior" }
+      - { worldwide: "true", q: "backend engineer", seniority: "Mid-level,Senior" }
+      - { worldwide: "true", q: "frontend engineer", seniority: "Mid-level,Senior" }
+      - { worldwide: "true", q: "full stack engineer", seniority: "Mid-level,Senior" }
+      - { worldwide: "true", q: "machine learning engineer", seniority: "Mid-level,Senior" }
+      - { country: "India", q: "software engineer", seniority: "Mid-level,Senior" }
+      - { country: "India", q: "backend engineer", seniority: "Mid-level,Senior" }
+      - { country: "India", q: "frontend engineer", seniority: "Mid-level,Senior" }
+      - { country: "India", q: "full stack engineer", seniority: "Mid-level,Senior" }
 
   - company: Remotive
     ats: remotive
@@ -42,6 +57,45 @@ companies:
     # Remotive's terms ask for at most ~4 calls/day. The scheduler runs hourly,
     # so the cap is enforced here. Do not lower this.
     min_fetch_interval_minutes: 360
+
+  # Wellfound (ex-AngelList) has no public API and blocks plain HTTP clients,
+  # so its adapter renders pages through Firecrawl and reads the Next.js data
+  # blob the page ships to itself. Needs FIRECRAWL_API_KEY; without it this
+  # source is skipped and the rest of the run is unaffected.
+  #
+  # `queries` are URL *paths*, not API params:
+  #   {role: X, remote: true}   -> /role/r/X          (remote-only feed)
+  #   {role: X, location: Y}    -> /role/l/X/Y
+  #   {location: Y}             -> /location/Y
+  # All three forms are permitted by robots.txt. `/search` is NOT — it is both
+  # disallowed and the logged-in personalised feed, so it is never used.
+  - company: Wellfound
+    ats: wellfound
+    careers_url: https://wellfound.com/jobs
+    #
+    # The role slugs mirror `role.families` in `filters.yaml`. `mobile-engineer`
+    # was dropped with the `mobile` family — fetching a feed whose every row the
+    # role rule then rejects spends a Firecrawl credit per page to store noise.
+    queries:
+      - { role: software-engineer, remote: true }
+      - { role: backend-engineer, remote: true }
+      - { role: fullstack-engineer, remote: true }
+      - { role: machine-learning-engineer, remote: true }
+      - { role: frontend-engineer, remote: true }
+      # India-located roles the remote-only feeds miss. Every one is scoped to
+      # a role slug (`/role/l/{role}/india`).
+      #
+      # The bare `{location: india}` sweep that used to sit here is GONE. It
+      # returned every posting in India regardless of role, which is how
+      # "Part-Time E-commerce Assistant" and "Software Development Intern"
+      # entered the DB — the role rule flagged both correctly, but they still
+      # cost a Firecrawl credit to fetch and a row to store. Scoping by role
+      # means they are never requested.
+      - { role: software-engineer, location: india }
+      - { role: backend-engineer, location: india }
+      - { role: fullstack-engineer, location: india }
+      - { role: frontend-engineer, location: india }
+      - { role: machine-learning-engineer, location: india }
 
   # --- Curated ATS: India-friendly, USD-paying, remote-first ---------------
   - company: GitLab

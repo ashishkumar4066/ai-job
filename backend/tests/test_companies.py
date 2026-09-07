@@ -73,6 +73,7 @@ class TestShippedConfig:
             "ashby",
             "himalayas",
             "remotive",
+            "wellfound",
             "playwright",
         }
 

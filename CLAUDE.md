@@ -87,6 +87,9 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
   (Browse feed `GET https://himalayas.app/jobs/api` returns max 20/page; page it with `offset`.)
 - `RemotiveAdapter` → `GET https://remotive.com/api/remote-jobs?category=software-dev` (free, no key). Secondary feed.
   Constraints, non-negotiable: listings are **delayed 24h**; we **must persist and display Remotive's own job URL** (it becomes `apply_url` for Remotive-sourced rows) and **attribute Remotive as the source** in the UI; **do not repost Remotive jobs to third parties**.
+- `WellfoundAdapter` → Wellfound (ex-AngelList) via **Firecrawl** (`FIRECRAWL_API_KEY`). The one source with **no public API** — `api.angel.co` is gone, and plain HTTP gets a bot challenge — so this is the principle-1 fallback. Driven by `queries` that build robots-allowed URL paths (`/role/r/{role}`, `/role/l/{role}/{loc}`, `/location/{loc}`); `/search` is disallowed and never used.
+  **Two stages, and the second is not optional.** Stage 1 reads the `__NEXT_DATA__` Apollo cache off a listing page (~37 jobs, 1 credit). Stage 2 reads schema.org JSON-LD off a detail page for candidates only, because Wellfound renders an *unstated* candidate location as "Everywhere": verified job 4627451 claimed Everywhere while its own text said "fully remotely within the United States". Trusting stage 1 alone pushes US-only roles through the India filter.
+  Compound location names (`"Mumbai, Maharashtra"`) must go through `split_location_text` before `resolve_eligibility`, or India eligibility is silently dropped.
 
 ### B. Curated ATS adapters (high-signal supplement — pre-vetted employers)
 
@@ -110,17 +113,42 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
 ### Ingestion
 
 - `ingest.py` — for each entry in `companies.yaml` / the aggregator source config: run its adapter → **eligibility filter (below)** → upsert by `source_key` (refresh `last_seen_at` + changed fields), insert new rows with `first_seen_at=now`, then mark any previously-open job for that source **not seen this run** as `closed`.
-- **New ingestion stage — eligibility + currency filter.** Runs **after `normalize`, before a job is marked active.** Retain a job as **eligible** only if BOTH hold:
-  1. **Location:** `location_eligibility` includes `IN` **OR** `worldwide` (treat `"global"` / `"anywhere"` as worldwide).
-  2. **Pay:** `salary_currency == "USD"` **OR** (`is_us_employer == true` **AND** currency unknown).
+- **New ingestion stage — eligibility filter.** Runs **after `normalize`, before a job is marked active.** Retain a job as **eligible** only if ALL FOUR hold:
+  1. **Location:** `location_eligibility` includes `IN` **OR** `worldwide` (treat `"global"` / `"anywhere"` as worldwide). This is who the employer will *hire*, not where its office is — a London or Singapore company that takes India-based remote candidates passes.
+  2. **Remote:** off by default (`require_remote: false`) — rule 1 already implies remote-from-India, and `detect_remote` under-reports badly (GitLab, an all-remote employer, returns `remote=false` on 42 rows).
+  3. **Pay:** an *unstated* salary **passes** and is surfaced in the UI as "not stated" (~84% of postings state nothing). A *stated* salary must annualize to at least `min_annual_salary_inr` (INR 20L). Any currency is acceptable above the floor; `fx_to_inr` is a static table, and `salary_period_bands` infers hourly/monthly/annual from magnitude in the **native** currency.
+  4. **Role + seniority** (`app/roles.py`): the title must name a wanted engineering family, must not be junior or leadership or non-engineering, and any *stated* years-of-experience requirement must fall in `role.min_years .. role.max_years` (2-8). An *unstated* requirement passes, exactly as an unstated salary does.
 
   Jobs that fail are **still stored**, flagged `eligibility_pass = false` with populated `eligibility_reasons[]`. **Nothing is silently dropped** — the rules stay auditable and tunable against real data.
-- Filter config in `config/filters.yaml`:
-  ```yaml
-  allowed_locations: [IN, worldwide]
-  required_currency: USD
-  allow_us_employer_when_currency_unknown: true
-  ```
+- Filter config in `config/filters.yaml` — see the file for the full annotated block.
+
+### Rule 4 — role and seniority (`app/roles.py`)
+
+Rules 1-3 read structured fields a board hands us. Rule 4 has only the title and
+the JD prose, so it is the only rule that reads English and the only one whose
+mistakes are worth auditing. Two decisions in it are non-obvious:
+
+- **`years_required` takes the MAXIMUM stated figure, not the minimum.** A JD's
+  several year counts are a headline requirement plus narrower sub-clauses, not
+  alternatives. Palantir's "Senior Software Engineer - Observability" states
+  `5+ years professional software development`, then `2+ years ... system
+  design`, then `1+ years ... as a mentor`. Reading the minimum files a genuine
+  senior role as junior — the first cut of this module did exactly that.
+- **Every non-engineering pattern anchors on a role HEAD**, never a lone
+  qualifier. Matching a bare `product` rejects "Software Engineer, AI Product";
+  a bare `partner` rejects "Senior Staff Software Engineer - App and Partner
+  Ecosystem". A qualifier names the team a role serves, not the role.
+- A wanted title does **not** rescue an out-of-range bar: Databricks asks 12-15
+  years for Staff and Stripe asks 10, so those are dropped even though `staff`
+  is a wanted family (116 rows). Staff roles stating ≤8 years, or stating
+  nothing, still pass.
+- `associate` is deliberately **not** a junior marker — "Associate Staff
+  Engineer" is Nagarro's real mid-level IC title (21 live rows).
+- **The API-level half lives in `companies.yaml`.** Himalayas is swept with
+  `seniority=Mid-level,Senior`, so entry-level rows are never fetched. Verified
+  live: the param takes a comma-separated list and its vocabulary is exactly
+  `Entry-level | Mid-level | Senior | Manager | Director | Executive` —
+  anything else 400s (`Lead` does).
 - **New-job detection:** rows whose `first_seen_at == this run`.
 - `notify/telegram.py` — send each new job (title, company, location, apply_url). **Only `eligibility_pass = true` jobs trigger alerts.**
 - `scheduler.py` — APScheduler job running ingest every N minutes (configurable).
@@ -134,7 +162,7 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
 - Delete a job from a fixture and re-run → that job flips to `closed`, not deleted.
 - Force one adapter to throw → the other adapters still complete and persist.
 - A genuinely new fixture job appears in `GET /jobs` and triggers **exactly one** Telegram message.
-- All five live source endpoints verified: a short script prints fetched count per source and it matches that source's public listing page.
+- All live source endpoints verified: a short script (`python -m scripts.verify_endpoints`) prints fetched count per source and it matches that source's public listing page.
 - Himalayas and Remotive adapters each return normalized jobs from a **recorded fixture**, and the shared interface handles both with **no downstream special-casing**.
 - A worldwide-eligible USD job **passes** the filter; a US-candidates-only remote job is flagged `eligibility_pass = false` with a **location** reason.
 - **Only** `eligibility_pass = true` jobs generate alerts.
@@ -155,13 +183,48 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
 - Job detail drawer: full JD, metadata grid, apply on the canonical ATS URL, `j`/`k` to move between jobs. Drawer state is in the URL (`?job=`), so back closes it.
 - "New since last visit" via a `localStorage` timestamp, frozen for the session so rows don't stop being new while you read them.
 - Glassmorphism design system, dark/light themes (no FOUC), keyboard shortcuts (`/` `j` `k` `r` `t` `esc`), skeletons, empty states, responsive to 430px.
+- **Fetch-on-load, once a day.** Opening the dashboard sweeps every board before
+  anything renders: `/jobs` and `/meta/facets` are `enabled`-gated on the sweep,
+  so a stale snapshot is never requested, let alone shown. A sync screen lists
+  each board as it goes (queued → fetching → done/failed/skipped) — a bare
+  spinner for 90s reads as broken, a board list does not.
+  - The window is a **rolling 24h** (`REFRESH_WINDOW_HOURS`), not a calendar
+    day. A calendar boundary called a 23:00 sweep stale at 00:05; making it the
+    browser's local midnight fixed the timezone half but not that. Rolling also
+    means the browser contributes nothing to the decision — no clock, no
+    timezone, no `fresh_since` on the wire.
+  - Freshness is decided server-side from `max(ingest_runs.finished_at)`, so it
+    survives a cleared browser and counts scheduler runs too. A run killed
+    mid-sweep leaves `finished_at` NULL and correctly does **not** count.
+    Second visit inside the window: no board is contacted, dashboard renders in
+    ~0.3s. Only the refresh button / `r` (`force=true`) sweeps early.
+  - **The scheduler shares the same gate.** Its interval is a *check* cadence,
+    not a sweep cadence — it wakes hourly, and runs only if the window has
+    lapsed. Before this it swept every 60 minutes outright, so the boards were
+    hit all day regardless of the dashboard's rule, and a reload landing during
+    a tick was held behind the whole sweep.
+  - A failed first sweep keeps the gate shut and offers *retry* or *show stored
+    jobs* — the user chooses, rather than getting an empty table under a banner.
 
 **API added for the dashboard** (`backend/app/api.py`):
 
-- `GET /meta/facets` — filter options with counts + headline stats, so dropdowns only ever offer values that have jobs.
+- `GET /meta/facets` — filter options with counts + headline stats, so dropdowns only ever offer values that have jobs. Takes `eligibility_pass` for the same reason `/jobs` does: the dashboard hides ineligible rows by default, and a facet list built without the gate offers companies whose every posting is filtered out, so selecting one yields an empty table. `totals.eligible` / `totals.ineligible` are deliberately computed *without* the gate — inside it they would report `ineligible = 0` and describe the query rather than the board.
+- **The dashboard's default view is gated on `eligibility_pass = true`** (`matchesPrefs` in the filter state, the "My roles / All roles" toggle). This is the one filter that hides rows by default. Ingest still stores every posting and flags the misses, so "All roles" is the way back to the full board and the drawer shows `eligibility_reasons` for any row. Serialized as `prefs=0` only when switched OFF, so default links stay short.
 - `q_scope=all|title` on `/jobs` — full-JD search is inherently noisy (`q=engineer` matched all 400 Anthropic jobs via boilerplate); title scope is the precise option.
 - `first_seen_after` on `/jobs` — backs the "new since last visit" filter.
 - `department` is now an exact, repeatable filter (was a single substring match).
+- `POST /ingest/refresh` — the page-load entry point. Skips the sweep when the
+  last finished run is inside the window (`fresh_since` overrides the default
+  cutoff); otherwise starts the run **in the background** and returns at once.
+  Holding an HTTP request open for a real sweep (Wellfound alone can take a
+  minute) yields a proxy timeout, not an answer. Freshness is checked **before**
+  the in-progress check, so a load that lands during a scheduler tick paints
+  from storage instead of waiting; only a caller with no fresh data attaches to
+  the running sweep, and never queues a second one. `force=true` bypasses the
+  window (the manual refresh button and `r`).
+- `GET /ingest/status` — poll target with live per-source progress. Backed by
+  `app/ingest_state.py`, which also owns the lock the scheduler, the manual
+  trigger and the background refresh all share.
 
 **Acceptance criteria — all met:**
 

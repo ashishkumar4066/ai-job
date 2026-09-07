@@ -21,7 +21,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import httpx
 from sqlalchemy import func, select
@@ -32,6 +32,7 @@ from app.companies import load_companies
 from app.config import Settings, get_settings
 from app.db import session_scope
 from app.eligibility import FilterConfig, evaluate, load_filters
+from app.ingest_state import RunProgress
 from app.models import IngestRun, JobPosting, utcnow
 from app.normalize import content_hash
 from app.notify import Notifier, build_notifier
@@ -66,7 +67,7 @@ class FetchOutcome:
 
 
 def _apply_eligibility(postings: list[NormalizedJob], filters: FilterConfig) -> int:
-    """The eligibility + currency stage: after normalize, before persist.
+    """The eligibility stage: after normalize, before persist.
 
     Mutates each posting in place with the verdict and its reasons. Nothing is
     dropped — a failing job is stored flagged, so the rules stay auditable and
@@ -76,8 +77,12 @@ def _apply_eligibility(postings: list[NormalizedJob], filters: FilterConfig) -> 
     for posting in postings:
         result = evaluate(
             location_eligibility=posting.location_eligibility,
+            remote=posting.remote,
+            salary_min=posting.salary_min,
+            salary_max=posting.salary_max,
             salary_currency=posting.salary_currency,
-            is_us_employer=posting.is_us_employer,
+            title=posting.title,
+            description_text=posting.description_text,
             filters=filters,
         )
         posting.eligibility_pass = result.passed
@@ -91,11 +96,16 @@ async def _fetch_one(
     client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
     filters: FilterConfig,
+    progress: RunProgress | None = None,
 ) -> FetchOutcome:
     """Fetch + normalize + filter one board. Never raises — errors are returned."""
     started = time.perf_counter()
     adapter: BaseAdapter | None = None
     async with semaphore:
+        # Marked here, not before the semaphore: a UI blocked on this run should
+        # see which boards are genuinely in flight, not which are queued.
+        if progress is not None:
+            progress.mark(company.source_id, "fetching")
         try:
             adapter = get_adapter(company.ats, client=client)
             raws = await adapter.fetch(company)
@@ -355,6 +365,42 @@ def _is_throttled(
     return (now - previous).total_seconds() < interval * 60
 
 
+async def last_completed_run_at(session: AsyncSession) -> datetime | None:
+    """When the newest *finished* sweep ended, or None if none ever has.
+
+    Interrupted runs leave `finished_at` NULL and deliberately do not count —
+    half a sweep is not fresh data, and a killed dev server should not make the
+    boards look freshly fetched for the rest of the day.
+    """
+    return await session.scalar(select(func.max(IngestRun.finished_at)))
+
+
+def refresh_cutoff(settings: Settings | None = None) -> datetime:
+    """Stored data finishing before this instant is stale and due a sweep.
+
+    A rolling window, not a calendar boundary: whoever asks, the answer is
+    "was the last sweep less than N hours ago", so the gate behaves the same
+    at 23:00 as at 00:05 and needs nothing from the caller's timezone.
+    """
+    settings = settings or get_settings()
+    return utcnow() - timedelta(hours=settings.refresh_window_hours)
+
+
+async def is_fresh(
+    session: AsyncSession, cutoff: datetime | None = None, *, settings: Settings | None = None
+) -> datetime | None:
+    """The last finished run if it is inside the window, else None.
+
+    Returning the timestamp rather than a bool lets callers report *why* they
+    skipped without a second query.
+    """
+    last_finished = await last_completed_run_at(session)
+    if last_finished is None:
+        return None
+    boundary = cutoff or refresh_cutoff(settings)
+    return last_finished if last_finished >= boundary else None
+
+
 async def run_ingest(
     *,
     companies: list[CompanyConfig] | None = None,
@@ -362,13 +408,21 @@ async def run_ingest(
     client: httpx.AsyncClient | None = None,
     settings: Settings | None = None,
     notify: bool = True,
+    progress: RunProgress | None = None,
 ) -> IngestRunOut:
-    """Execute one full ingest run and return its per-source summary."""
+    """Execute one full ingest run and return its per-source summary.
+
+    `progress` is an optional live sink for a caller that is showing the run to
+    a human while it happens; it never affects the outcome.
+    """
     settings = settings or get_settings()
     run_ts = utcnow()
 
     if companies is None:
         companies = load_companies(settings.companies_file)
+
+    if progress is not None:
+        progress.begin(companies)
 
     log.info(
         "ingest.run_start",
@@ -380,6 +434,9 @@ async def run_ingest(
         session.add(run)
         await session.flush()
         run_id = run.id
+
+    if progress is not None:
+        progress.run_id = run_id
 
     if not companies:
         log.warning("ingest.no_sources")
@@ -413,7 +470,8 @@ async def run_ingest(
             "ingest.filters",
             extra={
                 "allowed_locations": filters.allowed_locations,
-                "required_currency": filters.required_currency,
+                "require_remote": filters.require_remote,
+                "min_annual_salary_inr": filters.min_annual_salary_inr,
             },
         )
 
@@ -421,6 +479,13 @@ async def run_ingest(
             last_fetch = await _last_fetch_times(session)
 
         results: list[SourceResultOut] = []
+
+        def record(result: SourceResultOut) -> SourceResultOut:
+            results.append(result)
+            if progress is not None:
+                progress.apply(result)
+            return result
+
         due: list[CompanyConfig] = []
         for company in companies:
             if _is_throttled(company, last_fetch, run_ts):
@@ -431,7 +496,7 @@ async def run_ingest(
                         "min_interval_minutes": company.min_fetch_interval_minutes,
                     },
                 )
-                results.append(
+                record(
                     SourceResultOut(
                         source_id=company.source_id,
                         company=company.company,
@@ -444,12 +509,15 @@ async def run_ingest(
 
         semaphore = asyncio.Semaphore(settings.ingest_concurrency)
         outcomes = await asyncio.gather(
-            *(_fetch_one(company, http_client, semaphore, filters) for company in due)
+            *(
+                _fetch_one(company, http_client, semaphore, filters, progress)
+                for company in due
+            )
         )
 
         for outcome in outcomes:
             if not outcome.ok:
-                results.append(
+                record(
                     SourceResultOut(
                         source_id=outcome.company.source_id,
                         company=outcome.company.company,
@@ -466,13 +534,13 @@ async def run_ingest(
             # back the boards that already succeeded.
             try:
                 async with session_scope() as session:
-                    results.append(await _persist_source(session, outcome, run_ts, settings))
+                    record(await _persist_source(session, outcome, run_ts, settings))
             except Exception as exc:
                 log.exception(
                     "ingest.persist_failed",
                     extra={"source_id": outcome.company.source_id},
                 )
-                results.append(
+                record(
                     SourceResultOut(
                         source_id=outcome.company.source_id,
                         company=outcome.company.company,
