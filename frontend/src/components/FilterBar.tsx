@@ -2,22 +2,34 @@ import {
   ArrowDownWideNarrow,
   Building2,
   CalendarClock,
+  ShieldCheck,
   ChevronDown,
   Layers,
   Server,
   Sparkles,
   X,
 } from "lucide-react";
-import type { Facets, Filters, SortField } from "@/lib/types";
+import { MAX_POSTING_AGE_DAYS, type Facets, type Filters, type SortField } from "@/lib/types";
 import { titleCase } from "@/lib/format";
 import { MultiSelect } from "./MultiSelect";
 import { Segmented, VDivider, cx } from "./primitives";
 
+const VALIDITY_OPTIONS: { label: string; value: number | null; title: string }[] = [
+  { label: "Any", value: null, title: "No validity filter" },
+  { label: "50+", value: 50, title: "Hide clearly suspect postings" },
+  { label: "70+", value: 70, title: "Hide stale and questionable postings" },
+  { label: "85+", value: 85, title: "Only postings with no validity penalties worth noting" },
+];
+
+// 30d is the default: a posting older than a month is no use. "Any time"
+// stays available so the funnel's "−N posted earlier" can be inspected.
 const POSTED_OPTIONS: { value: number | null; label: string }[] = [
-  { value: null, label: "Any time" },
   { value: 1, label: "24h" },
+  { value: 3, label: "3d" },
   { value: 7, label: "7d" },
+  { value: 14, label: "14d" },
   { value: 30, label: "30d" },
+  { value: null, label: "Any" },
 ];
 
 const SORT_OPTIONS: { value: SortField; label: string }[] = [
@@ -138,6 +150,28 @@ export function FilterBar({
           ))}
         </div>
 
+        {/* Minimum validity. Rows the validity pass has not scored always
+            pass, so raising this never empties a board that has not been
+            checked yet — it only ever hides rows with a known-bad verdict. */}
+        <div className="inline-flex items-center gap-0.5 rounded-xl border border-edge bg-panel p-0.5 text-[13px] shadow-[inset_0_1px_2px_oklch(0%_0_0_/_0.06)]">
+          <ShieldCheck size={14} className="mx-1.5 shrink-0 text-subtle" />
+          {VALIDITY_OPTIONS.map((option) => (
+            <button
+              key={option.label}
+              onClick={() => onPatch({ minValidity: option.value })}
+              title={option.title}
+              className={cx(
+                "rounded-[10px] px-2.5 py-1.5 font-medium transition-all duration-200",
+                filters.minValidity === option.value
+                  ? "bg-gradient-to-b from-accent to-accent-strong text-white shadow-[inset_0_1px_0_oklch(100%_0_0_/_0.25),0_3px_12px_-4px_var(--accent-glow)]"
+                  : "text-muted hover:bg-panel-hover hover:text-ink",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
         {hasLastVisit && (
           <button
             onClick={() => onPatch({ newOnly: !filters.newOnly })}
@@ -230,10 +264,20 @@ export function FilterBar({
           {filters.status !== "open" && (
             <Chip label={`Status: ${filters.status}`} onRemove={() => onPatch({ status: "open" })} />
           )}
-          {filters.postedWithinDays !== null && (
+          {filters.postedWithinDays !== MAX_POSTING_AGE_DAYS && (
             <Chip
-              label={`Posted ≤ ${filters.postedWithinDays}d`}
-              onRemove={() => onPatch({ postedWithinDays: null })}
+              label={
+                filters.postedWithinDays === null
+                  ? "Posted any time"
+                  : `Posted ≤ ${filters.postedWithinDays}d`
+              }
+              onRemove={() => onPatch({ postedWithinDays: MAX_POSTING_AGE_DAYS })}
+            />
+          )}
+          {filters.minValidity !== null && (
+            <Chip
+              label={`Validity ≥ ${filters.minValidity}`}
+              onRemove={() => onPatch({ minValidity: null })}
             />
           )}
           {filters.newOnly && (

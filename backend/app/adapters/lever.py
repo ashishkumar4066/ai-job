@@ -22,6 +22,8 @@ from app.normalize import (
     build_source_key,
     clean_locations,
     detect_remote,
+    employment_type,
+    workplace_type,
     html_to_text,
     parse_epoch_millis,
 )
@@ -128,6 +130,8 @@ class LeverAdapter(BaseAdapter):
             remote=detect_remote(
                 locations, title=posting.text, workplace_type=posting.workplaceType
             ),
+            employment_type=employment_type(categories.commitment),
+            workplace_type=workplace_type(posting.workplaceType),
             department=department,
             apply_url=apply_url,
             description_html=description_html,

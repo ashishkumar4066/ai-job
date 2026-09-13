@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
@@ -13,18 +14,43 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.adapters import supported_ats
 from app.companies import CompanyConfigError, load_companies
 from app.config import get_settings
-from app.db import get_session
+from app.db import get_session, session_scope
+from app.funnel import jobs_funnel, matches_funnel
 from app.ingest import is_fresh, run_ingest
 from app.ingest_state import RunProgress, tracker
-from app.models import IngestRun, JobPosting, utcnow
+from app.job_filters import IS_REMOTE, JobFilterSet, apply_job_filters
+from app.llm_runner import LLMProgress, LLMRunResult, run_llm_screen
+from app.llm_runner import tracker as llm_tracker
+from app.match_runner import MatchRunResult, run_matching
+from app.matching import get_weights
+from app.models import IngestRun, JobMatch, JobPosting, utcnow
+from app.normalize import detect_currency, find_usd_pay
+from app.pipeline import LLMEstimate, PipelineProgress, estimate_llm_pass, run_pipeline
+from app.pipeline import tracker as pipeline_tracker
+from app.prefs import Prefs, PrefsError, TransferPrefs, get_prefs, load_prefs, save_prefs
+from app.profile import ProfileError, get_profile
+from app.shortlist import HARD_MAX_READS, reasons_excluded, shortlist_clause
+from app.validation_runner import ValidityRunResult, run_validation
 from app.schemas import (
     IngestRunOut,
     IngestStatusOut,
     JobDetailOut,
     JobListOut,
     JobOut,
+    LLMEstimateOut,
+    LLMRunOut,
+    LLMStatusOut,
+    MatchListOut,
+    MatchOut,
+    MatchRunOut,
+    PipelineStatusOut,
+    PrefsIn,
+    PrefsOut,
+    ProfileOut,
     SourceProgressOut,
+    ValidityRunOut,
 )
+from app.prefs import EMPLOYMENT_TYPES, WORKPLACE_TYPES
 
 log = logging.getLogger(__name__)
 
@@ -38,64 +64,55 @@ _ingest_lock = tracker.lock
 SortField = Literal["posted_at", "first_seen_at", "last_seen_at", "title", "company"]
 
 
-def _apply_filters(
-    stmt: Select,
-    *,
-    company: list[str] | None = None,
-    ats: list[str] | None = None,
-    remote: bool | None = None,
-    status: str = "open",
-    q: str | None = None,
-    q_scope: str = "all",
-    department: list[str] | None = None,
-    posted_within_days: int | None = None,
-    first_seen_after: datetime | None = None,
-    eligibility_pass: bool | None = None,
-) -> Select:
-    """Shared filter builder so /jobs and /meta/facets stay consistent.
+def _apply_filters(stmt: Select, *, status: str = "open", **filters: object) -> Select:
+    """`job_filters.apply_job_filters` with keyword arguments.
 
-    If these ever diverge, facet counts stop matching the result list — the
-    quickest way to make a dashboard feel broken.
+    Kept as a thin shim so the facet queries below read as they did; the one
+    implementation lives in `app/job_filters.py`, shared with the funnel and
+    with the scope sent to Matches.
     """
-    if status != "any":
-        stmt = stmt.where(JobPosting.status == status)
-    if company:
-        stmt = stmt.where(
-            or_(*(func.lower(JobPosting.company) == c.strip().lower() for c in company))
-        )
-    if ats:
-        stmt = stmt.where(JobPosting.ats.in_([a.strip().lower() for a in ats]))
-    if remote is not None:
-        stmt = stmt.where(JobPosting.remote.is_(remote))
-    if eligibility_pass is not None:
-        stmt = stmt.where(JobPosting.eligibility_pass.is_(eligibility_pass))
-    if department:
-        stmt = stmt.where(
-            or_(*(func.lower(JobPosting.department) == d.strip().lower() for d in department))
-        )
-    if posted_within_days is not None:
-        cutoff = utcnow() - timedelta(days=posted_within_days)
-        stmt = stmt.where(JobPosting.posted_at.is_not(None), JobPosting.posted_at >= cutoff)
-    if first_seen_after is not None:
-        moment = (
-            first_seen_after
-            if first_seen_after.tzinfo
-            else first_seen_after.replace(tzinfo=UTC)
-        )
-        stmt = stmt.where(JobPosting.first_seen_at > moment)
-    if q:
-        pattern = f"%{q.strip()}%"
-        if q_scope == "title":
-            stmt = stmt.where(JobPosting.title.ilike(pattern))
-        else:
-            stmt = stmt.where(
-                or_(
-                    JobPosting.title.ilike(pattern),
-                    JobPosting.company.ilike(pattern),
-                    JobPosting.description_text.ilike(pattern),
-                )
-            )
-    return stmt
+    # Callers pass query parameters straight through, so an absent list filter
+    # arrives as None; the model's defaults are the empty list.
+    given = {key: value for key, value in filters.items() if value is not None}
+    return apply_job_filters(stmt, JobFilterSet(**given), status=status)
+
+
+def job_filter_params(
+    company: Annotated[list[str] | None, Query(description="Repeatable company filter")] = None,
+    ats: Annotated[list[str] | None, Query(description="Repeatable ATS filter")] = None,
+    remote: bool | None = None,
+    q: Annotated[str | None, Query(description="Keyword search")] = None,
+    q_scope: Annotated[
+        Literal["all", "title"],
+        Query(description="'all' searches title+company+description; 'title' is precise"),
+    ] = "all",
+    department: Annotated[list[str] | None, Query(description="Repeatable")] = None,
+    posted_within_days: Annotated[int | None, Query(ge=1, le=365)] = None,
+    first_seen_after: Annotated[
+        datetime | None, Query(description="Only jobs discovered after this instant")
+    ] = None,
+    eligibility_pass: Annotated[
+        bool | None,
+        Query(description="true = only jobs that cleared the eligibility filter"),
+    ] = None,
+    min_validity: Annotated[
+        int | None,
+        Query(ge=0, le=100, description="Minimum validity score; unscored rows always pass"),
+    ] = None,
+) -> JobFilterSet:
+    """The Jobs tile's filters from query parameters — one parser for every route."""
+    return JobFilterSet(
+        company=company or [],
+        ats=ats or [],
+        remote=remote,
+        q=q,
+        q_scope=q_scope,
+        department=department or [],
+        posted_within_days=posted_within_days,
+        first_seen_after=first_seen_after,
+        eligibility_pass=eligibility_pass,
+        min_validity=min_validity,
+    )
 
 
 @router.get("/health", tags=["meta"])
@@ -135,42 +152,14 @@ async def list_companies() -> list[dict[str, object]]:
 @router.get("/jobs", response_model=JobListOut, tags=["jobs"])
 async def list_jobs(
     session: Annotated[AsyncSession, Depends(get_session)],
-    company: Annotated[list[str] | None, Query(description="Repeatable company filter")] = None,
-    ats: Annotated[list[str] | None, Query(description="Repeatable ATS filter")] = None,
-    remote: bool | None = None,
+    filters: Annotated[JobFilterSet, Depends(job_filter_params)],
     status: Annotated[Literal["open", "closed", "any"], Query()] = "open",
-    q: Annotated[str | None, Query(description="Keyword search")] = None,
-    q_scope: Annotated[
-        Literal["all", "title"],
-        Query(description="'all' searches title+company+description; 'title' is precise"),
-    ] = "all",
-    department: Annotated[list[str] | None, Query(description="Repeatable")] = None,
-    posted_within_days: Annotated[int | None, Query(ge=1, le=365)] = None,
-    first_seen_after: Annotated[
-        datetime | None, Query(description="Only jobs discovered after this instant")
-    ] = None,
-    eligibility_pass: Annotated[
-        bool | None,
-        Query(description="true = only jobs that cleared the eligibility filter"),
-    ] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
     sort: SortField = "first_seen_at",
     order: Literal["asc", "desc"] = "desc",
 ) -> JobListOut:
-    stmt = _apply_filters(
-        select(JobPosting),
-        company=company,
-        ats=ats,
-        remote=remote,
-        status=status,
-        q=q,
-        q_scope=q_scope,
-        department=department,
-        posted_within_days=posted_within_days,
-        first_seen_after=first_seen_after,
-        eligibility_pass=eligibility_pass,
-    )
+    stmt = apply_job_filters(select(JobPosting), filters, status=status)
 
     total = await session.scalar(
         select(func.count()).select_from(stmt.subquery())
@@ -236,7 +225,7 @@ async def facets(
         eligibility_pass=eligibility_pass,
     )
     total = await session.scalar(base) or 0
-    remote_count = await session.scalar(base.where(JobPosting.remote.is_(True))) or 0
+    remote_count = await session.scalar(base.where(IS_REMOTE)) or 0
 
     # Deliberately NOT derived from `base`. With the gate on, `base` already
     # excludes every ineligible row, so counting within it would report
@@ -276,11 +265,44 @@ async def facets(
     )
     last_ingest = await session.scalar(select(func.max(IngestRun.finished_at)))
 
+    # Validity bands, so the `min validity` slider can show what each step
+    # would cost before you move it. Computed with the same gate as the rest
+    # of the facets; `unscored` is reported separately because those rows pass
+    # every threshold and would otherwise look like high-validity rows.
+    validity_base = _apply_filters(
+        select(func.count()).select_from(JobPosting),
+        status=status,
+        eligibility_pass=eligibility_pass,
+    )
+    validity_bands: dict[str, int] = {}
+    for label, lo, hi in (
+        ("solid", 85, 101),
+        ("ok", 70, 85),
+        ("questionable", 50, 70),
+        ("suspect", 0, 50),
+    ):
+        validity_bands[label] = (
+            await session.scalar(
+                validity_base.where(
+                    JobPosting.validity_score.is_not(None),
+                    JobPosting.validity_score >= lo,
+                    JobPosting.validity_score < hi,
+                )
+            )
+            or 0
+        )
+    validity_unscored = (
+        await session.scalar(validity_base.where(JobPosting.validity_score.is_(None))) or 0
+    )
+
     return {
         "companies": await grouped(JobPosting.company),
         "ats": await grouped(JobPosting.ats),
         "departments": await grouped(JobPosting.department),
         "currencies": await grouped(JobPosting.salary_currency),
+        "employment_types": await grouped(JobPosting.employment_type),
+        "workplace_types": await grouped(JobPosting.workplace_type),
+        "validity": {"bands": validity_bands, "unscored": validity_unscored},
         "totals": {
             "matching": total,
             "open": open_total,
@@ -293,6 +315,21 @@ async def facets(
         },
         "last_ingest_finished_at": last_ingest,
     }
+
+
+@router.get("/meta/funnel", tags=["meta"])
+async def jobs_funnel_route(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    filters: Annotated[JobFilterSet, Depends(job_filter_params)],
+    status: Annotated[Literal["open", "closed", "any"], Query()] = "open",
+) -> dict[str, object]:
+    """How the board narrows to the Jobs list, one active filter at a time.
+
+    Takes exactly the `/jobs` filter parameters, and the final step's count is
+    the `/jobs` total for the same query — both are built by
+    `job_filters.apply_job_filters`.
+    """
+    return await jobs_funnel(session, filters, status=status)
 
 
 @router.get("/jobs/{job_id}", response_model=JobDetailOut, tags=["jobs"])
@@ -458,3 +495,668 @@ async def list_runs(
         }
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Matching — fit against `profile.yaml`
+#
+# Ranking only. Nothing here drops a job: `eligibility_pass` is the binary
+# gate, and this is an ordering on top of it. See `app/matching.py` for why
+# that separation is load-bearing rather than stylistic.
+# ---------------------------------------------------------------------------
+_match_lock = asyncio.Lock()
+
+
+def _band_of(score: int) -> str:
+    if score >= 80:
+        return "excellent"
+    if score >= 65:
+        return "strong"
+    if score >= 50:
+        return "moderate"
+    if score >= 35:
+        return "weak"
+    return "poor"
+
+
+@router.get("/profile", response_model=ProfileOut, tags=["matching"])
+async def read_profile() -> ProfileOut:
+    """The profile every job is scored against."""
+    try:
+        p = get_profile()
+    except ProfileError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return ProfileOut(
+        version=p.version,
+        full_name=p.identity.full_name,
+        location=p.identity.location,
+        total_years=p.seniority.total_years,
+        ai_years=p.seniority.ai_years,
+        current_title=p.seniority.current_title,
+        target_titles=p.seniority.target_titles,
+        skills=p.skills,
+        gaps=p.gaps,
+        min_annual_inr=p.compensation.min_annual_inr,
+        needs_sponsorship=p.work_authorization.needs_sponsorship,
+        resume_files=p.resume_files,
+    )
+
+
+@router.post("/matches/score", response_model=MatchRunOut, tags=["matching"])
+async def score_matches(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    force: Annotated[bool, Query(description="Re-score even unchanged postings")] = False,
+) -> MatchRunOut:
+    """Run the deterministic scoring pass. No LLM calls, no network."""
+    if _match_lock.locked():
+        raise HTTPException(status_code=409, detail="a scoring pass is already running")
+    async with _match_lock:
+        result = await run_matching(session, force=force)
+    out = _match_run_out(result)
+    assert out is not None
+    return out
+
+
+def _llm_run_out(result: LLMRunResult) -> LLMRunOut:
+    return LLMRunOut(
+        profile_version=result.profile_version,
+        routed=result.routed,
+        cached=result.cached,
+        screened=result.screened,
+        failed=result.failed,
+        skipped_budget=result.skipped_budget,
+        requests=result.requests,
+        tokens=result.tokens,
+        bands=result.bands,
+        statuses=result.statuses,
+        blocked=result.blocked,
+        duration_ms=result.duration_ms,
+        error=result.error,
+    )
+
+
+async def _llm_background(
+    force: bool, limit: int | None, job_ids: list[int] | None = None
+) -> None:
+    """Own session, own lock — the pass outlives the request that started it."""
+    async with llm_tracker.lock:
+        llm_tracker.progress = LLMProgress()
+        try:
+            async with session_scope() as session:
+                llm_tracker.result = await run_llm_screen(
+                    session,
+                    force=force,
+                    limit=limit,
+                    job_ids=job_ids,
+                    progress=llm_tracker.progress,
+                )
+        except Exception as exc:  # pragma: no cover - defensive
+            llm_tracker.progress.error = f"{type(exc).__name__}: {exc}"
+            llm_tracker.progress.finished_at = utcnow()
+            log.exception("llm.run_failed")
+
+
+def _start_llm(force: bool, limit: int | None, job_ids: list[int] | None = None) -> None:
+    if not get_settings().llm_configured:
+        raise HTTPException(status_code=503, detail="the LLM provider key is not configured")
+    if llm_tracker.busy:
+        raise HTTPException(status_code=409, detail="a deep read is already running")
+    asyncio.create_task(_llm_background(force, limit, job_ids))
+
+
+@router.post("/matches/llm", response_model=LLMStatusOut, tags=["matching"])
+async def start_llm_screen(
+    force: Annotated[bool, Query(description="Re-read rows already cached")] = False,
+    limit: Annotated[
+        int | None,
+        Query(ge=1, le=HARD_MAX_READS, description="Read at most N shortlisted jobs (≤ 50)"),
+    ] = None,
+) -> LLMStatusOut:
+    """Deep-read the shortlist in the background and return at once.
+
+    Reads at most `limit` jobs (default `LLM_MAX_REQUESTS_PER_RUN`, 15; never
+    more than 50), best score first. Poll `GET /matches/llm/status`.
+    """
+    _start_llm(force, limit)
+    # Let the task claim the lock before the caller can poll and be told "idle".
+    await asyncio.sleep(0)
+    return await llm_status()
+
+
+@router.post("/matches/{job_id}/llm", response_model=LLMStatusOut, tags=["matching"])
+async def start_llm_one(
+    job_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    force: Annotated[bool, Query(description="Re-read even if already read")] = False,
+) -> LLMStatusOut:
+    """Deep-read ONE job on request — one call, shortlist or not.
+
+    This is where low-confidence jobs go: they no longer reach the automatic
+    pass, but any ranked job can be read from its drawer when it is worth it.
+    """
+    try:
+        version = get_profile().version
+    except ProfileError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    exists = await session.scalar(
+        select(func.count())
+        .select_from(JobMatch)
+        .where(JobMatch.job_id == job_id, JobMatch.profile_version == version)
+    )
+    if not exists:
+        raise HTTPException(
+            status_code=404,
+            detail="this job is not ranked yet — only open, eligible jobs can be deep-read",
+        )
+    _start_llm(force, 1, [job_id])
+    await asyncio.sleep(0)
+    return await llm_status()
+
+
+@router.get("/matches/llm/estimate", response_model=LLMEstimateOut, tags=["matching"])
+async def llm_estimate(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    limit: Annotated[int | None, Query(ge=1, le=HARD_MAX_READS)] = None,
+) -> LLMEstimateOut:
+    """Re-price the deep read for a different cap — the confirm dialog's picker."""
+    out = _estimate_out(await estimate_llm_pass(session, limit=limit))
+    assert out is not None
+    return out
+
+
+@router.get("/matches/llm/status", response_model=LLMStatusOut, tags=["matching"])
+async def llm_status() -> LLMStatusOut:
+    progress = llm_tracker.progress
+    if progress.running:
+        state: Literal["idle", "running", "done"] = "running"
+    elif progress.finished_at is not None:
+        state = "done"
+    else:
+        state = "idle"
+    return LLMStatusOut(
+        state=state,
+        total=progress.total,
+        done=progress.done,
+        cached=progress.cached,
+        failed=progress.failed,
+        tokens=progress.tokens,
+        current=progress.current,
+        started_at=progress.started_at,
+        finished_at=progress.finished_at,
+        error=progress.error,
+        result=_llm_run_out(llm_tracker.result) if llm_tracker.result else None,
+    )
+
+
+def _format_usd(value: float) -> str:
+    return f"${value / 1000:,.0f}K" if value >= 10_000 else f"${value:,.0f}"
+
+
+def _usd_pay(job: JobPosting) -> dict[str, str]:
+    """`usd_pay` / `usd_pay_source` for a match row, most trustworthy first.
+
+    The board's structured salary wins, then the deep read's verbatim quote,
+    then a pattern match over the JD prose. Non-USD pay is ignored on purpose:
+    this finding answers "does this pay in dollars", not "is pay stated".
+    """
+    if (job.salary_currency or "").upper() == "USD" and (job.salary_min or job.salary_max):
+        amounts = sorted({v for v in (job.salary_min, job.salary_max) if v})
+        return {"usd_pay": " – ".join(_format_usd(v) for v in amounts), "usd_pay_source": "board"}
+
+    quoted = (job.llm_validity or {}).get("compensation_text") or ""
+    if quoted and detect_currency(quoted) == "USD":
+        return {"usd_pay": " ".join(quoted.split())[:80], "usd_pay_source": "deep_read"}
+
+    found = find_usd_pay(job.description_text)
+    return {"usd_pay": found, "usd_pay_source": "jd"} if found else {}
+
+
+@router.get("/matches", response_model=MatchListOut, tags=["matching"])
+async def list_matches(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    company: Annotated[list[str] | None, Query()] = None,
+    ats: Annotated[list[str] | None, Query()] = None,
+    department: Annotated[list[str] | None, Query()] = None,
+    q: Annotated[str | None, Query()] = None,
+    q_scope: Annotated[Literal["all", "title"], Query()] = "all",
+    posted_within_days: Annotated[int | None, Query(ge=1, le=365)] = None,
+    min_score: Annotated[int, Query(ge=0, le=100)] = 0,
+    band: Annotated[str | None, Query(description="excellent|strong|moderate|weak|poor")] = None,
+    shortlisted: Annotated[
+        bool | None, Query(description="true = only jobs on the LLM shortlist")
+    ] = None,
+    hide_blocked: Annotated[
+        bool, Query(description="true = drop jobs whose JD states a hard blocker")
+    ] = False,
+    match_prefs: Annotated[
+        bool,
+        Query(
+            description=(
+                "true (default) = only rows that cleared the preference gate. "
+                "false shows every scored row, preference misses included."
+            )
+        ),
+    ] = True,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    sort: Annotated[Literal["score", "posted_at", "first_seen_at"], Query()] = "score",
+    order: Literal["asc", "desc"] = "desc",
+) -> MatchListOut:
+    """Scored jobs, best fit first, composing with the existing /jobs filters."""
+    try:
+        version = get_profile().version
+    except ProfileError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    stmt = (
+        select(JobMatch, JobPosting)
+        .join(JobPosting, JobMatch.job_id == JobPosting.id)
+        .where(JobMatch.profile_version == version)
+    )
+    # Matching only ever scores open+eligible rows, but re-applying the gate
+    # keeps the list correct when a job closes between the pass and the read.
+    stmt = _apply_filters(
+        stmt,
+        company=company,
+        ats=ats,
+        department=department,
+        q=q,
+        q_scope=q_scope,
+        posted_within_days=posted_within_days,
+        status="open",
+        eligibility_pass=True,
+    )
+    # The scope sent from Jobs bounds this list even with preference misses
+    # shown: "Include jobs that miss my preferences" means misses among the
+    # jobs I sent, not the whole eligible board. Applied live, like the funnel.
+    try:
+        transfer = get_prefs().transfer
+    except PrefsError:
+        transfer = None
+    if transfer is not None:
+        stmt = apply_job_filters(stmt, transfer.filters)
+    # The preference gate. On by default, which is the whole shape of this
+    # surface: Jobs shows the entire board, Matches shows what I asked for.
+    # It reads the STORED per-row verdict rather than re-deriving the filter
+    # here, because the exact rules need the FX table and the JD prose — see
+    # `prefs_gate.sql_clause` on why the SQL form is only a superset.
+    if match_prefs:
+        stmt = stmt.where(JobMatch.prefs_pass.is_(True))
+    threshold = get_weights().llm_threshold
+    if min_score:
+        stmt = stmt.where(JobMatch.score >= min_score)
+
+    # Blocked jobs among everything above, counted BEFORE "hide blocked" is
+    # applied — it is the number that toggle would remove.
+    blocked_count = (
+        await session.scalar(
+            select(func.count()).select_from(stmt.where(JobMatch.blocked.is_(True)).subquery())
+        )
+        or 0
+    )
+    if hide_blocked:
+        stmt = stmt.where(JobMatch.blocked.is_(False))
+    if shortlisted is not None:
+        gate = shortlist_clause(threshold)
+        stmt = stmt.where(gate if shortlisted else ~gate)
+
+    # Band chips, the "All" count and the shortlist count are computed BEFORE
+    # the band is applied. A band is a selection within the list, not a filter
+    # of it: counting after it made every chip collapse to the selected band's
+    # size ("All 3", "LLM shortlist 1") the moment Excellent was clicked.
+    band_rows = await session.execute(
+        stmt.with_only_columns(JobMatch.score, shortlist_clause(threshold))
+    )
+    bands: dict[str, int] = {}
+    on_shortlist = 0
+    total_all = 0
+    for score, is_short in band_rows:
+        total_all += 1
+        key = _band_of(score)
+        bands[key] = bands.get(key, 0) + 1
+        if is_short:
+            on_shortlist += 1
+
+    if band:
+        lo, hi = {
+            "excellent": (80, 101),
+            "strong": (65, 80),
+            "moderate": (50, 65),
+            "weak": (35, 50),
+            "poor": (0, 35),
+        }.get(band.lower(), (0, 101))
+        stmt = stmt.where(JobMatch.score >= lo, JobMatch.score < hi)
+
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+
+    col = JobMatch.score if sort == "score" else getattr(JobPosting, sort)
+    stmt = stmt.order_by(col.desc() if order == "desc" else col.asc())
+    if sort == "score":
+        # Ties on score fall back to recency, so an arbitrary id order does not
+        # bury a fresh posting under a months-old one with the same number.
+        stmt = stmt.order_by(JobPosting.posted_at.desc())
+    stmt = stmt.order_by(JobPosting.id.desc()).limit(limit).offset(offset)
+
+    rows = (await session.execute(stmt)).all()
+    items = [
+        MatchOut(
+            job=JobOut.model_validate(job),
+            score=m.score,
+            band=_band_of(m.score),
+            subscores=m.subscores or {},
+            match_reasons=m.match_reasons or [],
+            confident=m.confident,
+            matched_skills=m.matched_skills or [],
+            missing_stacks=m.missing_stacks or [],
+            years_required=m.years_required,
+            shortlisted=not (excluded := reasons_excluded(m, job, threshold)),
+            shortlist_reasons=excluded,
+            blockers=m.blockers or [],
+            llm_used=m.llm_used,
+            llm_read=m.llm_read_for(job),
+            llm_verdict=m.llm_verdict,
+            profile_version=m.profile_version,
+            prefs_pass=m.prefs_pass,
+            prefs_reasons=m.prefs_reasons or [],
+            prefs_version=m.prefs_version or "",
+            **_usd_pay(job),
+            scored_at=m.scored_at,
+        )
+        for m, job in rows
+    ]
+    return MatchListOut(
+        total=total,
+        limit=limit,
+        offset=offset,
+        profile_version=version,
+        items=items,
+        bands=bands,
+        shortlisted=on_shortlist,
+        total_all=total_all,
+        blocked=blocked_count,
+    )
+
+
+@router.get("/matches/funnel", tags=["matching"])
+async def matches_funnel_route(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, object]:
+    """How the eligible board narrows to the LLM shortlist, step by step.
+
+    Read from the verdicts the last Run stored. `stale` is true when those
+    verdicts were computed under different preferences — Run to refresh.
+    """
+    try:
+        version = get_profile().version
+        prefs = get_prefs()
+    except (ProfileError, PrefsError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return await matches_funnel(
+        session,
+        profile_version=version,
+        prefs=prefs,
+        threshold=get_weights().llm_threshold,
+        default_reads=get_settings().llm_max_requests_per_run,
+    )
+
+
+@router.put("/matches/transfer", response_model=PrefsOut, tags=["matching"])
+async def transfer_to_matches(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    filters: JobFilterSet,
+) -> PrefsOut:
+    """"Send to Matches": make these Jobs filters the scope Matches works on.
+
+    Stored in `prefs.yaml` as the filters themselves, re-applied on every Run,
+    so jobs a later sweep adds under the same filters flow in and closed ones
+    drop out. Applied by the next `POST /matches/run` — free, no LLM calls.
+    """
+    try:
+        current = load_prefs()
+    except PrefsError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    count = await session.scalar(
+        apply_job_filters(select(func.count()).select_from(JobPosting), filters)
+    ) or 0
+    stored = save_prefs(
+        current.model_copy(
+            update={
+                "transfer": TransferPrefs(
+                    filters=filters, count_at_transfer=count, transferred_at=utcnow()
+                )
+            }
+        )
+    )
+    log.info("matches.transfer", extra={"count": count, "version": stored.version})
+    return _prefs_out(stored)
+
+
+@router.delete("/matches/transfer", response_model=PrefsOut, tags=["matching"])
+async def clear_transfer() -> PrefsOut:
+    """Forget the scope sent from Jobs — Matches works on every eligible job again."""
+    try:
+        current = load_prefs()
+    except PrefsError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return _prefs_out(save_prefs(current.model_copy(update={"transfer": None})))
+
+
+# ---------------------------------------------------------------------------
+# Preferences — "what do I want out of the board right now?"
+#
+# A third config layer, and the API keeps the three straight:
+#   filters.yaml -> eligibility, at ingest. Deliberately NOT editable here:
+#                   it gates Telegram alerts and is doctrine, not mood.
+#   profile.yaml -> who I am. `GET /profile`.
+#   prefs.yaml   -> this. Cheap, re-runnable, gates the Matches list only.
+# ---------------------------------------------------------------------------
+def _prefs_out(prefs: Prefs) -> PrefsOut:
+    return PrefsOut(
+        version=prefs.version,
+        work=prefs.work.model_dump(),
+        experience=prefs.experience.model_dump(),
+        compensation=prefs.compensation.model_dump(),
+        validity=prefs.validity.model_dump(),
+        freshness=prefs.freshness.model_dump(),
+        scope=prefs.scope.model_dump(),
+        transfer=(
+            {
+                **prefs.transfer.model_dump(mode="json"),
+                "labels": prefs.transfer.filters.describe(),
+            }
+            if prefs.transfer
+            else None
+        ),
+        include_unstated=prefs.include_unstated,
+        updated_at=prefs.updated_at,
+        workplace_options=list(WORKPLACE_TYPES),
+        employment_options=list(EMPLOYMENT_TYPES),
+    )
+
+
+@router.get("/prefs", response_model=PrefsOut, tags=["matching"])
+async def read_prefs() -> PrefsOut:
+    """Current match preferences, plus the vocabularies the editor renders."""
+    try:
+        return _prefs_out(load_prefs())
+    except PrefsError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.put("/prefs", response_model=PrefsOut, tags=["matching"])
+async def write_prefs(payload: PrefsIn) -> PrefsOut:
+    """Merge a partial preferences write into `prefs.yaml` and return it.
+
+    A **merge**, not a replace: the editor saves one section at a time, and a
+    replace would silently reset every section the client did not send.
+
+    `prefs.yaml` on disk stays the source of truth — this writes the file
+    (atomically) rather than keeping preferences in the database, so
+    hand-editing stays a first-class path exactly as it is for `profile.yaml`.
+
+    Saving does NOT re-score, and cannot need to: preferences select rows,
+    they never change a score. The new verdict is applied by the next
+    `POST /matches/run`, which is free and which the UI calls next anyway.
+    """
+    try:
+        current = load_prefs()
+    except PrefsError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    merged = current.model_dump(exclude={"updated_at"})
+    for section in ("work", "experience", "compensation", "validity", "freshness", "scope"):
+        incoming = getattr(payload, section)
+        if incoming is not None:
+            merged[section] = {**merged.get(section, {}), **incoming}
+    if payload.include_unstated is not None:
+        merged["include_unstated"] = payload.include_unstated
+
+    try:
+        candidate = Prefs(**merged)
+    except Exception as exc:  # noqa: BLE001 - the message names the bad value
+        raise HTTPException(status_code=422, detail=f"invalid preferences: {exc}") from exc
+
+    stored = save_prefs(candidate)
+    log.info("prefs.updated", extra={"version": stored.version})
+    return _prefs_out(stored)
+
+
+# ---------------------------------------------------------------------------
+# The Matches "Run" pipeline: validity -> ranking -> a costed estimate.
+# Never the deep read; see `app/pipeline.py`.
+# ---------------------------------------------------------------------------
+def _validity_out(result: ValidityRunResult | None) -> ValidityRunOut | None:
+    if result is None:
+        return None
+    return ValidityRunOut(
+        considered=result.considered,
+        scored=result.scored,
+        unchanged=result.unchanged,
+        suspect=result.suspect,
+        duplicates=result.duplicates,
+        llm_applied=result.llm_applied,
+        bands=result.bands,
+        reasons=result.reasons,
+        duration_ms=result.duration_ms,
+        error=result.error,
+    )
+
+
+def _estimate_out(est: LLMEstimate | None) -> LLMEstimateOut | None:
+    if est is None:
+        return None
+    return LLMEstimateOut(
+        routed=est.routed,
+        cached=est.cached,
+        pending=est.pending,
+        cap=est.cap,
+        over_cap=est.over_cap,
+        est_tokens=est.est_tokens,
+        est_minutes=est.est_minutes,
+        requests=est.requests,
+        token_cap=est.token_cap,
+        token_cap_period=est.token_cap_period,
+        tokens_used=est.tokens_used,
+        cap_budget_pct=est.cap_budget_pct,
+        fits_in_cap=est.fits_in_cap,
+        provider=est.provider,
+        model=est.model,
+        configured=est.configured,
+        note=est.note,
+    )
+
+
+def _match_run_out(result: MatchRunResult | None) -> MatchRunOut | None:
+    if result is None:
+        return None
+    return MatchRunOut(
+        profile_version=result.profile_version,
+        considered=result.considered,
+        in_transfer=result.in_transfer,
+        scored=result.scored,
+        updated=result.updated,
+        skipped=result.skipped,
+        shortlisted=result.shortlisted,
+        blocked=result.blocked,
+        low_validity=result.low_validity,
+        low_confidence=result.low_confidence,
+        bands=result.bands,
+        duration_ms=result.duration_ms,
+        error=result.error,
+        prefs_version=result.prefs_version,
+        matching_prefs=result.matching_prefs,
+    )
+
+
+def _pipeline_out(p: PipelineProgress) -> PipelineStatusOut:
+    return PipelineStatusOut(
+        stage=p.stage,
+        started_at=p.started_at,
+        finished_at=p.finished_at,
+        error=p.error,
+        profile_version=p.profile_version,
+        prefs_version=p.prefs_version,
+        validity=_validity_out(p.validity),
+        ranking=_match_run_out(p.ranking),
+        estimate=_estimate_out(p.estimate),
+    )
+
+
+async def _pipeline_background(force: bool) -> None:
+    """Own session, own lock — the run outlives the request that started it."""
+    async with pipeline_tracker.lock:
+        pipeline_tracker.progress = PipelineProgress()
+        try:
+            async with session_scope() as session:
+                await run_pipeline(
+                    session, force=force, progress=pipeline_tracker.progress
+                )
+        except Exception as exc:  # pragma: no cover - defensive
+            pipeline_tracker.progress.stage = "failed"
+            pipeline_tracker.progress.error = f"{type(exc).__name__}: {exc}"
+            pipeline_tracker.progress.finished_at = utcnow()
+            log.exception("pipeline.failed")
+
+
+@router.post("/matches/run", response_model=PipelineStatusOut, tags=["matching"])
+async def start_pipeline(
+    force: Annotated[bool, Query(description="Re-score even unchanged postings")] = False,
+) -> PipelineStatusOut:
+    """Run validity + ranking in the background, then price the deep read.
+
+    Returns immediately; poll `GET /matches/run/status`. The two passes are
+    ~22s of CPU combined, which is past the point where holding an HTTP
+    request open is honest — and the dashboard already knows how to poll a
+    background job from the ingest sweep.
+
+    This never starts the deep read. It hands back what the deep read would
+    cost, and `POST /matches/llm` is the separate, explicit confirmation.
+    """
+    if pipeline_tracker.busy:
+        raise HTTPException(status_code=409, detail="a run is already in progress")
+    asyncio.create_task(_pipeline_background(force))
+    # Let the task claim the lock before the caller can poll and see "idle".
+    await asyncio.sleep(0)
+    return _pipeline_out(pipeline_tracker.progress)
+
+
+@router.get("/matches/run/status", response_model=PipelineStatusOut, tags=["matching"])
+async def pipeline_status() -> PipelineStatusOut:
+    return _pipeline_out(pipeline_tracker.progress)
+
+
+@router.post("/validity/run", response_model=ValidityRunOut, tags=["validation"])
+async def run_validity(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    force: Annotated[bool, Query(description="Rewrite even unchanged verdicts")] = False,
+) -> ValidityRunOut:
+    """The validity pass on its own. Free, no network, ~12s for 6,317 rows.
+
+    Synchronous because it is short and has no external dependency. The
+    Matches pipeline runs the same function as its first stage; this exists
+    for the Jobs tile, which wants validity badges without ranking anything.
+    """
+    result = await run_validation(session, force=force)
+    out = _validity_out(result)
+    assert out is not None  # run_validation always returns a result
+    return out

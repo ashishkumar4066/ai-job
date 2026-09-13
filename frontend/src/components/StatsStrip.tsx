@@ -42,7 +42,10 @@ export function StatsStrip({
       <Stat
         index={2}
         icon={<Globe2 size={14} />}
-        label="Remote"
+        // Counted over every posting date, unlike the funnel below, which
+        // applies the date window — say so rather than show two "remote"
+        // numbers that silently disagree.
+        label="Remote, any date"
         value={totals?.remote}
         loading={loading}
       />

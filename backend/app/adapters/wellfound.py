@@ -73,6 +73,7 @@ from app.geo import WORLDWIDE, country_code, resolve_eligibility, split_location
 from app.normalize import (
     build_source_key,
     clean_locations,
+    employment_type,
     html_to_text,
     parse_epoch_millis,
     parse_iso_datetime,
@@ -519,6 +520,16 @@ class WellfoundAdapter(BaseAdapter):
             title=listing.title.strip(),
             locations=clean_locations(listing.locationNames) or ["Remote"],
             remote=bool(listing.remote or remote_kind in {"REMOTE", "ONSITE_OR_REMOTE"}),
+            employment_type=employment_type(listing.jobType),
+            # `remoteConfig.kind` is the board's own claim; ONSITE_OR_REMOTE
+            # is a choice the candidate gets, so it reads as remote here.
+            workplace_type=(
+                "remote"
+                if remote_kind in {"REMOTE", "ONSITE_OR_REMOTE"} or listing.remote
+                else "onsite"
+                if remote_kind == "ONSITE"
+                else None
+            ),
             department=listing.primaryRoleTitle,
             apply_url=apply_url,
             description_html=description_html,

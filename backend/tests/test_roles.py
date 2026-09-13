@@ -83,6 +83,18 @@ def test_years_does_not_leap_across_a_sentence() -> None:
         ("Staff Engineer - Platform Engineering", "staff"),
         # Startup shorthand for a full-stack engineer; enabled on purpose.
         ("Senior / Staff Product Engineer", "product_engineer"),
+        # Founding roles. The bare title matches no other family, which is the
+        # whole reason `founding_engineer` exists. Qualified variants keep
+        # matching their own family — the label differs, the verdict does not.
+        ("Founding Engineer", "founding_engineer"),
+        ("Founding Engineers", "founding_engineer"),
+        ("Founding Engineer, India (Remote)", "founding_engineer"),
+        ("Founding Engineer, Compiler / ML Systems", "founding_engineer"),
+        # The qualifier may lead as well as follow — both are live titles.
+        ("Robotics Founding Engineer (100 % remote)", "founding_engineer"),
+        ("Founding Backend Engineer", "backend"),
+        ("Founding AI/ML Engineer", "ai_ml"),
+        ("Founding Full-Stack Engineer", "fullstack"),
     ],
 )
 def test_wanted_titles_pass(title: str, family: str, rules: RoleRules) -> None:
@@ -162,6 +174,21 @@ def test_qualifiers_do_not_reject_engineering_roles(title: str, rules: RoleRules
         ("Data Engineer", "role_blocked"),
         ("Mobile App Engineer (Xamarin)", "role_blocked"),
         ("Mobility Tax Analyst", "role_blocked"),
+        # "Founding" is a qualifier, never a role head. These are the titles
+        # that sit next to a real founding-engineer post on the same board, and
+        # a pattern that matched the bare word would take all four.
+        ("Founding Product Designer", "role_blocked"),
+        ("Founding Enterprise Account Executive", "role_blocked"),
+        ("Technical Founder", "role_blocked"),
+        ("Founding Engineer - Head of Platform", "role_too_senior"),
+        # All three were admitted by a `founding\s+(\w+\s+){0,2}engineer`
+        # pattern, and all three are live titles. The first two belong to
+        # families switched OFF in filters.yaml (mobile, data) — prefixing a
+        # title with "Founding" must not reopen a family that was closed on
+        # purpose. The third is not engineering at all.
+        ("Founding Flutter Engineer", "role_blocked"),
+        ("Founding Data Pipeline Engineer", "role_blocked"),
+        ("Founding Customer Success Engineer", "role_blocked"),
     ],
 )
 def test_unwanted_titles_are_rejected(title: str, reason_prefix: str, rules: RoleRules) -> None:

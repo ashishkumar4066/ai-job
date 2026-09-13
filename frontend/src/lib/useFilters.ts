@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DEFAULT_FILTERS, type Filters, type SortField, type SortOrder } from "./types";
-import type { SearchScope, StatusFilter } from "./types";
+import type { SearchScope, StatusFilter, ViewId } from "./types";
 
 /**
  * Filter state lives in the URL so every view is bookmarkable and shareable.
@@ -10,6 +10,7 @@ import type { SearchScope, StatusFilter } from "./types";
  */
 
 const PARAM = {
+  view: "view",
   q: "q",
   scope: "scope",
   company: "company",
@@ -20,6 +21,7 @@ const PARAM = {
   posted: "posted",
   newOnly: "new",
   matchesPrefs: "prefs",
+  minValidity: "minval",
   sort: "sort",
   order: "order",
   job: "job",
@@ -27,6 +29,13 @@ const PARAM = {
 
 const SORTS: SortField[] = ["first_seen_at", "posted_at", "title", "company", "last_seen_at"];
 const STATUSES: StatusFilter[] = ["open", "closed", "any"];
+const VIEWS: ViewId[] = ["jobs", "matches"];
+
+/** Which nav tile the URL is pointing at. Jobs is the default surface. */
+export function parseView(search: string): ViewId {
+  const view = new URLSearchParams(search).get(PARAM.view) as ViewId | null;
+  return view && VIEWS.includes(view) ? view : "jobs";
+}
 
 export function parseFilters(search: string): Filters {
   const params = new URLSearchParams(search);
@@ -38,6 +47,8 @@ export function parseFilters(search: string): Filters {
   const remote = params.get(PARAM.remote);
   const posted = params.get(PARAM.posted);
   const postedDays = posted ? Number.parseInt(posted, 10) : Number.NaN;
+  const minval = params.get(PARAM.minValidity);
+  const minValidity = minval ? Number.parseInt(minval, 10) : Number.NaN;
 
   return {
     q: params.get(PARAM.q) ?? "",
@@ -47,17 +58,32 @@ export function parseFilters(search: string): Filters {
     departments: params.getAll(PARAM.department).filter(Boolean),
     remote: remote === "true" ? true : remote === "false" ? false : null,
     status: status && STATUSES.includes(status) ? status : "open",
-    postedWithinDays: Number.isFinite(postedDays) && postedDays > 0 ? postedDays : null,
+    // Absent = the 30-day default; `posted=any` is the explicit "Any time".
+    postedWithinDays:
+      posted === "any"
+        ? null
+        : Number.isFinite(postedDays) && postedDays > 0
+          ? postedDays
+          : DEFAULT_FILTERS.postedWithinDays,
     newOnly: params.get(PARAM.newOnly) === "1",
     // Defaults ON, so its ABSENCE means on and `prefs=0` means off.
     matchesPrefs: params.get(PARAM.matchesPrefs) !== "0",
+    minValidity:
+      Number.isFinite(minValidity) && minValidity > 0 ? minValidity : null,
     sort: sort && SORTS.includes(sort) ? sort : "first_seen_at",
     order: order === "asc" ? "asc" : "desc",
   };
 }
 
-export function serializeFilters(filters: Filters, jobId: number | null): string {
+export function serializeFilters(
+  filters: Filters,
+  jobId: number | null,
+  view: ViewId = "jobs",
+): string {
   const params = new URLSearchParams();
+
+  // Default view stays out of the URL, so /?q=rust keeps meaning the job list.
+  if (view !== "jobs") params.set(PARAM.view, view);
 
   if (filters.q.trim()) {
     params.set(PARAM.q, filters.q.trim());
@@ -68,11 +94,12 @@ export function serializeFilters(filters: Filters, jobId: number | null): string
   for (const value of filters.departments) params.append(PARAM.department, value);
   if (filters.remote !== null) params.set(PARAM.remote, String(filters.remote));
   if (filters.status !== DEFAULT_FILTERS.status) params.set(PARAM.status, filters.status);
-  if (filters.postedWithinDays !== null) {
-    params.set(PARAM.posted, String(filters.postedWithinDays));
+  if (filters.postedWithinDays !== DEFAULT_FILTERS.postedWithinDays) {
+    params.set(PARAM.posted, filters.postedWithinDays === null ? "any" : String(filters.postedWithinDays));
   }
   if (filters.newOnly) params.set(PARAM.newOnly, "1");
   if (!filters.matchesPrefs) params.set(PARAM.matchesPrefs, "0");
+  if (filters.minValidity) params.set(PARAM.minValidity, String(filters.minValidity));
   if (filters.sort !== DEFAULT_FILTERS.sort) params.set(PARAM.sort, filters.sort);
   if (filters.order !== DEFAULT_FILTERS.order) params.set(PARAM.order, filters.order);
   if (jobId !== null) params.set(PARAM.job, String(jobId));
@@ -97,11 +124,12 @@ export function countActive(filters: Filters): number {
   count += filters.departments.length;
   if (filters.remote !== null) count++;
   if (filters.status !== DEFAULT_FILTERS.status) count++;
-  if (filters.postedWithinDays !== null) count++;
+  if (filters.postedWithinDays !== DEFAULT_FILTERS.postedWithinDays) count++;
   if (filters.newOnly) count++;
   // Counted only when turned OFF: the badge tracks deviation from the
   // default view, and this filter is on in the default view.
   if (!filters.matchesPrefs) count++;
+  if (filters.minValidity) count++;
   return count;
 }
 
@@ -117,14 +145,25 @@ export function useFilters() {
 
   const filters = useMemo(() => parseFilters(search), [search]);
   const selectedJobId = useMemo(() => parseJobId(search), [search]);
+  const view = useMemo(() => parseView(search), [search]);
 
-  const write = useCallback((next: Filters, jobId: number | null, push: boolean) => {
-    const query = serializeFilters(next, jobId);
-    const url = `${window.location.pathname}${query}`;
-    // Filter changes replace history; opening a job pushes, so Esc/back closes it.
-    window.history[push ? "pushState" : "replaceState"](null, "", url);
-    setSearch(query);
-  }, []);
+  const write = useCallback(
+    (
+      next: Filters,
+      jobId: number | null,
+      push: boolean,
+      // Defaults to whatever the URL already says, so no caller has to thread
+      // the view through just to change a filter.
+      nextView: ViewId = parseView(window.location.search),
+    ) => {
+      const query = serializeFilters(next, jobId, nextView);
+      const url = `${window.location.pathname}${query}`;
+      // Filter changes replace history; opening a job pushes, so Esc/back closes it.
+      window.history[push ? "pushState" : "replaceState"](null, "", url);
+      setSearch(query);
+    },
+    [],
+  );
 
   const patch = useCallback(
     (changes: Partial<Filters>) => {
@@ -163,9 +202,21 @@ export function useFilters() {
 
   const setScope = useCallback((qScope: SearchScope) => patch({ qScope }), [patch]);
 
+  /**
+   * Switching tiles keeps the filters (come back to Jobs and your query is
+   * still there) but drops the open job, which belongs to the list behind it.
+   * Pushed, not replaced: a view change is navigation, so back returns.
+   */
+  const setView = useCallback(
+    (next: ViewId) => write(parseFilters(window.location.search), null, true, next),
+    [write],
+  );
+
   return {
     filters,
     selectedJobId,
+    view,
+    setView,
     patch,
     reset,
     selectJob,

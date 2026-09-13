@@ -50,6 +50,17 @@ companies:
       - { country: "India", q: "backend engineer", seniority: "Mid-level,Senior" }
       - { country: "India", q: "frontend engineer", seniority: "Mid-level,Senior" }
       - { country: "India", q: "full stack engineer", seniority: "Mid-level,Senior" }
+      # Founding-engineer roles, and the one pair of queries here that carries
+      # NO `seniority`. Verified live: `country=India` returns 15 unfiltered
+      # and 11 with `Mid-level,Senior`, and the four it cuts include
+      # "Founding Product Engineer" and "MedTech Founding Engineer", both
+      # tagged `Executive`. At a seed-stage startup "founding" reads as
+      # executive to a tagger, so the param cuts on the very word that makes
+      # the row worth fetching. The volume is 15 rows, so letting the local
+      # role rule judge them costs almost nothing and stays auditable —
+      # "Technical Founder" comes back in this sweep and rule 4 rejects it.
+      - { worldwide: "true", q: "founding engineer" }
+      - { country: "India", q: "founding engineer" }
 
   - company: Remotive
     ats: remotive
@@ -76,6 +87,16 @@ companies:
     # The role slugs mirror `role.families` in `filters.yaml`. `mobile-engineer`
     # was dropped with the `mobile` family — fetching a feed whose every row the
     # role rule then rejects spends a Firecrawl credit per page to store noise.
+    #
+    # There is deliberately NO `founding-engineer` slug here, even though the
+    # family is enabled in `filters.yaml`. Wellfound has no such role: the URL
+    # resolves 200 and then 302s to `/remote`, the entire unfiltered board —
+    # 11,695 jobs across 205 pages — so the query would silently spend a credit
+    # per page scraping the whole site instead of returning nothing. An
+    # unrecognized slug here fails open, not closed. Wellfound's valid role
+    # slugs are enumerated in the footer of any listing page; founding-engineer
+    # is not among them. Founding roles that name a stack
+    # ("Founding Backend Engineer") already arrive via the slugs below.
     queries:
       - { role: software-engineer, remote: true }
       - { role: backend-engineer, remote: true }

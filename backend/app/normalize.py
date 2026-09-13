@@ -146,6 +146,91 @@ def detect_remote(
     return bool(_REMOTE_PATTERNS.search(haystack))
 
 
+# Five boards write the same fact five ways, so the raw spelling is never
+# stored — this table is the only place the variants are known.
+#
+# Values are collapsed to a small vocabulary the preferences layer can filter
+# on. `permanent` deliberately maps to `full_time`: Lever uses "Permanent" and
+# "Full-time" as alternatives for the same commitment (258 and 92 live rows),
+# and treating them as distinct would make a "full-time only" preference drop
+# 92 perfectly good postings.
+_EMPLOYMENT_TYPES: dict[str, str] = {
+    "fulltime": "full_time",
+    "full time": "full_time",
+    "permanent": "full_time",
+    "regular": "full_time",
+    "parttime": "part_time",
+    "part time": "part_time",
+    "contract": "contract",
+    "contractor": "contract",
+    "contracttohire": "contract",
+    "freelance": "contract",
+    "consultant": "contract",
+    "fixedterm": "temporary",
+    "shortterm": "temporary",
+    "temporary": "temporary",
+    "temp": "temporary",
+    "seasonal": "temporary",
+    "intern": "internship",
+    "internship": "internship",
+    "apprenticeship": "internship",
+    "graduate": "internship",
+    "volunteer": "volunteer",
+    "other": None,  # Himalayas' explicit "don't know" — same as silence.
+}
+
+_WORKPLACE_TYPES: dict[str, str] = {
+    "remote": "remote",
+    "fullyremote": "remote",
+    "workfromhome": "remote",
+    "anywhere": "remote",
+    "hybrid": "hybrid",
+    "flexible": "hybrid",
+    "onsite": "onsite",
+    "inperson": "onsite",
+    "office": "onsite",
+    "inoffice": "onsite",
+}
+
+
+def _vocab_key(value: str) -> str:
+    """Fold a board's spelling to a lookup key.
+
+    "Full-time", "FullTime", "full_time" and "Full Time" all have to land on
+    the same entry, but "full time" must not collapse to "fulltime" only —
+    both spellings are listed, because stripping spaces as well as separators
+    would make `part time` and `parttime` indistinguishable from a future
+    `parttimecontract`.
+    """
+    return re.sub(r"[-_/.]+", "", value.strip().lower())
+
+
+def employment_type(value: str | None) -> str | None:
+    """Normalize a board's employment/commitment string, or None if unknown.
+
+    None is the honest answer for an unrecognized value, not a guess. It reads
+    downstream as "the board never said", which PASSES a preference — so a new
+    spelling appearing on a board degrades to "unfiltered", never to "dropped".
+    """
+    if not value:
+        return None
+    key = _vocab_key(str(value))
+    if key in _EMPLOYMENT_TYPES:
+        return _EMPLOYMENT_TYPES[key]
+    # Space-stripped second pass, so "Full Time" reaches the "fulltime" entry.
+    return _EMPLOYMENT_TYPES.get(key.replace(" ", ""))
+
+
+def workplace_type(value: str | None) -> str | None:
+    """Normalize a board's workplace string to remote | hybrid | onsite."""
+    if not value:
+        return None
+    key = _vocab_key(str(value))
+    if key in _WORKPLACE_TYPES:
+        return _WORKPLACE_TYPES[key]
+    return _WORKPLACE_TYPES.get(key.replace(" ", ""))
+
+
 def build_source_key(ats: str, company_key: str, native_id: str) -> str:
     """Identity per the spec: `{ats}:{company}:{job_id}`."""
     return f"{ats}:{company_key}:{native_id}"
@@ -242,6 +327,75 @@ def parse_salary_text(text: str | None) -> tuple[float | None, float | None, str
 
     low, high = sorted(amounts[:2])
     return low, high, currency
+
+
+# USD pay quoted in JD prose. Greenhouse publishes no structured salary at all,
+# yet US pay-transparency law puts a range like "$150,000 - $190,000" in the
+# body of many of its postings — so the board fields alone miss most USD pay.
+#
+# The sign lookbehind refuses `CA$`, `A$`, `HK$` and friends. The amount
+# lookahead refuses funding and revenue figures (`$50M`, `$1.2 billion`), and
+# `\.\d` stops `$1.5M` backtracking into a bare `$1`.
+_USD_SIGN = r"(?<![A-Za-z$])(?:US\s?\$|USD\s?\$?|\$)"
+_USD_NUM = (
+    r"(?:\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?:\s?[kK]\b)?"
+    r"(?!\d|[,.]\d|\s?(?:[mMbB]\b|million|billion|mn\b|bn\b))"
+)
+_USD_MONEY = rf"(?:{_USD_SIGN}\s?{_USD_NUM}(?:\s?USD\b)?|\b{_USD_NUM}\s?USD\b)"
+_USD_PAY_RE = re.compile(
+    rf"{_USD_MONEY}"
+    rf"(?:\s*(?:-|–|—|to)\s*(?:{_USD_MONEY}|{_USD_NUM}))?"
+    r"(?:\s?(?:/|per|an?)\s?(?:year|yr|annum|annually|hour|hr|month|mo)\b)?",
+    re.IGNORECASE,
+)
+_USD_RANGE_RE = re.compile(r"\d\s?k?\s*(?:-|–|—|to)\s*(?:US|\$|\d)", re.IGNORECASE)
+_PAY_CONTEXT_RE = re.compile(
+    r"salary|compensation|\bpay\b|\bbase\b|\bOTE\b|annual|per year|per hour|/hr|/year|wage",
+    re.IGNORECASE,
+)
+
+
+def find_usd_pay(text: str | None) -> str | None:
+    """The first USD pay figure quoted in free text, verbatim, or `None`.
+
+    Returned as the posting wrote it rather than parsed into numbers: this is
+    surfaced as a finding for a human to read, and a quoted "$60 - $80/hr" is
+    more useful than an annualization this function would have to guess.
+
+    A range qualifies on its own. A single amount needs a pay word nearby,
+    because JDs quote single dollar figures for everything — a "$1,500 learning
+    budget", a "$10,000 relocation bonus". Both need a salary-sized magnitude.
+    """
+    if not text:
+        return None
+
+    single: str | None = None
+    for match in _USD_PAY_RE.finditer(text):
+        snippet = " ".join(match.group(0).split())
+        values = [
+            v
+            for m in _AMOUNT_RE.finditer(snippet)
+            if (v := _parse_amount(m.group(1), bool(m.group(2)))) is not None
+        ]
+        if not values:
+            continue
+        lowered = snippet.lower()
+        if re.search(r"hour|hr\b", lowered):
+            floor = 15.0
+        elif re.search(r"month|mo\b", lowered):
+            floor = 2_000.0
+        else:
+            floor = 10_000.0
+        if max(values) < floor:
+            continue
+
+        if _USD_RANGE_RE.search(snippet):
+            return snippet
+        if single is None:
+            window = text[max(0, match.start() - 120) : match.end() + 40]
+            if _PAY_CONTEXT_RE.search(window):
+                single = snippet
+    return single
 
 
 def parse_iso_datetime(value: Any) -> datetime | None:

@@ -45,6 +45,7 @@ from app.geo import format_utc_offset, resolve_eligibility
 from app.normalize import (
     build_source_key,
     clean_locations,
+    employment_type,
     html_to_text,
     parse_epoch_millis,
 )
@@ -213,6 +214,10 @@ class HimalayasAdapter(BaseAdapter):
             title=job.title.strip(),
             locations=locations,
             remote=True,  # Himalayas lists remote roles exclusively.
+            employment_type=employment_type(job.employmentType),
+            # The board lists remote roles exclusively, so this is a fact
+            # about the feed rather than a field it publishes per job.
+            workplace_type="remote",
             department=next(iter(job.parentCategories or job.categories), None),
             apply_url=apply_url,
             description_html=job.description,

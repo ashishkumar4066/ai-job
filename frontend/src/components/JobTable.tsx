@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUpRight, Globe2, Loader2, MapPin, SearchX } from "lucide-react";
 import { formatLocations, formatSalary, relativeTime } from "@/lib/format";
 import type { Job } from "@/lib/types";
+import { LlmBadge, VerifierBadge } from "./CheckBadges";
 import { Badge, CompanyAvatar, EmptyState, SkeletonRow, cx } from "./primitives";
 
 const ROW_HEIGHT = 68;
@@ -11,7 +12,7 @@ const OVERSCAN = 8;
 
 /** Shared column template keeps the header and rows locked together. */
 const GRID =
-  "grid grid-cols-[minmax(0,1fr)_112px] items-center gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.1fr)_120px_96px] lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1fr)_104px_92px]";
+  "grid grid-cols-[minmax(0,1fr)_112px] items-center gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.1fr)_120px_96px] lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1fr)_132px_104px_92px]";
 
 export function JobTable({
   jobs,
@@ -83,6 +84,12 @@ export function JobTable({
         <span className="hidden md:block">Location</span>
         <span className="hidden lg:block">Department</span>
         <span className="hidden lg:block">Salary</span>
+        <span
+          className="hidden lg:block"
+          title="A tag appears only when that check ran: Validator (hover for the validity score) and LLM"
+        >
+          Checks
+        </span>
         <span className="hidden md:block">Posted</span>
         <span className="text-right">Apply</span>
       </div>
@@ -294,6 +301,16 @@ function JobRow({
             <span className="text-[12.5px] text-subtle/60 italic">Not stated</span>
           );
         })()}
+      </div>
+
+      {/* Checks — verifier and LLM, each stated as run or not run. */}
+      <div className="hidden items-center gap-1 lg:flex">
+        <VerifierBadge
+          score={job.validity_score}
+          reasons={job.validity_reasons}
+          checkedAt={job.validity_checked_at}
+        />
+        <LlmBadge read={job.llm_read} />
       </div>
 
       {/* Posted */}

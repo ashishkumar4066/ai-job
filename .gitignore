@@ -6,8 +6,13 @@
 # Local database
 *.db
 *.db-journal
+*.db.bak-*
 *.sqlite
 *.sqlite3
+
+# Personal documents. The resume is PII and has no business in git history.
+# Read from disk at runtime -- see backend/app/profile.py.
+backend/data/
 
 # Python
 .venv/

@@ -218,6 +218,8 @@ async def _persist_source(
                     description_text=posting.description_text,
                     posted_at=posting.posted_at,
                     updated_at=posting.updated_at,
+                    employment_type=posting.employment_type,
+                    workplace_type=posting.workplace_type,
                     # New-job detection keys off this being exactly the run stamp.
                     first_seen_at=run_ts,
                     last_seen_at=run_ts,
@@ -265,6 +267,14 @@ async def _persist_source(
         # The verdict is refreshed on every run regardless of `content_hash`,
         # because editing `filters.yaml` must re-decide existing rows even
         # though the posting itself never changed.
+        # Structured facts, not JD content: refreshed unconditionally and
+        # deliberately NOT part of `content_hash`. Folding them into the
+        # hash would re-stamp all 6,317 rows the first time a board starts
+        # publishing them, and re-stamping the hash invalidates every
+        # cached LLM verdict — a ~2-hour, ~440-request re-read to learn
+        # that a job is full-time.
+        row.employment_type = posting.employment_type
+        row.workplace_type = posting.workplace_type
         row.location_eligibility = posting.location_eligibility
         row.timezone_restrictions = posting.timezone_restrictions
         row.salary_min = posting.salary_min
@@ -273,6 +283,38 @@ async def _persist_source(
         row.is_us_employer = posting.is_us_employer
         row.eligibility_pass = posting.eligibility_pass
         row.eligibility_reasons = posting.eligibility_reasons
+
+    # --- A curated board that has never worked ------------------------------
+    # Distinct from the guard below, and invisible to it. That guard asks "did
+    # this board lose all its rows?", which needs rows to have existed. A
+    # board whose slug is simply wrong answers 200 with an empty list and has
+    # *never* had a row, so `open_before` is 0 and nothing fires — measured
+    # live on `ashby:deel`, which fetched 0 with no error and no warning while
+    # every other board reported normally.
+    #
+    # Only curated ATS entries qualify. The whole premise of `companies.yaml`
+    # section B is that these are pre-vetted employers with live boards, so
+    # zero is always a config bug there. An aggregator board legitimately
+    # returns nothing for a narrow query.
+    #
+    # The discriminator is the config SHAPE, not `empty_result_is_suspicious`
+    # — that flag is True for the aggregators as well, so it cannot tell the
+    # two families apart. A curated entry is keyed by `token_or_slug` and
+    # carries no `queries`; an aggregator entry is the reverse.
+    is_curated = bool(company.token_or_slug) and not company.queries
+    if not postings and not existing_rows and is_curated:
+        result.never_produced_rows = True
+        log.warning(
+            "ingest.board_never_produced_rows",
+            extra={
+                "source_id": company.source_id,
+                "token_or_slug": company.token_or_slug,
+                "reason": (
+                    "curated board fetched 0 rows and has never stored one — "
+                    "check the slug, or whether the company still uses this ATS"
+                ),
+            },
+        )
 
     # --- Closure by disappearance ------------------------------------------
     adapter_suspicious = outcome.adapter.empty_result_is_suspicious if outcome.adapter else True

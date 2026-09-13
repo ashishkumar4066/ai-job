@@ -87,6 +87,21 @@ _CITY_COUNTRIES: dict[str, str] = {
     "noida": "IN", "hyderabad": "IN", "chennai": "IN", "pune": "IN",
     "kolkata": "IN", "ahmedabad": "IN", "jaipur": "IN", "kochi": "IN",
     "chandigarh": "IN", "indore": "IN", "coimbatore": "IN", "thiruvananthapuram": "IN",
+    # US metro shorthand. Present because Greenhouse packs several cities into
+    # one `location.name` in abbreviated form — Stripe posts "SF, NYC, SEA,
+    # CHI" — and without these the whole string resolves to nothing, so the
+    # posting carries no candidate-location data at all. 613 open rows have a
+    # location string with three or more commas.
+    #
+    # `sea` in particular USED to resolve to South-East Asia via a bare
+    # three-letter region alias, so "SF, NYC, SEA, CHI" came back as
+    # {ID, KH, MY, PH, SG, TH, VN} — a US-only multi-city role tagged as
+    # ASEAN-eligible. Same failure as the lone-qualifier role patterns: a
+    # short token is an abbreviation for whichever thing the writer meant, and
+    # a US job board means the airport.
+    "sf": "US", "sfo": "US", "nyc": "US", "sea": "US", "chi": "US",
+    "la": "US", "lax": "US", "dc": "US", "atl": "US", "bos": "US",
+    "pdx": "US", "phl": "US", "aus": "US", "den": "US",
 }
 
 # Region -> member countries. See the scope note in the module docstring.
@@ -122,7 +137,11 @@ REGION_MEMBERS: dict[str, frozenset[str]] = {
     "indian subcontinent": _SOUTH_ASIA,
     "southeast asia": frozenset({"SG", "MY", "TH", "VN", "PH", "ID", "KH"}),
     "south east asia": frozenset({"SG", "MY", "TH", "VN", "PH", "ID", "KH"}),
-    "sea": frozenset({"SG", "MY", "TH", "VN", "PH", "ID", "KH"}),
+    # NO bare "sea" alias. It used to be here and it was wrong: on a US job
+    # board "SEA" is Seattle, so Stripe's "SF, NYC, SEA, CHI" resolved to
+    # {ID, KH, MY, PH, SG, TH, VN} and a US-only role claimed ASEAN
+    # eligibility. `sea -> US` now lives in `_CITY_COUNTRIES`, which is
+    # checked first. Spell the region out to mean the region.
     "europe": _EUROPE,
     "eu": _EUROPE,
     "eea": _EUROPE,
@@ -149,8 +168,15 @@ REGION_MEMBERS: dict[str, frozenset[str]] = {
 }
 
 # A token is a timezone constraint, not a place, if it looks like any of these.
+# The bare-abbreviation branch is deliberately CASE-SENSITIVE, via a scoped
+# `(?-i:)` inside an otherwise case-insensitive pattern. It exists to catch
+# "EST" / "PST" / "IST" / "CEST", and under a blanket IGNORECASE it matched any
+# three-to-five letter word ending in T — including "East". That made
+# `looks_like_timezone("South East Asia")` true, so a named REGION was filed as
+# a timezone restriction and its member countries were never resolved. A real
+# timezone abbreviation is written in capitals; an English word is not.
 _TIMEZONE_RE = re.compile(
-    r"(utc|gmt|time\s*zones?|timezones?|\b[A-Z]{2,4}T\b|\butc[+-]|\bgmt[+-])",
+    r"(utc|gmt|time\s*zones?|timezones?|(?-i:\b[A-Z]{2,4}T\b)|\butc[+-]|\bgmt[+-])",
     re.IGNORECASE,
 )
 # Splits "USA, Canada, USA timezones" / "Europe / UK" / "US | Canada", and the
@@ -264,6 +290,17 @@ def resolve_eligibility(
         if is_worldwide(token):
             add(WORLDWIDE)
             continue
+        # Region BEFORE timezone: a token that names a region we know is a
+        # region, whatever else it might look like. "South East Asia" and
+        # "Central - United States" both carry timezone-ish words, and
+        # guessing timezone first throws away membership we can actually
+        # resolve. Belt and braces alongside the case-sensitivity fix above.
+        members = region_members(token)
+        if members:
+            for member in sorted(members):
+                add(member)
+            continue
+
         if looks_like_timezone(token):
             timezones.append(token)
             continue
@@ -271,12 +308,6 @@ def resolve_eligibility(
         code = country_code(token)
         if code:
             add(code)
-            continue
-
-        members = region_members(token)
-        if members:
-            for member in sorted(members):
-                add(member)
             continue
 
         unresolved.append(token)

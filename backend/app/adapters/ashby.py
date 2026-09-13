@@ -27,6 +27,8 @@ from app.normalize import (
     build_source_key,
     clean_locations,
     detect_remote,
+    employment_type,
+    workplace_type,
     html_to_text,
     parse_iso_datetime,
 )
@@ -120,6 +122,8 @@ class AshbyAdapter(BaseAdapter):
                 workplace_type=job.workplaceType,
                 explicit=job.isRemote,
             ),
+            employment_type=employment_type(job.employmentType),
+            workplace_type=workplace_type(job.workplaceType),
             department=job.department or job.team,
             apply_url=apply_url,
             description_html=description_html,

@@ -12,8 +12,78 @@ Build in **phases, in order**. When I say `Implement Phase N`, treat that phase'
 | --- | --- | --- |
 | 1 | Aggregator (adapters, ingest, alerts, API) | ✅ Done |
 | 2A | Dashboard (browse / filter / inspect) | ✅ Done |
-| 2B | Validation layer (deterministic + LLM) | ⬜ Not started |
+| 2B | Validation layer (deterministic + LLM) | ✅ Built — only the deep read's data is incomplete (10 of ~314 in-preference routed rows read) |
+| 2C | Matches (profile fit + tailored résumé/cover letter) | 🟡 Stage 1 + Stage 2 done, plus a preferences gate, funnels, Send-to-Matches and a capped LLM shortlist; Stage 3 (documents) and profile editing not started |
 | 3 | Autofill (review-before-submit) | ⬜ Not started |
+
+### Deviation from the original 2B/2C split
+
+2C Stage 1 (`profile.yaml`) and the deterministic half of Stage 2 landed **inside
+2B**, ahead of the LLM work, because measuring the board changed the plan:
+
+- **The LLM provider is Groq, not Anthropic** (`GROQ_API_KEY`). Verified live:
+  the chat models are `openai/gpt-oss-120b`, `gpt-oss-20b`,
+  `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` — there is no Llama 3.3 70B on
+  Groq any more. Structured output needs **a `description` on every field plus
+  rubric anchors**: without them `gpt-oss-120b` answered a 0-100 scale on 0-10
+  and returned `fit_score: 6` for a good match, stably, at temperature 0.
+  Repeat runs move the number ±7.5 while the extracted evidence
+  (`gaps: ["AWS experience"]`) was identical 5/5 — so the UI shows **bands**,
+  and treats the reasons as the trustworthy output.
+- **The provider is switchable (2026-09-13):** `LLM_PROVIDER=groq|mistral|cerebras`,
+  each with its own key, model, base URL and rate-limit block in `.env`
+  (resolved in `Settings.llm`). Cerebras: `qwen-3.8-27b` by default, limited
+  six ways (requests and uncached tokens, each per minute/hour/day). Defaults:
+  300 RPM / 150K TPM (Developer tier on its model page), 27K RPH / 648K RPD /
+  9M TPH / 216M TPD (read live off the key). Its undocumented `x-ratelimit-*-{minute,hour,day}`
+  headers were verified live and are read on every call. Its strict mode rejects `maxItems`, so
+  that keyword is stripped per provider. It also defaults qwen to `reasoning_effort=high`,
+  so `low` is sent explicitly, along with `max_completion_tokens`, which it
+  books against its limits up front. The measurements below were all taken on Groq.
+- **Correction (2026-09-08): strict `json_schema` does NOT work on all three.**
+  Measured while building the pass. `gpt-oss-20b` rejects the screen schema
+  outright (HTTP 400). `gpt-oss-120b` *intermittently* generates JSON that
+  violates the schema it was given — 3 failures in 4 probe rows, then the same
+  row succeeded on retry — so it cannot be retried away cheaply. Only
+  `qwen/qwen3.8-27b` held the schema on every attempt, and it is also the
+  cheapest and the better reader: `gpt-oss-120b` scored "Software Engineer II,
+  Enterprise AI Enablement" as an *excellent* match with no gaps, where qwen
+  read it as mid-level and named the missing stacks. **`qwen/qwen3.8-27b` is
+  the default** (`GROQ_MODEL`).
+- **Correction (2026-09-13): the binding constraint is 200,000 tokens/DAY,
+  not 8,000 tokens/minute.** Groq's free plan limits each model four ways
+  (https://console.groq.com/docs/rate-limits): 30 RPM, 1K RPD, 8K TPM, 200K
+  TPD. At ~1,800 tokens a row TPD ends a pass at ~110 rows — a 424-row pass
+  is a multi-day job, not "~2 hours". The first live pass ran into it at
+  ~207k tokens and failed every row after that, because the 429 said "try
+  again in 7m32s" and the parser only read "Ns". Headers report only TPM
+  (`*-tokens`) and RPD (`*-requests`); RPM and TPD are invisible, so
+  `app/ratelimit.py` counts all four and seeds TPD from the persisted
+  `llm_usage` ledger (migration `0006`). A daily wait stops the pass cleanly
+  (resumable); minute windows are slept through; 429s without a named wait,
+  5xx and network errors use exponential backoff with jitter. The per-job
+  cost still depends on the model — on a reasoning model most of the
+  completion is reasoning: `gpt-oss-120b` costs ~3,100 tokens at
+  `reasoning_effort=low` and ~3,950 at `medium` **for an identical verdict**,
+  qwen ~1,800. One LLM call per job is not affordable across the whole board,
+  which is what forced the deterministic pass to come first.
+- **Validation and matching share one call**, with **two cache keys** —
+  `content_hash` for the validity half, `content_hash + profile_version` for
+  the fit half. One key would make a résumé edit re-bill validation for jobs
+  whose description never changed.
+
+**A note on the duplicate check 2B asks for:** measured against the live board
+it finds almost nothing. Exact `content_hash` collisions across open rows: 0.
+On the 917 eligible rows a (company, title, JD-hash) key collapses **2**. Same
+JD across different companies: **3**. Databricks' "Solutions Architect" ×23
+looks like duplication but carries 23 distinct JD hashes. It is cheap, so it
+ships — but it is a footnote, not a feature.
+
+**And `updated_at` is unusable for staleness.** The spec says Lever has no
+update timestamp; in fact **5 of 6 sources** have none (ashby, himalayas,
+lever, remotive, wellfound — 3,266 of 5,491 open rows). Only Greenhouse
+populates it. Staleness keys off `posted_at` (100% coverage) plus our own
+`first_seen_at` / `last_seen_at`.
 
 ## Overview
 
@@ -21,7 +91,8 @@ A single-user, self-hosted tool that:
 
 1. **Aggregates** live, valid job postings from a configurable set of companies across multiple ATS platforms.
 2. **Presents** them in a filterable dashboard with an automated validity check.
-3. **Assists applying** via review-before-submit autofill.
+3. **Ranks** them against my stored profile and drafts tailored application documents.
+4. **Assists applying** via review-before-submit autofill.
 
 Optimize for **correctness and freshness over scale**. This runs for one person against ~50 companies, not at web scale.
 
@@ -88,6 +159,7 @@ Optimize for **correctness and freshness over scale**. This runs for one person 
 - `RemotiveAdapter` → `GET https://remotive.com/api/remote-jobs?category=software-dev` (free, no key). Secondary feed.
   Constraints, non-negotiable: listings are **delayed 24h**; we **must persist and display Remotive's own job URL** (it becomes `apply_url` for Remotive-sourced rows) and **attribute Remotive as the source** in the UI; **do not repost Remotive jobs to third parties**.
 - `WellfoundAdapter` → Wellfound (ex-AngelList) via **Firecrawl** (`FIRECRAWL_API_KEY`). The one source with **no public API** — `api.angel.co` is gone, and plain HTTP gets a bot challenge — so this is the principle-1 fallback. Driven by `queries` that build robots-allowed URL paths (`/role/r/{role}`, `/role/l/{role}/{loc}`, `/location/{loc}`); `/search` is disallowed and never used.
+  **An unrecognized role slug fails OPEN, not closed** — verify every new one before adding it. `/role/r/founding-engineer` answers 200 and then redirects to `/remote`, the entire unfiltered board (11,695 jobs, 205 pages), so a typo'd or non-existent slug does not return nothing, it silently spends a Firecrawl credit per page scraping the whole site. The valid slugs are enumerated in the footer of any listing page.
   **Two stages, and the second is not optional.** Stage 1 reads the `__NEXT_DATA__` Apollo cache off a listing page (~37 jobs, 1 credit). Stage 2 reads schema.org JSON-LD off a detail page for candidates only, because Wellfound renders an *unstated* candidate location as "Everywhere": verified job 4627451 claimed Everywhere while its own text said "fully remotely within the United States". Trusting stage 1 alone pushes US-only roles through the India filter.
   Compound location names (`"Mumbai, Maharashtra"`) must go through `split_location_text` before `resolve_eligibility`, or India eligibility is silently dropped.
 
@@ -144,6 +216,16 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
   nothing, still pass.
 - `associate` is deliberately **not** a junior marker — "Associate Staff
   Engineer" is Nagarro's real mid-level IC title (21 live rows).
+- **`founding_engineer` matches the BARE title only** (`founding engineer`),
+  never `founding <anything> engineer`. It exists because "Founding Engineer"
+  names no stack and so matched no other family; qualified variants already
+  have homes ("Founding Backend Engineer" is `backend`). The wildcard form was
+  tried and it turned `founding` into a lone qualifier — the exact failure the
+  head-anchoring rule above exists to prevent. It admitted "Founding Flutter
+  Engineer" and "Founding Data Pipeline Engineer", reopening the `mobile` and
+  `data` families that `filters.yaml` switches off on purpose, plus "Founding
+  Customer Success Engineer", which is not engineering at all. 16 live rows
+  pass on the bare form.
 - **The API-level half lives in `companies.yaml`.** Himalayas is swept with
   `seniority=Mid-level,Senior`, so entry-level rows are never fetched. Verified
   live: the param takes a comma-separated list and its vocabulary is exactly
@@ -183,6 +265,15 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
 - Job detail drawer: full JD, metadata grid, apply on the canonical ATS URL, `j`/`k` to move between jobs. Drawer state is in the URL (`?job=`), so back closes it.
 - "New since last visit" via a `localStorage` timestamp, frozen for the session so rows don't stop being new while you read them.
 - Glassmorphism design system, dark/light themes (no FOUC), keyboard shortcuts (`/` `j` `k` `r` `t` `esc`), skeletons, empty states, responsive to 430px.
+- **Left nav shell** (`components/SideNav.tsx`): the app is a rail plus a
+  content column, with one tile per top-level surface — **Jobs** (everything
+  above) and **Matches** (Phase 4, shell only). The active tile lives in the URL
+  as `?view=`, parsed by `useFilters` alongside the filters, so a view is
+  linkable and back moves between views. Default (`jobs`) is left out of the
+  URL, so existing links keep meaning the job list. Switching tiles keeps the
+  filters and drops the open job. The rail collapses to icons on desktop
+  (persisted) and becomes an off-canvas drawer under `md`, where TopBar's menu
+  button opens it — TopBar gave up the brand block to the rail in exchange.
 - **Fetch-on-load, once a day.** Opening the dashboard sweeps every board before
   anything renders: `/jobs` and `/meta/facets` are `enabled`-gated on the sweep,
   so a stale snapshot is never requested, let alone shown. A sync screen lists
@@ -244,6 +335,160 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
   - `job_postings.content_hash` already exists from Phase 1 and is the intended cache key.
 - Persist `validity_score`, `validity_reasons[]`, and extracted structured fields on the job; expose via API.
 
+**Built (2026-09-08) — the deep read (`app/llm.py`, `app/llm_runner.py`):**
+
+- One Groq call per routed row carries **both halves**, as planned: the
+  validity fields (`posting_status` active/evergreen/ghost, `status_reason`,
+  `seniority`, `tech_stack`, `compensation_text`, `sponsorship_required`,
+  `inconsistencies`) and the fit fields (`fit_band`, `fit_reasons`,
+  `strengths`, `gaps`). The JD has to be in the prompt either way, so two
+  calls would double the only cost that matters.
+- Lands in the `job_matches.llm_used / llm_content_hash / llm_verdict` columns
+  that were already designed for it. **No migration.** The separate
+  `validity_score` / `validity_reasons` columns on `job_postings` above, and
+  the dashboard badge and `min validity` filter, are still unbuilt.
+- ~~Routing is `MatchVerdict.needs_llm` (score ≥ threshold **or** low
+  confidence)~~ — **superseded 2026-09-13 by the LLM shortlist**, see
+  "Transparency and the LLM budget" below. The low-confidence clause spent
+  most of 1.26M tokens on jobs the LLM then called weak or poor.
+- **Two hard blockers only prose can show**, and they are separate fields on
+  purpose. `sponsorship_required` catches "must be authorized to work in the
+  US without sponsorship", which eligibility rule 1 cannot see because it
+  reads the board's *structured* location fields. `work_mode = onsite` is a
+  blocker in its own right because `profile.work_authorization` is remote-only.
+  The first live run folded location and work-mode together and reported Steps
+  AI's "On-Site, Hyderabad, **India**" role as "India cannot hold this" — the
+  right answer for the wrong reason, and the wrong reason is what the
+  dashboard would have shown.
+- **A field's NAME outweighs its description.** While the pay field was called
+  `comp_stated`, the model answered the literal string `"No"` on postings that
+  state no pay, ignoring a description that spelled out the empty-string rule
+  twice. Renaming it `compensation_text` fixed it with no other change.
+  `location_policy` is likewise phrased about the posting, not the candidate.
+  **Known residual:** it still reads an India-located *on-site* role as
+  `excludes_india`. `blocked` is unaffected (`work_mode` catches those), but
+  the field itself is not trustworthy for India-located on-site rows.
+- **Resumable and cache-correct.** Committed every 10 rows, failures recorded
+  with an `error` in the verdict rather than left null, so "failed" and "not
+  reached yet" stay distinguishable across a 2-hour pass. `match_runner` now
+  **clears `llm_verdict` when it re-scores a row whose JD moved** — it stamps
+  `llm_content_hash` itself, so without that a changed JD would re-stamp the
+  hash and leave a stale verdict looking current.
+- Run it with `python -m scripts.run_llm_screen` (`--dry-run` prices it,
+  `--limit N` bounds it, `--force` re-reads cached rows). `POST /matches/llm`
+  runs the same function as a background task for the dashboard, with
+  `GET /matches/llm/status` to poll — a ~2-hour pass cannot be a synchronous
+  request.
+
+**Built (2026-09-13) — closing 2B (migrations `0004`, `0005`):**
+
+- **Deterministic validity** — `app/validation.py` + `validation_runner.py`,
+  config in the `validity:` block of `filters.yaml`. Whole board, free, ~12s.
+  Persists `validity_score` (NULL = not yet checked, never 0) and
+  `validity_reasons[]`, each penalty naming its amount (`stale:67d:-20`).
+  Checks: missed last sweep, age off `posted_at`, evergreen/contentless prose,
+  missing fields, duplicates. `POST /validity/run`.
+- **The ghost check compares against a run's `started_at`, not
+  `finished_at`.** Rows are stamped as their board is swept and a full sweep
+  takes ~6.5 min, so the first cut flagged 2,123 live rows as ghosts.
+- **Duplicates: 2 on the eligible slice, 223 on the whole board.** Both are
+  right. The key is (company, title, JD) and deliberately *not* location —
+  Databricks posts one role across nine cities as nine rows.
+- **The LLM cache split is now real.** Before this, both halves of the screen
+  lived in `job_matches.llm_verdict` under one key, so a profile edit stranded
+  validity answers that had already been paid for. Validity fields now go to
+  `job_postings.llm_validity` keyed by `content_hash` alone
+  (`JobScreen.VALIDITY_FIELDS` / `FIT_FIELDS`). Verified live: a profile
+  version change invalidated every fit verdict and kept all 10 validity ones.
+- **`employment_type` / `workplace_type`** — the adapters were already parsing
+  these and throwing them away. Backfilled from `raw_json` with no network
+  (`scripts/backfill_employment.py`) for 3,992 rows. Greenhouse publishes
+  neither, so its rows stay NULL — and NULL passes every preference. These
+  are deliberately **not** in `content_hash`, which would have invalidated
+  every cached verdict.
+- **Dashboard** — validity column in the Jobs table (no badge at all when
+  unscored), validity + deep-read section in the drawer, `min validity` filter
+  (`minval=` in the URL, facet bands). `description_html` now goes through
+  `lib/sanitize.ts`, an allowlist sanitizer. A jsdom test caught a leak in its
+  first version: the parser rewrites NUL to U+FFFD, which slipped past a
+  "no scheme, so relative" fallback. `safeUrl` now rejects anything that
+  looks like a scheme and isn't on the allowlist.
+- **Stabilization** — `"SF, NYC, SEA, CHI"` resolved to ASEAN through a bare
+  `sea` alias; `SEA` and the other US metro codes now map to US.
+  `looks_like_timezone` matched "East" under IGNORECASE, so "South East Asia"
+  was stored as a timezone; the abbreviation branch is case-sensitive now and
+  regions resolve before timezones. A curated board that fetches 0 rows and has
+  never stored any sets `never_produced_rows` — this is how **`ashby:deel`**
+  failed silently. Its slug still needs checking by hand.
+
+**Preferences — the Matches gate (`prefs.yaml`, `app/prefs.py`, `prefs_gate.py`):**
+
+A third config layer. `filters.yaml` decides eligibility at ingest time and
+also drives Telegram alerts, so it is not editable from the UI. `profile.yaml`
+is who I am. `prefs.yaml` is what I want right now: work mode, commitment,
+years band, pay floor, min validity and exclusions. It gates the **Matches
+list only**, and the Jobs tile ignores it.
+
+- The verdict is an overlay on `job_matches` (`prefs_pass`, `prefs_reasons`,
+  `prefs_version`) and is **not part of the unique key**, so editing a
+  preference never creates duplicate rows and costs zero LLM calls.
+- `prefs_version` hashes canonicalized values. Hashing raw floats gave
+  `3000000` and `3000000.0` different versions, so every save looked like a
+  change.
+- **Run** (`POST /matches/run`, polled via `/matches/run/status`) does
+  validity, then ranking with the gate, then an estimate of the deep read's
+  cost — and **stops there**. The UI shows jobs, minutes and share of the
+  daily budget, and the deep read only starts after an explicit confirm
+  (`POST /matches/llm`). Preferences cut the routed set from 417 to 314.
+- Default preferences (remote, full-time, 2-8y, ₹30L) admit 719 of the 929
+  eligible jobs. *(Now 5-8y and posted ≤ 30d: 401 of 910 on 2026-09-13.)*
+
+**Built (2026-09-13) — transparency and the LLM budget (migration `0007`):**
+
+The dashboard showed 5,481 / 740 remote / "430 of 910 eligible" / a deep read
+quoted at 198 that read 427, with nothing connecting them. And one confirm had
+spent 1.26M tokens.
+
+- **One filter builder** — `app/job_filters.py` (`JobFilterSet`,
+  `apply_job_filters`). `/jobs`, facets, the funnel and the Matches scope all
+  use it. **Remote means one thing**: `IS_REMOTE` = the board's
+  `workplace_type` when stated, else the keyword flag.
+- **Funnels** — `GET /meta/funnel` (same params as `/jobs`, last step equals
+  its total) and `GET /matches/funnel` (from stored verdicts; `stale` when
+  preferences changed since the last Run). `app/funnel.py`. Both render as a
+  strip above their list, each step showing what it removed and why.
+- **Posted ≤ 30 days is a hard limit.** Jobs defaults to 30d (`posted=any` to
+  widen); `prefs.freshness.max_age_days` is 1-30 and cannot exceed 30. The
+  SQL and Python sides cut at the same instant — rounding the age to whole
+  days put 619 rows in Matches against 612 in Jobs.
+- **Send to Matches** — `PUT /matches/transfer` stores the Jobs *filters* (not
+  ids) in `prefs.yaml`; each Run re-applies them, so later sweeps flow in. Rows
+  outside the scope fail the gate with `not_transferred`. Matches no longer
+  reads the live URL filters. `DELETE` returns to all eligible jobs.
+  Eligibility is still a hard gate in Matches even if sent with "All roles".
+- **Experience floor 5** (was 6). At 6 the band dropped 372 jobs and every one
+  asked for *fewer* years (162 asked 5+); none asked more than 8.
+- **The LLM shortlist** (`app/shortlist.py`) replaces `needs_llm` routing. A
+  job is read only if it passed preferences, scored ≥ 65, was scored
+  confidently, was verified ≥ 70, and has no JD blocker. Best score first,
+  **15 per pass by default, never more than 50** (`clamp_reads`; the old
+  `LLM_MAX_REQUESTS_PER_RUN=500` is clamped rather than rejected so an old
+  `.env` still boots). The confirm offers 10/15/20/50, re-priced by
+  `GET /matches/llm/estimate`. Low-confidence jobs are read one at a time
+  from the drawer (`POST /matches/{job_id}/llm`). The estimate and the pass
+  select through the same function, so they cannot disagree again.
+- **Free JD blockers** — `app/blockers.py`, stored as `job_matches.blockers` /
+  `blocked`. US work authorization, no sponsorship, US persons, clearance,
+  region-only remote. Region rules are vetoed by an India/APAC/worldwide
+  mention in the same sentence. Tuned against the JD sentences, **not** the
+  LLM's labels, which were noisy: it marked "Applied AI Engineer - India" as
+  `excludes_india` and claimed sponsorship rules for GitLab and Pinterest JDs
+  that state none. 34 eligible jobs carry one.
+- **Every row states its checks**: Verifier ran (score) or not, LLM read or
+  not (`JobOut.llm_read`, `validity_checked_at`; `MatchOut.llm_read`,
+  `shortlisted`, `shortlist_reasons`, `blockers`).
+- Fixed on the way: `POST /validity/run` called an unimported `run_validation`.
+
 **Build — Dashboard additions (extends 2A):**
 
 - Validity badge column in the table + validity section in the detail drawer.
@@ -263,15 +508,123 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
 
 ---
 
+## PHASE 2C — Matches (profile fit + tailored documents)
+
+**Goal:** of everything the aggregator has collected, surface the jobs that fit
+**my** profile, ranked with reasons I can argue with, and for the ones worth
+applying to, draft a tailored résumé and cover letter. The `Matches` nav tile
+and its placeholder surface (`SideNav.tsx`, `MatchesView.tsx`) already exist —
+this fills them in.
+
+Runs **after 2B**, so matching never ranks a ghost posting highly, and
+**before Phase 3**, because autofill needs the profile and the documents this
+phase produces.
+
+### Stage 1 — Your profile
+
+- `profile.yaml` + résumé file(s), Pydantic-modelled: contact and links, work
+  authorization, skills, seniority, comp floor, location rules, and the
+  reusable free-text answers every application asks for.
+- **This is the profile store Phase 3 used to define — it lands here instead,
+  and Phase 3 consumes it.** One profile, not two.
+- Editable from the dashboard, but `profile.yaml` on disk stays the source of
+  truth: it is the one file worth backing up, and hand-editing it must not be a
+  second-class path.
+- **Every write bumps a `profile_version`** (hash of the normalized content).
+  Scores and documents are keyed to it. Without that, editing my résumé leaves
+  yesterday's scores on screen looking current.
+
+### Stage 2 — Fit score
+
+- **Scored surface is `status = open` AND `eligibility_pass = true` — 695 rows
+  today, not the 5,251 open ones.** Eligibility is Phase 1's hard binary gate;
+  fit is a *ranking on top of it*. Scoring rows already rejected on location or
+  pay spends tokens on jobs I cannot take. Unscored browsing stays in the Jobs
+  tile.
+- **Deterministic first** (`app/matching.py`, built like `eligibility.py`):
+  tech-stack overlap with the profile, title/seniority distance from the wanted
+  families in `roles.py`, comp against the floor, location and timezone fit.
+  Cheap, free, runs on every scored row, and emits reasons on its own.
+- **LLM second, and only on the ambiguous middle** — the band the deterministic
+  pass cannot separate. Anthropic API, structured output.
+- **Cached by `content_hash` + `profile_version`.** Both halves of that key
+  matter: unchanged JD *and* unchanged profile → zero API calls. `content_hash`
+  is already maintained by ingest and is the same key 2B's validator uses.
+- **Scoring is a separate pass, never inline in ingest.** A sweep already takes
+  ~90s with Wellfound in it; an LLM call per job on top would make 2A's
+  fetch-on-load unusable. Trigger it from the Matches view, or as a background
+  task after a run completes.
+- Persist the score and `match_reasons[]` **per (job, profile_version)**, in
+  their own table rather than as columns on `job_postings`. A score is a fact
+  about a *pairing*, not about the posting.
+
+### Stage 3 — Tailored documents
+
+- Generated **per job, on request** — never in bulk across the match list. This
+  is the expensive stage, and most matches never get applied to.
+- A résumé re-ordered and re-worded to lead with what that JD asks for, and a
+  cover letter drafted from profile + JD.
+- **Hard constraint: the generator may only select, re-order and re-word facts
+  stated in the profile.** It must never invent an employer, a date, a title or
+  a metric. A résumé that hallucinates experience is worse than no résumé — it
+  is a lie with my name on it, and if it reads well I will not catch it at
+  review time. This needs a fixture test, not just a prompt instruction.
+- Stored as **drafts**, labelled as such, versioned by (job, profile_version).
+  They feed Phase 3's autofill; they do not replace its review step.
+
+### Schema
+
+- `job_matches` — `job_id` FK, `profile_version`, `score`, deterministic
+  subscores, `match_reasons[]`, `llm_used`, `scored_at`. Unique on
+  (`job_id`, `profile_version`).
+- `generated_documents` — `job_id` FK, `profile_version`, `kind`
+  (`resume | cover_letter`), content, `is_draft`, `created_at`.
+- Alembic migration for both, dialect-neutral per the stack rules.
+
+### API
+
+- `GET /profile`, `PUT /profile` — read/write the profile; the write returns the
+  new `profile_version`.
+- `POST /matches/score` — run the scoring pass, cache-aware (`force=true` to
+  bypass). Reports live progress the way `/ingest/status` does, and shares that
+  module's lock discipline.
+- `GET /matches` — scored jobs by score, with reasons; composes with the
+  existing `/jobs` filters.
+- `POST /matches/{job_id}/documents` — generate for one job; `GET` reads back.
+
+### Dashboard (replaces the `MatchesView` placeholder)
+
+- Match list with score and reasons, reusing 2A's job drawer.
+- Profile editor.
+- Per-job "generate documents", with a **diff against the base résumé** so I can
+  see exactly what was changed, plus download.
+- `view=matches` already round-trips through the URL (`useFilters.ts`) — keep it.
+
+**Acceptance criteria:**
+
+- Scoring is idempotent and cached: a re-run with no profile change and no JD
+  change issues **zero** LLM calls.
+- Editing the profile bumps `profile_version` and re-scores; a stale score is
+  never displayed as current.
+- Only open, `eligibility_pass = true` jobs are scored.
+- Every listed match shows the reasons behind its score — the low ones included.
+- A generated résumé contains **no** claim absent from `profile.yaml` (fixture
+  test).
+- Generated documents are always drafts for review; **no send or submit path
+  exists in this phase**.
+
+---
+
 ## PHASE 3 — Autofill (review-before-submit)
 
 **Goal:** from a selected job + my stored profile/resume, open the application page, auto-fill standard fields, draft answers to custom questions, and present everything for my review. **The system never submits autonomously — a human confirm is always required.**
 
 **Build:**
 
-- **Profile store:** `profile.yaml` (name, contact, links, work authorization, standard reusable answers) + resume file(s). Pydantic model.
+- **Profile store:** reuse **Phase 2C's** `profile.yaml` + résumé files — the same profile, not a second one. Phase 3 adds only what autofill needs on top: per-ATS field aliases, and answers a form asks for that matching never needed.
 - **Per-ATS fillers** via Playwright — `GreenhouseFiller`, `LeverFiller`, `AshbyFiller`: map profile fields → each ATS's known application-form selectors (resume upload, name, email, phone, LinkedIn, etc.). Keep this isolated per ATS, same pattern as the Phase 1 adapters.
 - **Custom-question handler:** detect non-standard/free-text questions on the form; draft answers with the Anthropic API using profile + JD; label them `DRAFT — review`.
+- **Résumé upload** attaches 2C's tailored draft for that job when one exists, else the base résumé from the profile store.
 - **Review step:** headed Playwright session (or a review page) showing the filled form + drafted answers. I edit, then explicitly click submit. **No auto-submit path exists in the code.**
 - **Anti-bot:** on CAPTCHA / Cloudflare / an unmapped required field, **pause and hand control to me** rather than trying to bypass.
 - **Audit log:** per application, record what was filled and the final answers.

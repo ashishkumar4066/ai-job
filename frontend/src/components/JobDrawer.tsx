@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   ArrowUpRight,
+  BrainCircuit,
+  Briefcase,
+  Loader2,
   CalendarDays,
   Check,
+  ShieldCheck,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -15,9 +20,12 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, llmStatus, startLlmOne } from "@/lib/api";
+import { LlmBadge, VerifierBadge } from "./CheckBadges";
 import { absoluteDate, formatSalary, relativeTime, titleCase } from "@/lib/format";
-import type { Job } from "@/lib/types";
+import { sanitizeHtml } from "@/lib/sanitize";
+import type { Job, LlmValidity } from "@/lib/types";
+import { validityBand } from "@/lib/types";
 import { Badge, CompanyAvatar, cx } from "./primitives";
 
 export function JobDrawer({
@@ -175,8 +183,34 @@ export function JobDrawer({
               value={relativeTime(job.last_seen_at)}
               hint="Confirmed live on the board"
             />
+            {/* "Not stated" rather than a guess: Greenhouse publishes
+                neither of these for any of its 2,224 rows, and a blank is
+                honest where "On-site" would be an invention. */}
+            <Meta
+              icon={<Briefcase size={13} />}
+              label="Commitment"
+              value={
+                job.employment_type
+                  ? titleCase(job.employment_type.replace(/_/g, " "))
+                  : "Not stated"
+              }
+            />
+            <Meta
+              icon={<Globe2 size={13} />}
+              label="Work mode"
+              value={job.workplace_type ? titleCase(job.workplace_type) : "Not stated"}
+            />
             <Meta icon={<Server size={13} />} label="Source" value={job.source_key} mono />
           </div>
+        )}
+
+        {job && <ChecksBar job={job} />}
+
+        {/* Validity — the deterministic verdict, plus the deep read when one
+            exists. Shown ABOVE the JD because it is the thing that decides
+            whether the JD is worth reading at all. */}
+        {job && job.validity_score != null && (
+          <ValiditySection job={job} llm={data?.llm_validity ?? null} />
         )}
 
         {/* Description */}
@@ -196,9 +230,15 @@ export function JobDrawer({
               Couldn't load this description: {(error as Error).message}
             </p>
           ) : data?.description_html ? (
-            // Server-rendered ATS markup. Same-origin backend, personal-scale
-            // tool; Phase 2b sanitizes this when the LLM validator lands.
-            <div className="jd" dangerouslySetInnerHTML={{ __html: data.description_html }} />
+            // Sanitized before it reaches the DOM. The board carries
+            // aggregator feeds (Himalayas, Remotive, Wellfound) whose HTML is
+            // written by whoever posted the job rather than by a vetted ATS,
+            // so this is third-party markup executing on the same origin as
+            // the API. `sanitizeHtml` is allowlist-only — see its module docs.
+            <div
+              className="jd"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.description_html) }}
+            />
           ) : data?.description_text ? (
             <p className="jd whitespace-pre-wrap">{data.description_text}</p>
           ) : (
@@ -242,6 +282,76 @@ export function JobDrawer({
   );
 }
 
+/**
+ * Verifier and LLM state, plus the one way to spend a call on a job the
+ * shortlist did not pick — typically a low-confidence JD written in prose.
+ * One click, one call, never a batch.
+ */
+function ChecksBar({ job }: { job: Job }) {
+  const qc = useQueryClient();
+  const [polling, setPolling] = useState(false);
+
+  const status = useQuery({
+    queryKey: ["llm"],
+    queryFn: llmStatus,
+    refetchInterval: polling ? 2000 : false,
+    enabled: polling,
+  });
+
+  const read = useMutation({
+    mutationFn: () => startLlmOne(job.id),
+    // Seed the poll with this run's own "running" status, so a "done" left
+    // over from an earlier pass cannot end the wait before it starts.
+    onSuccess: (started) => {
+      qc.setQueryData(["llm"], started);
+      setPolling(true);
+    },
+  });
+
+  useEffect(() => {
+    if (polling && status.data?.state === "done") {
+      setPolling(false);
+      for (const key of ["job", "jobs", "matches", "matches-funnel", "jobs-funnel"]) {
+        qc.invalidateQueries({ queryKey: [key] });
+      }
+    }
+  }, [polling, status.data?.state, qc]);
+
+  const busy = read.isPending || polling;
+  const canRead = job.status === "open" && job.eligibility_pass && !job.llm_read;
+
+  return (
+    <div className="relative flex flex-wrap items-center gap-2 border-b border-edge px-5 py-2.5">
+      <span className="text-[10.5px] font-semibold tracking-[0.08em] text-subtle uppercase">
+        Checks
+      </span>
+      <VerifierBadge
+        score={job.validity_score}
+        reasons={job.validity_reasons}
+        checkedAt={job.validity_checked_at}
+      />
+      <LlmBadge read={job.llm_read} />
+      {canRead && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => read.mutate()}
+          title="Send this one job to the LLM — a single call"
+          className="ml-auto flex items-center gap-1.5 rounded-lg border border-accent/35 bg-accent/10 px-2.5 py-1 text-[12px] font-medium text-accent-text transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? <Loader2 size={12} className="animate-spin" /> : <BrainCircuit size={12} />}
+          {busy ? "Reading…" : "Deep read this job"}
+        </button>
+      )}
+      {(read.error || status.data?.error) && (
+        <span className="w-full text-[11.5px] text-danger">
+          {(read.error as Error | null)?.message ?? status.data?.error}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function Meta({
   icon,
   label,
@@ -268,6 +378,155 @@ function Meta({
         {value}
       </p>
       {hint && <p className="truncate text-[11px] text-subtle">{hint}</p>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ validity */
+
+const VALIDITY_TONE: Record<string, { label: string; text: string; bg: string }> = {
+  solid: { label: "Solid", text: "text-success", bg: "bg-success/12 border-success/25" },
+  ok: { label: "OK", text: "text-accent-text", bg: "bg-accent/10 border-accent/25" },
+  questionable: {
+    label: "Questionable",
+    text: "text-highlight",
+    bg: "bg-highlight/12 border-highlight/25",
+  },
+  suspect: { label: "Suspect", text: "text-danger", bg: "bg-danger/10 border-danger/25" },
+};
+
+/** Human wording for the reason codes `validation.py` emits.
+ *
+ *  Each stored reason keeps its evidence after a colon and its penalty after
+ *  `:-` — `stale:67d:-20` — because the whole point of this layer is that its
+ *  verdicts can be argued with. The raw string is kept in the tooltip. */
+const VALIDITY_REASONS: Record<string, string> = {
+  fresh: "Posted recently",
+  aging: "Getting old",
+  stale: "Stale",
+  very_stale: "Very stale",
+  no_posted_date: "No posting date",
+  seen_in_last_sweep: "Confirmed in the latest fetch",
+  missed_last_sweep: "Missing from the latest fetch",
+  closed: "Closed",
+  unchanged_since_first_seen: "Unchanged since we first saw it",
+  evergreen_language: "Reads as a perpetual talent-pool post",
+  contentless_description: "Description says nothing concrete",
+  no_description: "No description",
+  thin_description: "Very short description",
+  no_apply_url: "No apply link",
+  duplicate_same_company: "Duplicate of another posting at this company",
+  duplicate_cross_company: "Same description appears under another company",
+  "llm:ghost": "Deep read: likely a ghost posting",
+  "llm:evergreen": "Deep read: evergreen posting",
+  "llm:evergreen_confirmed": "Deep read confirms: evergreen",
+  "llm:active": "Deep read: a real, active opening",
+  "llm:inconsistent": "Deep read found internal contradictions",
+};
+
+function describeValidityReason(raw: string): { label: string; penalty: number | null } {
+  const [body, penaltyPart] = raw.split(":-");
+  const parts = (body ?? "").split(":");
+  // `llm:` reasons are two segments before any evidence.
+  const key = parts[0] === "llm" ? `llm:${parts[1] ?? ""}` : (parts[0] ?? "");
+  const evidence = parts[0] === "llm" ? parts[2] : parts[1];
+  const label = VALIDITY_REASONS[key] ?? key.replace(/_/g, " ");
+  return {
+    label: evidence ? `${label} (${evidence})` : label,
+    penalty: penaltyPart ? Number.parseInt(penaltyPart, 10) : null,
+  };
+}
+
+function ValiditySection({ job, llm }: { job: Job; llm: LlmValidity | null }) {
+  const score = job.validity_score ?? 100;
+  const tone = VALIDITY_TONE[validityBand(score)] ?? VALIDITY_TONE.ok!;
+  const reasons = (job.validity_reasons ?? []).map((r) => ({
+    raw: r,
+    ...describeValidityReason(r),
+  }));
+  // Penalties first — they are what the score is explaining.
+  reasons.sort((a, b) => (b.penalty ?? 0) - (a.penalty ?? 0));
+
+  return (
+    <div className="border-b border-edge px-5 py-4">
+      <div className="mb-2.5 flex items-center gap-2">
+        <span className={cx("grid size-6 place-items-center rounded-md border", tone.bg)}>
+          <ShieldCheck size={13} className={tone.text} />
+        </span>
+        <div className="text-[12.5px] font-semibold text-ink">Validity</div>
+        <span className={cx("text-[12.5px] font-semibold", tone.text)}>
+          {score}
+          <span className="ml-1 text-[11px] font-medium">{tone.label}</span>
+        </span>
+        {llm && (
+          <span className="ml-auto text-[10.5px] text-subtle">
+            deep read · {llm.model ?? "llm"}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {reasons.map((r) => (
+          <span
+            key={r.raw}
+            title={r.raw}
+            className={cx(
+              "rounded-md border px-1.5 py-0.5 text-[10.5px]",
+              r.penalty
+                ? "border-danger/25 bg-danger/8 text-danger"
+                : "border-edge bg-panel text-muted",
+            )}
+          >
+            {r.label}
+            {r.penalty ? <span className="ml-1 font-mono">−{r.penalty}</span> : null}
+          </span>
+        ))}
+      </div>
+
+      {/* The deep read's extracted fields. Cached per JD (not per profile), so
+          these survive a résumé edit and are present even when the fit half
+          has been invalidated. */}
+      {llm && (
+        <div className="mt-3 space-y-1.5 border-t border-edge pt-2.5 text-[11.5px]">
+          {llm.status_reason && (
+            <p className="text-muted">
+              <span className="text-subtle">Read as {llm.posting_status}: </span>
+              {llm.status_reason}
+            </p>
+          )}
+          {llm.sponsorship_required === "yes" && (
+            <p className="flex items-start gap-1.5 text-danger">
+              <AlertTriangle size={12} className="mt-px shrink-0" />
+              The posting requires work authorization you do not have.
+            </p>
+          )}
+          {llm.tech_stack && llm.tech_stack.length > 0 && (
+            <p className="text-muted">
+              <span className="text-subtle">Stack asked for: </span>
+              {llm.tech_stack.join(", ")}
+            </p>
+          )}
+          {llm.seniority && (
+            <p className="text-muted">
+              <span className="text-subtle">Level: </span>
+              {llm.seniority}
+            </p>
+          )}
+          {llm.compensation_text && (
+            <p className="text-muted">
+              <span className="text-subtle">Pay in the text: </span>
+              {llm.compensation_text}
+            </p>
+          )}
+          {llm.inconsistencies && llm.inconsistencies.length > 0 && (
+            <ul className="ml-4 list-disc text-highlight">
+              {llm.inconsistencies.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

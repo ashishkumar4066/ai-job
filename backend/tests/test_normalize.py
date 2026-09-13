@@ -9,6 +9,7 @@ from app.normalize import (
     clean_locations,
     content_hash,
     detect_remote,
+    find_usd_pay,
     html_to_text,
     maybe_unescape_html,
     parse_epoch_millis,
@@ -144,3 +145,30 @@ class TestContentHash:
     def test_content_change_changes_hash(self) -> None:
         assert self._hash(title="Senior Engineer") != self._hash()
         assert self._hash(description_text="Different") != self._hash()
+
+
+class TestFindUsdPay:
+    def test_greenhouse_style_range_in_prose(self) -> None:
+        text = "The base salary range for this role is $150,000 - $190,000 USD, plus equity."
+        assert find_usd_pay(text) == "$150,000 - $190,000 USD"
+
+    def test_k_suffix_range(self) -> None:
+        assert find_usd_pay("Compensation: $120k – $150k per year") == "$120k – $150k per year"
+
+    def test_hourly_range(self) -> None:
+        assert find_usd_pay("Contract at $60 - $80/hr, fully remote.") == "$60 - $80/hr"
+
+    def test_single_amount_needs_a_pay_word(self) -> None:
+        assert find_usd_pay("Base salary: $140,000, paid monthly.") == "$140,000"
+        assert find_usd_pay("You get a $10,000 relocation stipend.") is None
+
+    def test_ignores_funding_and_small_perks(self) -> None:
+        text = "We raised $50M and $1.5 billion in revenue. $1,500 learning budget."
+        assert find_usd_pay(text) is None
+
+    def test_ignores_other_dollar_currencies(self) -> None:
+        assert find_usd_pay("Salary CA$120,000 - CA$140,000") is None
+
+    def test_none_and_no_pay(self) -> None:
+        assert find_usd_pay(None) is None
+        assert find_usd_pay("Competitive salary and great benefits.") is None

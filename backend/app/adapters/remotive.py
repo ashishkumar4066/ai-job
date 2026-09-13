@@ -44,6 +44,7 @@ from app.geo import resolve_eligibility, split_location_text
 from app.normalize import (
     build_source_key,
     clean_locations,
+    employment_type,
     html_to_text,
     parse_iso_datetime,
     parse_salary_text,
@@ -134,6 +135,9 @@ class RemotiveAdapter(BaseAdapter):
             title=job.title.strip(),
             locations=locations,
             remote=True,  # Remotive lists remote roles exclusively
+            employment_type=employment_type(job.job_type),
+            # The feed is remote-only by construction.
+            workplace_type="remote",
             department=job.category,
             # Remotive's own URL, never the employer's — required by the terms.
             apply_url=job.url,

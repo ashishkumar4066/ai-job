@@ -1,0 +1,59 @@
+# Match preferences — what I want out of the board RIGHT NOW.
+#
+# Distinct from the other two config layers, and the distinction is the point:
+#
+#   config/filters.yaml -> ELIGIBILITY. Can I hold this job at all?
+#                          India-eligible, not junior, not leadership.
+#                          Doctrine. Gates Telegram alerts. Rarely edited.
+#   profile.yaml        -> WHO I AM. Skills, gaps, years, comp floor.
+#                          Drives the fit SCORE.
+#   this file           -> WHAT I WANT. A cheap filter over already-eligible
+#                          rows. Edit freely; it costs a ~10s re-rank and
+#                          ZERO LLM calls, because preferences select rows
+#                          rather than changing any row's score.
+#
+# The Jobs tile ignores this file completely — it always shows the whole
+# board. Nothing here can hide a row from Jobs, only from Matches.
+#
+# Every rule treats "the board never said" as a PASS. That is measured, not
+# lenient: Greenhouse publishes no employment type at all (0 of 2,224 rows)
+# and ~84% of postings state no pay, so reading silence strictly drops most
+# of the board for facts nobody ever published. Flip `include_unstated` to
+# false to invert it.
+#
+# Edited from the dashboard, but hand-editing here stays first-class.
+
+work:
+  workplace_types:
+  - remote
+  employment_types:
+  - full_time
+experience:
+  min_years: 5
+  max_years: 8
+compensation:
+  min_annual_inr: 3000000
+  require_stated: false
+validity:
+  min_score: 0
+freshness:
+  max_age_days: 3
+scope:
+  exclude_companies: []
+  exclude_ats: []
+transfer:
+  filters:
+    company: []
+    ats: []
+    department: []
+    remote: true
+    q: null
+    q_scope: all
+    posted_within_days: 3
+    first_seen_after: null
+    eligibility_pass: true
+    min_validity: null
+  count_at_transfer: 46
+  transferred_at: '2026-09-13T13:51:55.193470Z'
+include_unstated: true
+updated_at: '2026-09-13T13:52:23.801470+00:00'

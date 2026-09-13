@@ -100,6 +100,13 @@ role:
   # engineer who owns a product surface (Linear's "Senior / Staff Product
   # Engineer"), not a different job.
   #
+  # `founding_engineer` is on for a different reason: it is not shorthand for
+  # anything. "Founding Engineer" is its own title and matches no other family,
+  # so before this entry every one of them was rejected as an unmatched family.
+  # It covers the BARE title only — qualified variants ("Founding Backend
+  # Engineer") already match their own family, and matching on `founding` plus
+  # a wildcard would reopen the families switched off below.
+  #
   # Deliberately OFF — real engineering, different specialization. Add a name
   # here to include it; nothing else changes.
   #   devops_sre (22 live rows)  data (32)  security (64)  mobile (35)  qa (38)
@@ -113,6 +120,7 @@ role:
     - platform
     - application
     - product_engineer
+    - founding_engineer
 
   exclude_junior: true
   exclude_leadership: true
@@ -129,3 +137,97 @@ role:
   # or state nothing — still pass.
   min_years: 2
   max_years: 8
+
+# ---------------------------------------------------------------------------
+# Fit scoring (`app/matching.py`) — how a posting is ranked against
+# `profile.yaml`. Separate from the eligibility rules above, and it obeys a
+# different contract: eligibility DECIDES, matching only RANKS.
+#
+# Nothing here can drop a job. That is a measured decision, not caution. A
+# keyword-overlap scorer run against this board hard-dropped 45% of rows, and
+# among the casualties was a full-stack AI role that explicitly said
+# "candidates must be based in India" — it scored zero because its JD names no
+# technology at all ("modern web frameworks, APIs, databases"). The same run's
+# top matches were an equity-only role and an "*Urgent* / Immediate-30-days"
+# consultancy post, because counting keywords rewards keyword stuffing.
+# Overlap is a fair ranking signal and a dangerous filter.
+# ---------------------------------------------------------------------------
+matching:
+  enabled: true
+
+  # Component caps. Each is bounded so no single signal can carry a row: a
+  # posting stuffed with my skill words still cannot outrank a genuine match
+  # on years, family and freshness combined.
+  skill_cap: 40    # weighted overlap with profile.skills
+  years_cap: 15    # stated JD requirement vs profile.seniority.total_years
+  family_cap: 20   # title against the wanted families
+  india_bonus: 10  # posting names India/IST directly — rarer and stronger
+                   # than "worldwide", which often means "worldwide except you"
+  fresh_cap: 10    # recency of posted_at
+
+  # Penalties.
+  evergreen_penalty: 15  # "always looking", "talent pool", "future openings"
+  spam_penalty: 25       # equity-only, unpaid, *urgent*, immediate-joiner
+  gap_penalty_cap: 12    # stacks in profile.gaps, capped so one stray mention
+                         # of AWS in a benefits list cannot sink a good role
+
+  # Score at or above which a row earns an LLM read. Rows flagged
+  # low-confidence are read regardless of score — a JD naming fewer than three
+  # technologies produces an overlap number that reflects its writing style
+  # rather than its fit, and the cheap pass has to admit when it cannot judge.
+  llm_threshold: 65
+
+# ---------------------------------------------------------------------------
+# Validity (`app/validation.py`) — is this posting worth believing?
+#
+# A third question, distinct from the two above: eligibility DECIDES, matching
+# RANKS, and validity DISCOUNTS. Nothing here filters — a ghost posting can be
+# perfectly eligible and score an excellent fit, so this emits a 0-100 score
+# and reasons, and a stale row sorts down rather than vanishing.
+#
+# Age keys off `posted_at`, never `updated_at`: five of six sources never
+# populate `updated_at` (ashby, himalayas, lever, remotive, wellfound — 3,266
+# of 5,491 open rows). Only Greenhouse sets it.
+# ---------------------------------------------------------------------------
+validity:
+  enabled: true
+
+  # Age bands in days. The penalty ramps across them instead of cliff-edging,
+  # because a 45-day-old posting is a weaker signal than a 20-day-old one but
+  # is not yet evidence of anything.
+  fresh_days: 14
+  aging_days: 45
+  stale_days: 90
+  age_penalty_cap: 30
+
+  # The ghost signal: a row whose `last_seen_at` predates the last SUCCESSFUL
+  # run for its board was not in that fetch and should have been closed.
+  # Weighted heavily because it is the one check backed by our own observation
+  # rather than by reading the board's prose.
+  missed_sweep_penalty: 35
+
+  # Listed unchanged for this long. Distinct from age — a posting can be
+  # recent and still never have moved since we first saw it.
+  never_changed_days: 120
+  never_changed_penalty: 10
+
+  evergreen_penalty: 25     # "talent pool", "always looking", "future openings"
+  contentless_penalty: 30   # "JD will be shared", "apply to know more"
+
+  # Low on purpose. Measured on the live board, this check finds almost
+  # nothing: 0 exact content_hash collisions across open rows, 2 rows on a
+  # (company, title, JD-hash) key, 3 on the same JD across different
+  # companies. Databricks' "Solutions Architect" x23 looks like duplication
+  # and is not — 23 distinct JD hashes. It ships because it is nearly free,
+  # but it is a footnote, not a feature.
+  duplicate_penalty: 15
+
+  missing_description_penalty: 25
+  thin_description_chars: 400
+  thin_description_penalty: 10
+  # Structural: a posting we cannot apply to is worthless however good it looks.
+  missing_apply_url_penalty: 40
+  missing_posted_at_penalty: 8
+
+  # Below this the dashboard badges the row as suspect.
+  suspect_below: 60

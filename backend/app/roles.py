@@ -5,7 +5,8 @@ fields a board hands us; this one has only the title and the JD prose, so it is
 the only rule that has to read English. It answers two questions:
 
   1. Is this one of the role families I want?  (software / staff engineer,
-     software developer, frontend, backend, full-stack, AI/ML, product engineer)
+     software developer, frontend, backend, full-stack, AI/ML, product engineer,
+     founding engineer)
   2. Is it pitched at my level — roughly 5-7 years?
 
 Both are decided from the **title** first, because a title is short, written to
@@ -96,6 +97,21 @@ ROLE_FAMILIES: Final[dict[str, re.Pattern[str]]] = {
     # (Linear's "Senior / Staff Product Engineer"). Enabled by choice: it is a
     # naming convention for a wanted role, not a different job.
     "product_engineer": re.compile(r"(?ix)\bproduct\s*engineer\b"),
+    # The first few engineering hires at a seed-stage startup. This entry
+    # covers exactly one thing: the BARE title. "Founding Engineer" names no
+    # stack, so it matches no other family and was rejected outright before
+    # this existed. Every qualified variant already has a home —
+    # "Founding Backend Engineer" is `backend`, "Founding AI Engineer" is
+    # `ai_ml` — and the label differs while the verdict does not.
+    #
+    # The pattern is deliberately NOT `founding\s+(\w+\s+){0,2}engineer`. That
+    # form was tried and it turns `founding` into a lone qualifier that drags
+    # in any engineer-suffixed title: it admitted "Founding Flutter Engineer"
+    # and "Founding Data Pipeline Engineer" — the `mobile` and `data` families,
+    # switched off on purpose in filters.yaml — plus "Founding Customer Success
+    # Engineer", which is not an engineering role at all. A qualifier names the
+    # team, not the role; the head has to be `engineer` itself.
+    "founding_engineer": re.compile(r"(?ix)\bfounding\s+engineers?\b"),
     # --- Off by default: real engineering, different specialization ---------
     "devops_sre": re.compile(
         r"(?ix)\b(devops|sre|site\s*reliability|cloud)\s*(engineer|engineering)\b"
@@ -118,6 +134,7 @@ DEFAULT_FAMILIES: Final[tuple[str, ...]] = (
     "platform",
     "application",
     "product_engineer",
+    "founding_engineer",
 )
 
 # Wrong level, downward. `engineer i` / `engineer 1` needs the negative

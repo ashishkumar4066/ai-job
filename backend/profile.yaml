@@ -1,0 +1,247 @@
+# My profile — the thing every job is scored against.
+#
+# This file is the SOURCE OF TRUTH. The dashboard can edit it, but hand-editing
+# here must stay a first-class path: it is the one file in this repo worth
+# backing up, and the résumé PDF beside it is not machine-readable.
+#
+# Extracted from data/Ashish_AI_FullStack_v2.pdf on 2026-09-13 (v1 on
+# 2026-09-08). REVIEW IT. Every fit score inherits whatever is wrong here, so a
+# mis-read year count or a missing skill silently biases all 741 rows.
+#
+# Editing this file changes `profile_version` (a hash of the normalized
+# content), which invalidates cached match scores. That is deliberate — a score
+# computed against last week's résumé must never be displayed as current.
+
+identity:
+  full_name: Ashish Kumar
+  email: krashish1350@gmail.com
+  phone: '+91-8789777738'
+  location: Bihar, India
+  country: IN
+  timezone: Asia/Kolkata
+  links:
+    # The résumé displays "linkedin.com/in/ashish-kumar"; this is the full URL.
+    linkedin: https://www.linkedin.com/in/ashish-kumar-17417914b/
+    github: https://github.com/ashishkumar4066
+
+# Not read by matching (the Profile model ignores it). Kept for Stage 3 document
+# generation, which may only re-word facts stated in this file.
+summary: >-
+  AI engineer who builds AI infrastructure, not just AI features. Built a
+  token-metering and LLM observability platform from scratch; prompt caching
+  cut LLM token costs ~90%. 6 years in production software, the last 2+ on
+  AI/LLM systems: RAG, agentic workflows (LangChain, LangGraph), multimodal document
+  intelligence (YOLOv11 + Vision LLMs), Text-to-SQL, and event-driven
+  architecture, serving 1,000+ users across 10 enterprise tenants on GCP.
+  Leads 5 engineers across Python, FastAPI, Java, Node.js, and React.
+
+work_authorization:
+  # Drives the "will they hire me" half. `needs_sponsorship: true` is why a JD
+  # saying "must be authorized to work in the US without sponsorship" is a hard
+  # mismatch even when the board tags the role `worldwide`.
+  citizenship: IN
+  authorized_in: [IN]
+  needs_sponsorship: true
+  open_to_relocation: false
+  remote_only: true
+
+seniority:
+  # Sep 2020 -> present = 6 years, which the v2 résumé now states outright.
+  # `roles.py` bounds a *stated* JD requirement to 2..8, and this is the
+  # candidate side of that comparison. `ai_years` follows the résumé's
+  # "the last 2+ on AI/LLM systems" (v1 of this file said 3).
+  total_years: 6
+  ai_years: 2
+  current_title: Senior Full Stack Developer
+  target_titles:
+    - Senior Software Engineer
+    - Senior Full Stack Engineer
+    - Senior Backend Engineer
+    - AI Engineer
+    - Senior AI Engineer
+    - Applied AI Engineer
+    - Staff Software Engineer
+    - Product Engineer
+    - Founding Team
+
+compensation:
+  # Mirrors `min_annual_salary_inr` in config/filters.yaml. Kept here too
+  # because matching reasons should be able to say "below your floor" without
+  # reaching into the eligibility config.
+  min_annual_inr: 3000000
+  preferred_currency: USD
+
+# Weighted skills. The weight is "how strongly does this represent me", not
+# "how much do I like it" — it scales the fit score when a JD asks for it.
+#   3 = core, shipped repeatedly in production
+#   2 = solid working experience
+#   1 = used, would not headline it
+#
+# Terms match on word boundaries, so a plural is a different term:
+# `websocket` does not match "WebSockets".
+skills:
+  ai:
+    llm: 3
+    rag: 3
+    agentic: 3
+    langgraph: 3
+    langchain: 2
+    generative ai: 3
+    gen ai: 3
+    llm observability: 3
+    prompt engineering: 2
+    prompt caching: 2
+    token metering: 2
+    tool calling: 2
+    function calling: 2
+    guardrails: 2
+    embeddings: 2
+    vector database: 2
+    qdrant: 2
+    semantic search: 2
+    hybrid search: 2
+    computer vision: 2
+    yolo: 2
+    pytorch: 2
+    machine learning: 2
+    multimodal: 2
+    vision llm: 2
+    document extraction: 2
+    text-to-sql: 2
+    gemini: 2
+    mistral: 1
+    groq: 1
+    llama: 1
+    bge-m3: 1
+    # Not on the v2 résumé. Kept at the lowest weight; delete any you would
+    # not want a tailored résumé to claim.
+    ollama: 1
+    openai: 1
+    nlp: 1
+  backend:
+    python: 3
+    fastapi: 3
+    node: 2
+    java: 2
+    rest api: 2
+    websocket: 2
+    websockets: 2
+    event-driven: 2
+    cdc: 2
+    sso: 2
+    oauth: 1
+    oidc: 1
+    jwt: 1
+    # Not on the v2 résumé — see the note under `ai`.
+    microservice: 1
+    graphql: 1
+  frontend:
+    react: 3
+    javascript: 2
+    typescript: 2
+    redux: 1
+    tailwind: 1
+    material ui: 1
+  data:
+    postgres: 2
+    mongodb: 2
+    mysql: 1
+    firebase: 1
+    firestore: 1
+    sql: 2
+  cloud:
+    gcp: 3
+    cloud run: 2
+    docker: 2
+    gcs: 1
+    ci/cd: 1
+    git: 1
+  practices:
+    distributed systems: 2
+    system design: 2
+    multi-tenant: 2
+    pytest: 2
+    saas: 1
+    agile: 1
+    jest: 1
+    junit: 1
+    mockito: 1
+
+# Stacks I have NOT shipped. A JD centred on these is a genuine mismatch, not
+# a gap to paper over. Weight = how strongly its presence should count against
+# a role. Kept separate from `skills` so the reasons can say *why* a job sank.
+gaps:
+  aws: 2
+  azure: 2
+  kubernetes: 2
+  terraform: 2
+  golang: 2
+  rust: 2
+  scala: 2
+  c++: 2
+  c#: 2
+  .net: 2
+  php: 2
+  ruby on rails: 2
+  django: 1
+  flask: 1
+  swift: 2
+  kotlin: 2
+  android: 2
+  ios: 2
+  spark: 2
+  hadoop: 2
+  snowflake: 1
+  databricks: 1
+  salesforce: 2
+  sap: 2
+  kafka: 1
+
+experience:
+  - company: AsInt
+    title: Senior Full Stack Developer
+    location: Ahmedabad, India
+    start: 2022-11
+    end: null
+    highlights:
+      - Lead engineer for the team's AI systems, owning architecture and end-to-end delivery; drove build-vs-buy decisions through RFCs and mentored 5 engineers across design, implementation, and production deployment.
+      - Designed an agentic AI workflow (LangChain/LangGraph + Gemini) with human-in-the-loop controls, automating inspection creation and reducing research effort by 30% while maintaining review.
+      - Real-time notification service on PostgreSQL WAL-based CDC; a Mistral LLM classifies and prioritizes events, delivering alerts to 1,000+ users within 20s via WebSockets to a React UI.
+      - Text-to-SQL engine built from scratch with schema-grounded RAG and guardrails against destructive SQL and cross-tenant leakage; 75% accuracy across 200+ schemas.
+      - Trained and deployed a custom YOLOv11 document-layout model (PyTorch) on Google Cloud Run; 80% mAP@0.5 across 2,500+ annotated document images.
+      - Multimodal document extraction pipeline on Gemini vision LLM; 90% field-level accuracy across document workflows, with page images served via GCS URLs to a React UI.
+      - Token-metering and LLM observability platform built from scratch, replacing Langfuse; five-tier request pricing, request-level tracing and audit trails; prompt caching cut LLM token costs ~90%.
+      - Re-architected a legacy monolith into a multi-tenant SaaS platform (Node.js, MongoDB) with Java/React SSO (Enterprise IDP + OTP), isolating 10 tenants; +20% throughput, 40% faster login.
+  - company: Incture Technologies
+    title: Associate Software Developer
+    location: Bengaluru, India
+    start: 2020-09
+    end: 2022-09
+    highlights:
+      - Shipped a MERN real-time messaging platform (WebSockets, JWT, MongoDB) for 1,000+ users.
+      - Reusable Jest-tested React rich-text editor (TinyMCE) adopted across 7 products.
+
+projects:
+  - name: CryptoLens
+    url: https://github.com/ashishkumar4066/ai-youtube-analyser
+    summary: RAG research agent over a crypto analyst's YouTube archive. Scraped 2,000+ transcripts, chunked and embedded them with BGE-M3, indexed in Qdrant. Hybrid search with temporal reranking, cross-time contradiction detection, and citation-grounded answers with video + timestamp references, using Groq (Llama 3.3 70B) + Gemini; Streamlit UI and Telegram.
+
+education:
+  - degree: Bachelor of Engineering, Computer Science and Engineering
+    institution: Siddaganga Institute of Technology
+    start: 2016
+    end: 2020
+    score: 8.5/10
+
+resume_files:
+  # Paths are relative to the backend/ directory.
+  base: data/Ashish_AI_FullStack_v2.pdf
+
+# Reusable free-text answers. Not used by matching — Phase 3 autofill consumes
+# these. Left here so there is exactly one profile store, not two.
+answers:
+  notice_period: null
+  current_ctc: null
+  expected_ctc: null
+  why_this_company: null
+  visa_status: 'Indian citizen, based in India. Requires sponsorship for US/UK roles; available for remote contracts worldwide.'

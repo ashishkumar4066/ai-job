@@ -13,7 +13,14 @@ import pytest
 
 from app.config import BACKEND_ROOT
 from app.eligibility import FilterConfig, evaluate, load_filters
-from app.geo import WORLDWIDE, country_code, format_utc_offset, resolve_eligibility, split_location_text
+from app.geo import (
+    WORLDWIDE,
+    country_code,
+    format_utc_offset,
+    looks_like_timezone,
+    resolve_eligibility,
+    split_location_text,
+)
 from app.normalize import parse_salary_text
 
 SHIPPED_FILTERS = BACKEND_ROOT / "config" / "filters.yaml"
@@ -323,3 +330,56 @@ class TestSalaryParsing:
 
     def test_bounds_are_ordered(self) -> None:
         assert parse_salary_text("$230k - $150k")[:2] == (150000, 230000)
+
+
+class TestShortTokenAmbiguity:
+    """Short location tokens mean whatever the writer meant, and a US job
+    board means the airport. Both bugs here were live on the real data."""
+
+    def test_a_us_multi_city_string_resolves_to_the_us(self) -> None:
+        """Stripe posts "SF, NYC, SEA, CHI" in one `location.name`.
+
+        A bare `sea` region alias used to make this {ID, KH, MY, PH, SG, TH,
+        VN} — a US-only role tagged ASEAN-eligible. 613 open rows carry a
+        location string with three or more commas.
+        """
+        codes, _, _ = resolve_eligibility(split_location_text("SF, NYC, SEA, CHI"))
+        assert codes == ["US"]
+
+    def test_the_region_still_resolves_when_spelled_out(self) -> None:
+        codes, _, _ = resolve_eligibility(split_location_text("Southeast Asia"))
+        assert "SG" in codes and "US" not in codes
+
+    def test_south_east_asia_is_a_region_not_a_timezone(self) -> None:
+        """`\b[A-Z]{2,4}T\b` under IGNORECASE matched "East", so this token
+        was filed as a timezone restriction and its members never resolved."""
+        codes, timezones, _ = resolve_eligibility(split_location_text("South East Asia"))
+        assert "SG" in codes
+        assert timezones == []
+
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("USA, CST (UTC-6)", "US"),
+            ("Central - United States", "US"),
+        ],
+    )
+    def test_a_timezone_hint_does_not_hide_the_country(
+        self, text: str, expected: str
+    ) -> None:
+        codes, _, _ = resolve_eligibility(split_location_text(text))
+        assert expected in codes
+
+    @pytest.mark.parametrize("text", ["EST timezone", "Remote (IST)", "UTC+05:30"])
+    def test_real_timezone_abbreviations_are_still_detected(self, text: str) -> None:
+        """The case-sensitivity fix must not stop catching genuine ones."""
+        assert looks_like_timezone(text)
+
+    @pytest.mark.parametrize("word", ["East", "West", "Most", "Next"])
+    def test_an_ordinary_capitalized_word_is_not_a_timezone(self, word: str) -> None:
+        assert not looks_like_timezone(word)
+
+    def test_india_still_wins_from_a_compound_city_name(self) -> None:
+        """The regression guard for `split_location_text` before resolve."""
+        codes, _, _ = resolve_eligibility(split_location_text("Mumbai, Maharashtra"))
+        assert codes == ["IN"]

@@ -250,6 +250,34 @@ class TestClosureByDisappearance:
         assert result.closed == 0
 
     @respx.mock
+    async def test_a_curated_board_that_never_produced_a_row_is_flagged(
+        self, db: None
+    ) -> None:
+        """The gap the closure guard cannot see.
+
+        That guard asks "did this board lose all its rows?", which needs rows
+        to have existed. A curated board whose slug is simply wrong answers
+        200 with an empty list and has NEVER had a row, so `open_before` is 0
+        and nothing fires. Measured live on `ashby:deel`, which reported
+        `fetched=0` with no error and no warning while every other board
+        looked normal — a dead config entry contributing nothing for a month.
+        """
+        mock_all_boards(ashby={"jobs": [], "apiVersion": "1"})
+        result = await run_ingest(notify=False)
+
+        ashby_result = next(s for s in result.sources if s.ats == "ashby")
+        assert ashby_result.fetched == 0
+        assert ashby_result.never_produced_rows is True
+        # Still not an error: the fetch succeeded, the config is what is wrong.
+        assert ashby_result.ok is True
+
+    @respx.mock
+    async def test_a_curated_board_with_rows_is_not_flagged(self, db: None) -> None:
+        mock_all_boards()
+        result = await run_ingest(notify=False)
+        assert all(not s.never_produced_rows for s in result.sources)
+
+    @respx.mock
     async def test_empty_lever_board_does_close(self, session_factory) -> None:
         """Lever 404s on a bad slug, so an empty array is a real signal."""
         mock_all_boards()
