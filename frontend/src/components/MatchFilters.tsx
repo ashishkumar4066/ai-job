@@ -129,7 +129,7 @@ export function MatchFilterButton({
         <div
           role="dialog"
           aria-label="Filter matches"
-          className="glass-strong animate-fade-in absolute top-full right-0 z-30 mt-1.5 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-xl border border-edge shadow-xl"
+          className="glass-popover animate-fade-in absolute top-full right-0 z-30 mt-1.5 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-xl"
         >
           <div className="flex items-center gap-2 border-b border-edge px-3.5 py-2.5">
             <span className="text-[12.5px] font-semibold text-ink">Filter matches</span>

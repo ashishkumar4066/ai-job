@@ -1,0 +1,66 @@
+# Answers for one application. Read by `python -m scripts.autofill`.
+#
+# Keys are the START of each question as the form shows it; values are the
+# option text (radio), a list of option texts (checkbox), or free text.
+# Option text may be a prefix too ("Yes" would be ambiguous, so write enough).
+#
+# `null` = the profile does not say, so the filler leaves it empty and outlines
+# it RED in the browser. Fill those in here or directly in the form.
+# Keys under `drafts` are outlined AMBER: inferred or drafted, read them first.
+
+url: https://jobs.lever.co/tryjeeves/ded9e04e-f18e-4d4c-ae43-4b7882c6200b/apply?lever-source=himalayas.app
+job: Jeeves — Senior AI Engineer (via Himalayas)
+
+answers:
+  How would you rate your professional English fluency: null
+
+  Which additional language(s) do you speak at a professional level: null
+
+  # profile: 6 years total (Sep 2020 -> now), full-stack with backend throughout.
+  How many years of professional backend engineering experience: "5-8 years"
+
+  Have you worked on a globally distributed engineering team: null
+
+  # profile: Python/FastAPI, Node.js, Java in production.
+  Which of the following server-side languages have you used professionally:
+    - Python
+    - Node.js / TypeScript
+    - Java
+
+  # profile: GCP (Cloud Run, GCS); "No AWS, Azure or Kubernetes in production".
+  Which cloud platforms have you used professionally:
+    - Google Cloud Platform
+
+  # profile: PostgreSQL WAL-based CDC in production; MongoDB was the main store
+  # of the multi-tenant platform, so "primary database" would overstate it.
+  Do you have professional experience with PostgreSQL: "Some production experience"
+
+  Do you currently use AI coding tools: null
+
+  Have you worked at a startup or high-growth company: null
+
+  # profile domains: enterprise B2B SaaS, document intelligence, LLM platform.
+  Do you have professional experience in fintech: "No fintech or financial services experience"
+
+  # expected_ctc is null in profile.yaml. Your floor is INR 30L/yr (~INR 2.5L
+  # per month) — that is a floor, not an ask. Include the currency.
+  What is your monthly salary requirement: null
+
+  # Drafted from profile.yaml facts only. Nothing about Jeeves beyond the
+  # question's own wording.
+  Why are you interested in this role at Jeeves: >-
+    I build production AI and backend systems end to end: a token-metering and
+    LLM observability platform, a Text-to-SQL engine with guardrails against
+    destructive SQL and cross-tenant leakage, and a real-time notification
+    service on PostgreSQL CDC, all in Python/FastAPI on GCP. Financial
+    infrastructure asks for the same things that work demanded — correctness,
+    auditability and strict tenant isolation — and I want to apply them where
+    the stakes are money. A globally distributed team also suits how I already
+    work: I drive architecture decisions through written RFCs and mentor
+    engineers across design, implementation and deployment.
+
+drafts:
+  - How many years of professional backend engineering experience
+  - Do you have professional experience with PostgreSQL
+  - Do you have professional experience in fintech
+  - Why are you interested in this role at Jeeves

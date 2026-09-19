@@ -38,3 +38,6 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# Autofill audit logs (contain personal details)
+backend/applications/logs/
