@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "./api";
+
+/** How long a job's detail (JD and all) stays fresh — shared with `JobDrawer`. */
+export const JOB_DETAIL_STALE_MS = 5 * 60_000;
 
 const THEME_KEY = "jr:theme";
 const VISIT_KEY = "jr:last-visit";
@@ -121,4 +126,23 @@ export function useHotkeys(handlers: Record<string, (event: KeyboardEvent) => vo
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+}
+
+/**
+ * Warm a job's detail on hover, so the drawer opens with the JD already there
+ * instead of a spinner. Same key and staleTime as `JobDrawer`'s own query, so
+ * a prefetched job is never fetched twice.
+ */
+export function usePrefetchJob() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (jobId: number) => {
+      void queryClient.prefetchQuery({
+        queryKey: ["job", jobId],
+        queryFn: () => api.job(jobId),
+        staleTime: JOB_DETAIL_STALE_MS,
+      });
+    },
+    [queryClient],
+  );
 }

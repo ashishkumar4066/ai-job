@@ -9,7 +9,7 @@ import type {
   JobsFunnel,
   LlmEstimate,
   LlmStatus,
-  MatchBand,
+  MatchBandFilters,
   MatchesFunnel,
   MatchList,
   MatchRun,
@@ -176,7 +176,8 @@ export function runMatchScoring(force = false): Promise<MatchRun> {
 
 export function fetchMatches(opts: {
   minScore?: number;
-  band?: MatchBand | null;
+  /** Ranker fit, LLM fit and Validator bands — OR within one, AND across. */
+  bands?: MatchBandFilters;
   /** true = only jobs on the LLM shortlist. */
   shortlisted?: boolean | null;
   /** true = drop jobs whose JD states a hard blocker. */
@@ -194,7 +195,9 @@ export function fetchMatches(opts: {
   // whatever the Jobs tab happens to show now, and the funnel would stop
   // adding up.
   if (opts.minScore) p.set("min_score", String(opts.minScore));
-  if (opts.band) p.set("band", opts.band);
+  for (const b of opts.bands?.fit ?? []) p.append("fit_band", b);
+  for (const b of opts.bands?.llm ?? []) p.append("llm_band", b);
+  for (const b of opts.bands?.validity ?? []) p.append("validity", b);
   if (opts.shortlisted != null) p.set("shortlisted", String(opts.shortlisted));
   if (opts.hideBlocked) p.set("hide_blocked", "true");
   // Default ON server-side. Sent explicitly only when switched off, so the

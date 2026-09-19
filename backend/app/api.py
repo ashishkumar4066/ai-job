@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, and_, case, func, or_, select
+from sqlalchemy.orm import defer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters import supported_ats
@@ -31,6 +33,7 @@ from app.prefs import Prefs, PrefsError, TransferPrefs, get_prefs, load_prefs, s
 from app.profile import ProfileError, get_profile
 from app.shortlist import HARD_MAX_READS, reasons_excluded, shortlist_clause
 from app.validation_runner import ValidityRunResult, run_validation
+from app.validation_runner import _band as validity_band
 from app.schemas import (
     IngestRunOut,
     IngestStatusOut,
@@ -62,6 +65,12 @@ router = APIRouter()
 _ingest_lock = tracker.lock
 
 SortField = Literal["posted_at", "first_seen_at", "last_seen_at", "title", "company"]
+
+# The JD bodies and the raw board payload are ~185 MB across the table and are
+# never part of a list response (`JobOut` omits them). Loading them anyway made
+# a 100-row page read ~2 MB of text and parse 100 JSON documents to discard.
+_JD_BODY_DEFERRED = (defer(JobPosting.raw_json), defer(JobPosting.description_html))
+_LIST_DEFERRED = (*_JD_BODY_DEFERRED, defer(JobPosting.description_text))
 
 
 def _apply_filters(stmt: Select, *, status: str = "open", **filters: object) -> Select:
@@ -175,6 +184,7 @@ async def list_jobs(
         stmt = stmt.order_by(JobPosting.posted_at.desc())
     # Final tie-break on id so pagination can never repeat or skip a row.
     stmt = stmt.order_by(JobPosting.id.desc()).limit(limit).offset(offset)
+    stmt = stmt.options(*_LIST_DEFERRED)
 
     rows = (await session.execute(stmt)).scalars().all()
     return JobListOut(
@@ -208,100 +218,91 @@ async def facets(
     Selecting one then yields an empty table, which reads as a broken filter.
     """
 
-    async def grouped(column) -> list[dict[str, object]]:
-        stmt = _apply_filters(
-            select(column, func.count().label("n")),
-            status=status,
-            eligibility_pass=eligibility_pass,
-        ).where(column.is_not(None))
-        rows = await session.execute(
-            stmt.group_by(column).order_by(func.count().desc(), column.asc())
-        )
-        return [{"value": value, "count": count} for value, count in rows if value]
+    # Every count below is folded into as few scans as possible. The filter
+    # columns (`posted_at`, `validity_score`, `workplace_type`, ...) sit behind
+    # ~20 KB of JD text in each row, so a scan costs ~40 ms and the old one-
+    # query-per-number shape made this route ~17 scans long.
+    def flag(condition) -> object:
+        return func.coalesce(func.sum(case((condition, 1), else_=0)), 0)
 
-    base = _apply_filters(
-        select(func.count()).select_from(JobPosting),
+    week_ago = utcnow() - timedelta(days=7)
+    moment = None
+    if since is not None:
+        moment = since if since.tzinfo else since.replace(tzinfo=UTC)
+
+    # Validity bands, so the `min validity` slider can show what each step
+    # would cost before you move it. `unscored` is reported separately because
+    # those rows pass every threshold and would otherwise look like
+    # high-validity rows.
+    band_edges = (("solid", 85, 101), ("ok", 70, 85), ("questionable", 50, 70), ("suspect", 0, 50))
+    score = JobPosting.validity_score
+    gated = _apply_filters(
+        select(
+            func.count(),
+            flag(IS_REMOTE),
+            flag(JobPosting.posted_at.is_not(None) & (JobPosting.posted_at >= week_ago)),
+            flag(JobPosting.first_seen_at > moment) if moment is not None else func.count() * 0,
+            flag(score.is_(None)),
+            *(flag(score.is_not(None) & (score >= lo) & (score < hi)) for _, lo, hi in band_edges),
+        ).select_from(JobPosting),
         status=status,
         eligibility_pass=eligibility_pass,
     )
-    total = await session.scalar(base) or 0
-    remote_count = await session.scalar(base.where(IS_REMOTE)) or 0
+    total, remote_count, posted_week, new_since, validity_unscored, *band_counts = (
+        (await session.execute(gated)).one()
+    )
+    validity_bands = {label: n for (label, _, _), n in zip(band_edges, band_counts, strict=True)}
 
-    # Deliberately NOT derived from `base`. With the gate on, `base` already
+    # Deliberately NOT gated. With the gate on, the query above already
     # excludes every ineligible row, so counting within it would report
     # ineligible = 0 and make the split describe the query rather than the
     # board. This pair always answers "of the jobs at this status, how many
     # clear the filter?", which is the only reading that stays useful.
-    split_base = _apply_filters(select(func.count()).select_from(JobPosting), status=status)
-    split_total = await session.scalar(split_base) or 0
-    eligible_count = (
-        await session.scalar(split_base.where(JobPosting.eligibility_pass.is_(True))) or 0
-    )
-
-    week_ago = utcnow() - timedelta(days=7)
-    posted_week = (
-        await session.scalar(
-            base.where(JobPosting.posted_at.is_not(None), JobPosting.posted_at >= week_ago)
+    split_total, eligible_count = (
+        await session.execute(
+            _apply_filters(
+                select(func.count(), flag(JobPosting.eligibility_pass.is_(True))).select_from(
+                    JobPosting
+                ),
+                status=status,
+            )
         )
-        or 0
-    )
+    ).one()
 
-    new_since = 0
-    if since is not None:
-        moment = since if since.tzinfo else since.replace(tzinfo=UTC)
-        new_since = await session.scalar(base.where(JobPosting.first_seen_at > moment)) or 0
-
-    open_total = (
-        await session.scalar(
-            select(func.count()).select_from(JobPosting).where(JobPosting.status == "open")
+    open_total, closed_total = (
+        await session.execute(
+            select(flag(JobPosting.status == "open"), flag(JobPosting.status == "closed"))
         )
-        or 0
-    )
-    closed_total = (
-        await session.scalar(
-            select(func.count()).select_from(JobPosting).where(JobPosting.status == "closed")
-        )
-        or 0
-    )
+    ).one()
     last_ingest = await session.scalar(select(func.max(IngestRun.finished_at)))
 
-    # Validity bands, so the `min validity` slider can show what each step
-    # would cost before you move it. Computed with the same gate as the rest
-    # of the facets; `unscored` is reported separately because those rows pass
-    # every threshold and would otherwise look like high-validity rows.
-    validity_base = _apply_filters(
-        select(func.count()).select_from(JobPosting),
-        status=status,
-        eligibility_pass=eligibility_pass,
-    )
-    validity_bands: dict[str, int] = {}
-    for label, lo, hi in (
-        ("solid", 85, 101),
-        ("ok", 70, 85),
-        ("questionable", 50, 70),
-        ("suspect", 0, 50),
-    ):
-        validity_bands[label] = (
-            await session.scalar(
-                validity_base.where(
-                    JobPosting.validity_score.is_not(None),
-                    JobPosting.validity_score >= lo,
-                    JobPosting.validity_score < hi,
-                )
-            )
-            or 0
+    # Every dropdown's options in one pass over the gated rows, counted here
+    # rather than with one GROUP BY scan per column.
+    facet_columns = {
+        "companies": JobPosting.company,
+        "ats": JobPosting.ats,
+        "departments": JobPosting.department,
+        "currencies": JobPosting.salary_currency,
+        "employment_types": JobPosting.employment_type,
+        "workplace_types": JobPosting.workplace_type,
+    }
+    counters: dict[str, Counter[str]] = {key: Counter() for key in facet_columns}
+    rows = await session.execute(
+        _apply_filters(
+            select(*facet_columns.values()), status=status, eligibility_pass=eligibility_pass
         )
-    validity_unscored = (
-        await session.scalar(validity_base.where(JobPosting.validity_score.is_(None))) or 0
     )
+    for row in rows:
+        for key, value in zip(facet_columns, row, strict=True):
+            if value:
+                counters[key][value] += 1
+
+    def ranked(counter: Counter[str]) -> list[dict[str, object]]:
+        ordered = sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+        return [{"value": value, "count": count} for value, count in ordered]
 
     return {
-        "companies": await grouped(JobPosting.company),
-        "ats": await grouped(JobPosting.ats),
-        "departments": await grouped(JobPosting.department),
-        "currencies": await grouped(JobPosting.salary_currency),
-        "employment_types": await grouped(JobPosting.employment_type),
-        "workplace_types": await grouped(JobPosting.workplace_type),
+        **{key: ranked(counter) for key, counter in counters.items()},
         "validity": {"bands": validity_bands, "unscored": validity_unscored},
         "totals": {
             "matching": total,
@@ -519,6 +520,27 @@ def _band_of(score: int) -> str:
     return "poor"
 
 
+# [lo, hi) score ranges — the SQL form of `_band_of` and of the Validator's
+# `validation_runner._band`.
+_FIT_BAND_RANGES = {
+    "excellent": (80, 101),
+    "strong": (65, 80),
+    "moderate": (50, 65),
+    "weak": (35, 50),
+    "poor": (0, 35),
+}
+_VALIDITY_BAND_RANGES = {
+    "solid": (85, 101),
+    "ok": (70, 85),
+    "questionable": (50, 70),
+    "suspect": (0, 50),
+}
+
+
+def _validity_band_of(score: int | None) -> str:
+    return "unchecked" if score is None else validity_band(score)
+
+
 @router.get("/profile", response_model=ProfileOut, tags=["matching"])
 async def read_profile() -> ProfileOut:
     """The profile every job is scored against."""
@@ -580,7 +602,11 @@ async def _llm_background(
 ) -> None:
     """Own session, own lock — the pass outlives the request that started it."""
     async with llm_tracker.lock:
-        llm_tracker.progress = LLMProgress()
+        # Stamped here, not only inside the runner: the runner sets it after
+        # the shortlist queries, and the POST that started this pass answered
+        # before then — "idle", so the dashboard never polled and never saw
+        # the pass finish.
+        progress = llm_tracker.progress = LLMProgress(started_at=utcnow())
         try:
             async with session_scope() as session:
                 llm_tracker.result = await run_llm_screen(
@@ -588,12 +614,18 @@ async def _llm_background(
                     force=force,
                     limit=limit,
                     job_ids=job_ids,
-                    progress=llm_tracker.progress,
+                    progress=progress,
                 )
+            if llm_tracker.result.error and not progress.error:
+                progress.error = llm_tracker.result.error
         except Exception as exc:  # pragma: no cover - defensive
-            llm_tracker.progress.error = f"{type(exc).__name__}: {exc}"
-            llm_tracker.progress.finished_at = utcnow()
+            progress.error = f"{type(exc).__name__}: {exc}"
             log.exception("llm.run_failed")
+        finally:
+            # Early returns in the runner (no profile) never stamp it, which
+            # would leave the pass reading as running forever.
+            if progress.finished_at is None:
+                progress.finished_at = utcnow()
 
 
 def _start_llm(force: bool, limit: int | None, job_ids: list[int] | None = None) -> None:
@@ -667,7 +699,8 @@ async def llm_estimate(
 @router.get("/matches/llm/status", response_model=LLMStatusOut, tags=["matching"])
 async def llm_status() -> LLMStatusOut:
     progress = llm_tracker.progress
-    if progress.running:
+    # The lock is the truth: a pass holds it from before its first query.
+    if llm_tracker.busy or progress.running:
         state: Literal["idle", "running", "done"] = "running"
     elif progress.finished_at is not None:
         state = "done"
@@ -721,7 +754,23 @@ async def list_matches(
     q_scope: Annotated[Literal["all", "title"], Query()] = "all",
     posted_within_days: Annotated[int | None, Query(ge=1, le=365)] = None,
     min_score: Annotated[int, Query(ge=0, le=100)] = 0,
-    band: Annotated[str | None, Query(description="excellent|strong|moderate|weak|poor")] = None,
+    fit_band: Annotated[
+        list[str] | None,
+        Query(description="Ranker fit: excellent|strong|moderate|weak|poor (repeatable, OR)"),
+    ] = None,
+    llm_band: Annotated[
+        list[str] | None,
+        Query(
+            description=(
+                "The LLM's fit_band from a current deep read: excellent|strong|moderate|"
+                "weak|poor|unread (repeatable, OR)"
+            )
+        ),
+    ] = None,
+    validity: Annotated[
+        list[str] | None,
+        Query(description="Validator band: solid|ok|questionable|suspect|unchecked (repeatable, OR)"),
+    ] = None,
     shortlisted: Annotated[
         bool | None, Query(description="true = only jobs on the LLM shortlist")
     ] = None,
@@ -800,32 +849,76 @@ async def list_matches(
         gate = shortlist_clause(threshold)
         stmt = stmt.where(gate if shortlisted else ~gate)
 
-    # Band chips, the "All" count and the shortlist count are computed BEFORE
-    # the band is applied. A band is a selection within the list, not a filter
-    # of it: counting after it made every chip collapse to the selected band's
-    # size ("All 3", "LLM shortlist 1") the moment Excellent was clicked.
+    # Three independent band filters — the ranker's fit, the LLM's fit and the
+    # Validator's validity — ORed within one, ANDed across them. Each one's
+    # counts are taken with the OTHER two applied but not itself, so a chip
+    # says how many rows selecting it would add, and never collapses to the
+    # current selection ("All 3" the moment Excellent was clicked).
+    # The LLM's band, only where `llm_read_for` would say True: a read of this
+    # exact JD that succeeded (failed reads carry `error` and no `fit_band`).
+    llm_fit = JobMatch.llm_verdict["fit_band"].as_string()
+    llm_read = and_(
+        JobMatch.llm_used.is_(True),
+        JobMatch.llm_content_hash == JobPosting.content_hash,
+        llm_fit.is_not(None),
+    )
+    want_fit = {b.lower() for b in fit_band or []}
+    want_llm = {b.lower() for b in llm_band or []}
+    want_validity = {b.lower() for b in validity or []}
+
     band_rows = await session.execute(
-        stmt.with_only_columns(JobMatch.score, shortlist_clause(threshold))
+        stmt.with_only_columns(
+            JobMatch.score,
+            shortlist_clause(threshold),
+            case((llm_read, llm_fit), else_=None),
+            JobPosting.validity_score,
+        )
     )
     bands: dict[str, int] = {}
+    llm_bands: dict[str, int] = {}
+    validity_bands: dict[str, int] = {}
     on_shortlist = 0
     total_all = 0
-    for score, is_short in band_rows:
+    for score, is_short, read_band, validity_score in band_rows:
         total_all += 1
-        key = _band_of(score)
-        bands[key] = bands.get(key, 0) + 1
         if is_short:
             on_shortlist += 1
+        keys = (_band_of(score), read_band or "unread", _validity_band_of(validity_score))
+        hits = (
+            not want_fit or keys[0] in want_fit,
+            not want_llm or keys[1] in want_llm,
+            not want_validity or keys[2] in want_validity,
+        )
+        for i, counts in enumerate((bands, llm_bands, validity_bands)):
+            if all(hit for j, hit in enumerate(hits) if j != i):
+                counts[keys[i]] = counts.get(keys[i], 0) + 1
 
-    if band:
-        lo, hi = {
-            "excellent": (80, 101),
-            "strong": (65, 80),
-            "moderate": (50, 65),
-            "weak": (35, 50),
-            "poor": (0, 35),
-        }.get(band.lower(), (0, 101))
-        stmt = stmt.where(JobMatch.score >= lo, JobMatch.score < hi)
+    if want_fit:
+        stmt = stmt.where(
+            or_(
+                *(
+                    and_(JobMatch.score >= lo, JobMatch.score < hi)
+                    for b, (lo, hi) in _FIT_BAND_RANGES.items()
+                    if b in want_fit
+                ),
+                False,
+            )
+        )
+    if want_llm:
+        named = sorted(want_llm - {"unread"})
+        clauses = [and_(llm_read, llm_fit.in_(named))] if named else []
+        if "unread" in want_llm:
+            clauses.append(~llm_read)
+        stmt = stmt.where(or_(*clauses, False))
+    if want_validity:
+        clauses = [
+            and_(JobPosting.validity_score >= lo, JobPosting.validity_score < hi)
+            for b, (lo, hi) in _VALIDITY_BAND_RANGES.items()
+            if b in want_validity
+        ]
+        if "unchecked" in want_validity:
+            clauses.append(JobPosting.validity_score.is_(None))
+        stmt = stmt.where(or_(*clauses, False))
 
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
 
@@ -836,6 +929,8 @@ async def list_matches(
         # bury a fresh posting under a months-old one with the same number.
         stmt = stmt.order_by(JobPosting.posted_at.desc())
     stmt = stmt.order_by(JobPosting.id.desc()).limit(limit).offset(offset)
+    # `description_text` stays loaded: `_usd_pay` reads the JD prose.
+    stmt = stmt.options(*_JD_BODY_DEFERRED)
 
     rows = (await session.execute(stmt)).all()
     items = [
@@ -871,6 +966,8 @@ async def list_matches(
         profile_version=version,
         items=items,
         bands=bands,
+        llm_bands=llm_bands,
+        validity_bands=validity_bands,
         shortlisted=on_shortlist,
         total_all=total_all,
         blocked=blocked_count,

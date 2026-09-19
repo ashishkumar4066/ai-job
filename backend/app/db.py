@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -25,6 +26,27 @@ def _connect_args(url: str) -> dict[str, object]:
     return {}
 
 
+def _tune_sqlite(dbapi_connection: object, _record: object) -> None:
+    """Per-connection pragmas that keep the dashboard responsive.
+
+    WAL lets reads proceed while a sweep, validity pass or match run is
+    writing; in the default rollback journal every dashboard request queued
+    behind the writer, which is why `/meta/facets` swung between 0.4s and
+    3.7s. `busy_timeout` turns the rare remaining lock into a short wait
+    instead of an error. The page cache matters because `job_postings` rows
+    carry ~20 KB of JD text each, and the list columns sit behind it.
+    """
+    cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+    try:
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.execute("PRAGMA cache_size=-65536")  # 64 MB
+        cursor.execute("PRAGMA temp_store=MEMORY")
+    finally:
+        cursor.close()
+
+
 def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
@@ -35,6 +57,8 @@ def get_engine() -> AsyncEngine:
             future=True,
             connect_args=_connect_args(settings.database_url),
         )
+        if settings.database_url.startswith("sqlite"):
+            event.listen(_engine.sync_engine, "connect", _tune_sqlite)
     return _engine
 
 

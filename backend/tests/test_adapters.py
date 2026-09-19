@@ -235,6 +235,16 @@ class TestRegistry:
             "himalayas",
             "remotive",
             "wellfound",
+            "jobicy",
+            "themuse",
+            "yc",
+            "arc",
+            "cutshort",
+            "hirist",
+            "builtin",
+            "remoteok",
+            "weworkremotely",
+            "remoteyeah",
             "playwright",
         }
 

@@ -69,7 +69,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.adapters.base import AdapterError, BaseAdapter
 from app.config import get_settings
-from app.geo import WORLDWIDE, country_code, resolve_eligibility, split_location_text
+from app.geo import (
+    WORLDWIDE,
+    country_code,
+    resolve_eligibility,
+    split_location_text,
+)
+from app.geo import restriction_from_prose as _restriction_from_prose
 from app.normalize import (
     build_source_key,
     clean_locations,
@@ -91,16 +97,6 @@ SITE = "https://wellfound.com"
 # `/role/...` path form below is a different, permitted surface.
 _NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
 _LD_JSON_RE = re.compile(r'<script[^>]*application/ld\+json[^>]*>(.*?)</script>', re.S)
-
-# Prose that overrides a "worldwide" claim. Ordered: first match wins.
-_RESTRICTION_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"\b(?:with)?in\s+the\s+(United States|USA|US)\b", re.I), "United States"),
-    (re.compile(r"\bUS[- ]based\b|\bU\.S\.[- ]based\b", re.I), "United States"),
-    (re.compile(r"\b(?:must|required to)\s+(?:be\s+)?(?:located|reside|live)\s+in\s+the\s+([A-Z][A-Za-z .]+)", re.I), ""),
-    (re.compile(r"\b(?:must|required to)\s+(?:be\s+)?(?:located|reside|live)\s+in\s+([A-Z][A-Za-z .]+)", re.I), ""),
-    (re.compile(r"\bauthoriz(?:ed|ation) to work in the\s+([A-Z][A-Za-z .]+)", re.I), ""),
-    (re.compile(r"\bonly\s+(?:accepting|considering)\s+.{0,40}?\bin\s+([A-Z][A-Za-z .]+)", re.I), ""),
-]
 
 # Wellfound writes the display line "Hires remotely in <X>" client-side, so it
 # exists in the rendered markdown but not in the raw HTML.
@@ -223,25 +219,6 @@ def _resolve_names(names: list[str]) -> tuple[list[str], list[str]]:
         chain.from_iterable(split_location_text(name) for name in names)
     )
     return codes, unresolved
-
-
-def _restriction_from_prose(text: str) -> str | None:
-    """Find a country restriction stated in free text, or None.
-
-    Deliberately conservative: it only reports a restriction it can name, so an
-    unparsed sentence leaves eligibility as-is rather than inventing a limit.
-    """
-    if not text:
-        return None
-    for pattern, fixed in _RESTRICTION_PATTERNS:
-        match = pattern.search(text)
-        if not match:
-            continue
-        name = fixed or (match.group(1) if match.groups() else "")
-        name = name.strip().rstrip(".,;")
-        if name and country_code(name):
-            return name
-    return None
 
 
 def _hires_remotely_in(markdown: str) -> list[str]:

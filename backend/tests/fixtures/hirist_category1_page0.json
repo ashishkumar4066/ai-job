@@ -1,0 +1,940 @@
+{
+ "data": [
+  {
+   "id": 1670230,
+   "title": "Freecharge Payment Technologies - Lead Software Development Engineer - Node.js Framework",
+   "min": 4,
+   "max": 7,
+   "jobdesignation": "Lead Software Development Engineer - Node.js",
+   "status": 1,
+   "femaleCandidate": 1,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 1,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 0,
+   "brandedJd": 0,
+   "createdTimeMs": 1789013985245,
+   "createdTime": 1788978600000,
+   "tagIdString": "434 49472 5555 2944 2267 2594 2349 603 43 519 167790",
+   "tags": [
+    {
+     "id": 434,
+     "name": "Node.js",
+     "isMandatory": true
+    },
+    {
+     "id": 49472,
+     "name": "Backend Architecture",
+     "isMandatory": true
+    },
+    {
+     "id": 5555,
+     "name": "System Architecture",
+     "isMandatory": false
+    },
+    {
+     "id": 2944,
+     "name": "System Design",
+     "isMandatory": true
+    },
+    {
+     "id": 2267,
+     "name": "Distributed Systems",
+     "isMandatory": true
+    },
+    {
+     "id": 2594,
+     "name": "RESTful API",
+     "isMandatory": false
+    },
+    {
+     "id": 2349,
+     "name": "Microservices Architecture",
+     "isMandatory": true
+    },
+    {
+     "id": 603,
+     "name": "RDBMS",
+     "isMandatory": false
+    },
+    {
+     "id": 43,
+     "name": "NoSQL",
+     "isMandatory": false
+    },
+    {
+     "id": 519,
+     "name": "Cloud",
+     "isMandatory": false
+    },
+    {
+     "id": 167790,
+     "name": "JWT",
+     "isMandatory": false
+    }
+   ],
+   "locations": [
+    {
+     "id": 37,
+     "name": "Gurgaon/Gurugram"
+    }
+   ],
+   "createdByAlias": "Gurgaon/Gurugram",
+   "assessmentFlags": 1,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 1,
+   "companyData": {
+    "companyId": 0,
+    "companyName": "Freecharge",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://rec-assets.iimjobs.com/CompanyLogos/centralised-590.webp",
+    "ambitionBoxInfo": {
+     "ambitionBoxCompanyId": 719,
+     "companyName": "Freecharge",
+     "reviewsCount": 480,
+     "aggregateRating": 3.7,
+     "aggregateRatingOneDecimal": 3.7
+    }
+   },
+   "refCode": "cl_br",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1670230,
+   "location": [
+    {
+     "id": 37,
+     "name": "Gurgaon/Gurugram"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1670236,
+   "title": "Wingify - Lead Backend Engineer - Java",
+   "min": 6,
+   "max": 8,
+   "jobdesignation": "Lead Backend Engineer",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 1,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 0,
+   "brandedJd": 0,
+   "createdTimeMs": 1789014242102,
+   "createdTime": 1788978600000,
+   "tagIdString": "1005 4606 43 2276 5 1756 2763 2850 15733 2944 5555",
+   "tags": [
+    {
+     "id": 1005,
+     "name": "SaaS",
+     "isMandatory": true
+    },
+    {
+     "id": 4606,
+     "name": "BigQuery",
+     "isMandatory": true
+    },
+    {
+     "id": 43,
+     "name": "NoSQL",
+     "isMandatory": false
+    },
+    {
+     "id": 2276,
+     "name": "Kafka",
+     "isMandatory": true
+    },
+    {
+     "id": 5,
+     "name": "Java",
+     "isMandatory": true
+    },
+    {
+     "id": 1756,
+     "name": "Golang",
+     "isMandatory": true
+    },
+    {
+     "id": 2763,
+     "name": "JVM",
+     "isMandatory": true
+    },
+    {
+     "id": 2850,
+     "name": "Spring Boot",
+     "isMandatory": true
+    },
+    {
+     "id": 15733,
+     "name": "Snowflake DB",
+     "isMandatory": false
+    },
+    {
+     "id": 2944,
+     "name": "System Design",
+     "isMandatory": true
+    },
+    {
+     "id": 5555,
+     "name": "System Architecture",
+     "isMandatory": true
+    }
+   ],
+   "locations": [
+    {
+     "id": 88,
+     "name": "Anywhere in India/Multiple Locations"
+    },
+    {
+     "id": 1,
+     "name": "Delhi NCR"
+    },
+    {
+     "id": 37,
+     "name": "Gurgaon/Gurugram"
+    },
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "createdByAlias": "Anywhere in India/Multiple Locations/Delhi NCR/Gurgaon/Gurugram/Bangalore",
+   "assessmentFlags": 1,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 2,
+   "companyData": {
+    "companyId": 2985,
+    "companyName": "Wingify Software",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-5685.webp",
+    "ambitionBoxInfo": {
+     "ambitionBoxCompanyId": 301045,
+     "companyName": "Wingify Software",
+     "reviewsCount": 38,
+     "aggregateRating": 3.1,
+     "aggregateRatingOneDecimal": 3.1
+    }
+   },
+   "refCode": "cl_br",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1670236,
+   "location": [
+    {
+     "id": 88,
+     "name": "Anywhere in India/Multiple Locations"
+    },
+    {
+     "id": 1,
+     "name": "Delhi NCR"
+    },
+    {
+     "id": 37,
+     "name": "Gurgaon/Gurugram"
+    },
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1672699,
+   "title": "WirelessCar - Senior Software Development Engineer - Golang",
+   "min": 8,
+   "max": 12,
+   "jobdesignation": "Senior Software Development Engineer - Golang",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 1,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 0,
+   "brandedJd": 0,
+   "createdTimeMs": 1789727452692,
+   "createdTime": 1789669800000,
+   "tagIdString": "1756 519 2918 7046 9",
+   "tags": [
+    {
+     "id": 1756,
+     "name": "Golang",
+     "isMandatory": true
+    },
+    {
+     "id": 519,
+     "name": "Cloud",
+     "isMandatory": true
+    },
+    {
+     "id": 2918,
+     "name": "Git",
+     "isMandatory": true
+    },
+    {
+     "id": 7046,
+     "name": "ARGO Tool",
+     "isMandatory": false
+    },
+    {
+     "id": 9,
+     "name": "Python",
+     "isMandatory": true
+    }
+   ],
+   "locations": [
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "createdByAlias": "Bangalore",
+   "assessmentFlags": 1,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 5,
+   "companyData": {
+    "companyId": 0,
+    "companyName": "WirelessCar",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-43906.webp"
+   },
+   "refCode": "cl_br",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1672699,
+   "location": [
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1672027,
+   "title": "Senior Rust Developer",
+   "min": 5,
+   "max": 9,
+   "jobdesignation": "Senior Rust Developer",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 1,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 0,
+   "brandedJd": 0,
+   "createdTimeMs": 1789619326909,
+   "createdTime": 1789583400000,
+   "tagIdString": "2197 9 2918 93",
+   "tags": [
+    {
+     "id": 2197,
+     "name": "Rust",
+     "isMandatory": true
+    },
+    {
+     "id": 9,
+     "name": "Python",
+     "isMandatory": true
+    },
+    {
+     "id": 2918,
+     "name": "Git",
+     "isMandatory": false
+    },
+    {
+     "id": 93,
+     "name": "Technical Architect",
+     "isMandatory": true
+    }
+   ],
+   "locations": [
+    {
+     "id": 132,
+     "name": "Remote"
+    },
+    {
+     "id": 88,
+     "name": "Anywhere in India/Multiple Locations"
+    }
+   ],
+   "createdByAlias": "Remote/Anywhere in India/Multiple Locations",
+   "assessmentFlags": 0,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 5,
+   "companyData": {
+    "companyId": 0,
+    "companyName": "Nexaxis Technology Solutions",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-46873.webp"
+   },
+   "refCode": "cl_br",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1672027,
+   "location": [
+    {
+     "id": 132,
+     "name": "Remote"
+    },
+    {
+     "id": 88,
+     "name": "Anywhere in India/Multiple Locations"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1668532,
+   "title": "Coforge - Senior Integration Developer - Java/Kafka",
+   "min": 7,
+   "max": 12,
+   "jobdesignation": "Senior Integration Developer",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 0,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 1,
+   "brandedJd": 0,
+   "createdTimeMs": 1788494023852,
+   "createdTime": 1788460200000,
+   "tagIdString": "5 2276 2850 2349 594 2090",
+   "tags": [
+    {
+     "id": 5,
+     "name": "Java",
+     "isMandatory": true
+    },
+    {
+     "id": 2276,
+     "name": "Kafka",
+     "isMandatory": false
+    },
+    {
+     "id": 2850,
+     "name": "Spring Boot",
+     "isMandatory": true
+    },
+    {
+     "id": 2349,
+     "name": "Microservices Architecture",
+     "isMandatory": false
+    },
+    {
+     "id": 594,
+     "name": "API",
+     "isMandatory": false
+    },
+    {
+     "id": 2090,
+     "name": "API Integration",
+     "isMandatory": false
+    }
+   ],
+   "locations": [
+    {
+     "id": 39,
+     "name": "Greater Noida"
+    }
+   ],
+   "createdByAlias": "Greater Noida",
+   "assessmentFlags": 1,
+   "minSal": 30,
+   "maxSal": 35,
+   "hideSal": 0,
+   "brandJobFlag": 5,
+   "companyData": {
+    "companyId": 4721,
+    "companyName": "Coforge",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-45753.webp"
+   },
+   "refCode": "cl_br_prm",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1668532,
+   "location": [
+    {
+     "id": 39,
+     "name": "Greater Noida"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1668394,
+   "title": ".Net Developer/Architect - MVC Design Patterns/CI/CD",
+   "min": 5,
+   "max": 15,
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 0,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 0,
+   "brandedJd": 0,
+   "createdTimeMs": 1788429053789,
+   "createdTime": 1788373800000,
+   "tagIdString": "7 132 30101 2479 1372 2926 434 1239 93 2187 5265",
+   "tags": [
+    {
+     "id": 7,
+     "name": ".Net"
+    },
+    {
+     "id": 132,
+     "name": "RESTful"
+    },
+    {
+     "id": 30101
+    },
+    {
+     "id": 2479,
+     "name": "CI/CD"
+    },
+    {
+     "id": 1372,
+     "name": "AngularJS"
+    },
+    {
+     "id": 2926,
+     "name": "Version Control System"
+    },
+    {
+     "id": 434,
+     "name": "Node.js"
+    },
+    {
+     "id": 1239,
+     "name": "Azure"
+    },
+    {
+     "id": 93,
+     "name": "Technical Architect"
+    },
+    {
+     "id": 2187,
+     "name": ".Net Architect"
+    },
+    {
+     "id": 5265,
+     "name": ".Net Core"
+    }
+   ],
+   "locations": [
+    {
+     "id": 4,
+     "name": "Hyderabad"
+    }
+   ],
+   "createdByAlias": "Hyderabad",
+   "assessmentFlags": 0,
+   "minSal": 5,
+   "maxSal": 19,
+   "hideSal": 0,
+   "brandJobFlag": 1,
+   "companyData": {
+    "companyId": 0,
+    "companyName": "Oracle Information Systems",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-137175.webp"
+   },
+   "refCode": "cl_br",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1668394,
+   "location": [
+    {
+     "id": 4,
+     "name": "Hyderabad"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1671164,
+   "title": "Siemens - Golang Developer - Backend Services",
+   "min": 2,
+   "max": 6,
+   "jobdesignation": "Golang Developer",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 0,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 1,
+   "brandedJd": 0,
+   "createdTimeMs": 1789363994020,
+   "createdTime": 1789324200000,
+   "tagIdString": "1756 58 5579 10395 14333 2774 5131 49472",
+   "tags": [
+    {
+     "id": 1756,
+     "name": "Golang",
+     "isMandatory": true
+    },
+    {
+     "id": 58,
+     "name": "AWS",
+     "isMandatory": true
+    },
+    {
+     "id": 5579,
+     "name": "DynamoDB",
+     "isMandatory": false
+    },
+    {
+     "id": 10395,
+     "name": "API Gateway",
+     "isMandatory": true
+    },
+    {
+     "id": 14333,
+     "name": "Graph DBMS",
+     "isMandatory": false
+    },
+    {
+     "id": 2774,
+     "name": "SQS",
+     "isMandatory": false
+    },
+    {
+     "id": 5131,
+     "name": "AWS Lambda",
+     "isMandatory": false
+    },
+    {
+     "id": 49472,
+     "name": "Backend Architecture",
+     "isMandatory": false
+    }
+   ],
+   "locations": [
+    {
+     "id": 7,
+     "name": "Pune"
+    }
+   ],
+   "showcase": {
+    "showcaseCompanyId": 4755,
+    "centralisedCompanyID": 4755,
+    "quoteLineNo": "13812557",
+    "custId": "CUST/040512",
+    "showcaseName": "Siemens Limited",
+    "showcaseUrl": "https://showcase.hirist.tech/company/siemens-limited-4755.html",
+    "showcaseImages": [
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1739956122383_cropped.jpg",
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1739956175538_cropped.jpg",
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1739956218108_cropped.jpg",
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1770196938472_cropped.jpg",
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1770196953732_cropped.jpg",
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1770196967053_cropped.jpg",
+     "https://d3ckeg60qk79fq.cloudfront.net/media/174966/U-174966-02/templateImages1770196977025_cropped.jpg"
+    ],
+    "showcaseVersion": "v4",
+    "showcaseDomain": "",
+    "templatePath": "https://s3.ap-south-1.amazonaws.com/hirist-showcasev2/media/13812557/U-13812557-02/finalMasterJson.json",
+    "templateVersion": "02"
+   },
+   "createdByAlias": "Pune",
+   "assessmentFlags": 0,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 2,
+   "companyData": {
+    "companyId": 115,
+    "companyName": "Siemens",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-4755.webp",
+    "ambitionBoxInfo": {
+     "ambitionBoxCompanyId": 493307,
+     "companyName": "Siemens Industry Software (India)",
+     "reviewsCount": 134,
+     "aggregateRating": 4.2,
+     "aggregateRatingOneDecimal": 4.2
+    }
+   },
+   "refCode": "cl_br_prm",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1671164,
+   "location": [
+    {
+     "id": 7,
+     "name": "Pune"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1670578,
+   "title": "NetApp - Senior Software Development Engineer - C++",
+   "min": 8,
+   "max": 12,
+   "jobdesignation": "Senior Software Development Engineer - C++",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 0,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 1,
+   "brandedJd": 1,
+   "createdTimeMs": 1789060856970,
+   "createdTime": 1788978600000,
+   "tagIdString": "10 2267 152 1756 18518 9 5 19 1328 9016 23",
+   "tags": [
+    {
+     "id": 10,
+     "name": "C++",
+     "isMandatory": true
+    },
+    {
+     "id": 2267,
+     "name": "Distributed Systems",
+     "isMandatory": true
+    },
+    {
+     "id": 152,
+     "name": "Storage",
+     "isMandatory": true
+    },
+    {
+     "id": 1756,
+     "name": "Golang",
+     "isMandatory": false
+    },
+    {
+     "id": 18518,
+     "name": "Ruby Programming",
+     "isMandatory": false
+    },
+    {
+     "id": 9,
+     "name": "Python",
+     "isMandatory": false
+    },
+    {
+     "id": 5,
+     "name": "Java",
+     "isMandatory": false
+    },
+    {
+     "id": 19,
+     "name": "OOPS",
+     "isMandatory": true
+    },
+    {
+     "id": 1328,
+     "name": "File System",
+     "isMandatory": false
+    },
+    {
+     "id": 9016,
+     "name": "Distributed Computing",
+     "isMandatory": false
+    },
+    {
+     "id": 23,
+     "name": "Linux",
+     "isMandatory": false
+    }
+   ],
+   "locations": [
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "createdByAlias": "Bangalore",
+   "assessmentFlags": 0,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 1,
+   "companyData": {
+    "companyId": 753,
+    "companyName": "Netapp",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://recruiter-static-content.s3.ap-south-1.amazonaws.com/CompanyLogos/centralised-3894.webp",
+    "ambitionBoxInfo": {
+     "ambitionBoxCompanyId": 336,
+     "companyName": "NetApp",
+     "reviewsCount": 471,
+     "aggregateRating": 3.7,
+     "aggregateRatingOneDecimal": 3.7
+    }
+   },
+   "refCode": "cl_br_prm",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1670578,
+   "location": [
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "minRatingAb": 3.8
+  },
+  {
+   "id": 1669191,
+   "title": "Capegemini - Java Full Stack Software Engineer",
+   "min": 9,
+   "max": 12,
+   "jobdesignation": "Full-Stack Software Engineer",
+   "status": 1,
+   "femaleCandidate": 0,
+   "differentlyAbled": 0,
+   "exDefence": 0,
+   "workFromHome": 0,
+   "femaleBackWorkForce": 0,
+   "confidential": 0,
+   "premium": 1,
+   "brandedJd": 1,
+   "createdTimeMs": 1788773334094,
+   "createdTime": 1788719400000,
+   "tagIdString": "1612 5 46 47 2594 2850 48 2043 1372",
+   "tags": [
+    {
+     "id": 1612,
+     "name": "Full Stack",
+     "isMandatory": true
+    },
+    {
+     "id": 5,
+     "name": "Java",
+     "isMandatory": true
+    },
+    {
+     "id": 46,
+     "name": "Spring",
+     "isMandatory": true
+    },
+    {
+     "id": 47,
+     "name": "Hibernate",
+     "isMandatory": false
+    },
+    {
+     "id": 2594,
+     "name": "RESTful API",
+     "isMandatory": false
+    },
+    {
+     "id": 2850,
+     "name": "Spring Boot",
+     "isMandatory": false
+    },
+    {
+     "id": 48,
+     "name": "Struts",
+     "isMandatory": false
+    },
+    {
+     "id": 2043,
+     "name": "React.js",
+     "isMandatory": true
+    },
+    {
+     "id": 1372,
+     "name": "AngularJS",
+     "isMandatory": false
+    }
+   ],
+   "locations": [
+    {
+     "id": 4,
+     "name": "Hyderabad"
+    },
+    {
+     "id": 3,
+     "name": "Bangalore"
+    },
+    {
+     "id": 7,
+     "name": "Pune"
+    },
+    {
+     "id": 6,
+     "name": "Chennai"
+    }
+   ],
+   "createdByAlias": "Hyderabad/Bangalore/Pune/Chennai",
+   "assessmentFlags": 1,
+   "minSal": 0,
+   "maxSal": 0,
+   "hideSal": 1,
+   "brandJobFlag": 1,
+   "companyData": {
+    "companyId": 21,
+    "companyName": "Capgemini Technology Services",
+    "companyStatus": 0,
+    "companyLogoFilePath": "https://rec-assets.iimjobs.com/CompanyLogos/centralised-1608.webp",
+    "ambitionBoxInfo": {
+     "ambitionBoxCompanyId": 95,
+     "companyName": "Capgemini",
+     "reviewsCount": 56901,
+     "aggregateRating": 3.6,
+     "aggregateRatingOneDecimal": 3.6
+    }
+   },
+   "refCode": "cl_br_prm",
+   "latitude": null,
+   "longitude": null,
+   "refJobId": 1669191,
+   "location": [
+    {
+     "id": 4,
+     "name": "Hyderabad"
+    },
+    {
+     "id": 3,
+     "name": "Bangalore"
+    },
+    {
+     "id": 7,
+     "name": "Pune"
+    },
+    {
+     "id": 6,
+     "name": "Chennai"
+    }
+   ],
+   "minRatingAb": 3.8
+  }
+ ],
+ "page": "0",
+ "limit": 100,
+ "count": 100,
+ "totalJobs": 4122,
+ "count1Year": 12441,
+ "totalPages": 41,
+ "hasMore": false
+}

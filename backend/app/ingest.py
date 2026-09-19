@@ -86,7 +86,11 @@ def _apply_eligibility(postings: list[NormalizedJob], filters: FilterConfig) -> 
             filters=filters,
         )
         posting.eligibility_pass = result.passed
-        posting.eligibility_reasons = result.reasons
+        # Keep the adapter's advisory notes ("treated as worldwide
+        # (unverified)") after the filter's own verdict, so the drawer shows
+        # why a location was believed, not only what was decided.
+        notes = [r for r in posting.eligibility_reasons if r not in result.reasons]
+        posting.eligibility_reasons = [*result.reasons, *notes]
         eligible += int(result.passed)
     return eligible
 
@@ -319,7 +323,19 @@ async def _persist_source(
     # --- Closure by disappearance ------------------------------------------
     adapter_suspicious = outcome.adapter.empty_result_is_suspicious if outcome.adapter else True
     empty_but_had_jobs = not postings and open_before > 0
-    if settings.guard_empty_fetches and empty_but_had_jobs and adapter_suspicious:
+    if outcome.adapter is not None and outcome.adapter.fetch_truncated:
+        # The board capped its pages and does not sort by date, so which jobs
+        # fell past the cap is arbitrary. Closing them would be a guess.
+        result.skipped_closure_sweep = True
+        log.warning(
+            "ingest.closure_sweep_skipped",
+            extra={
+                "source_id": company.source_id,
+                "reason": "fetch truncated at the board's page cap",
+                "open_before": open_before,
+            },
+        )
+    elif settings.guard_empty_fetches and empty_but_had_jobs and adapter_suspicious:
         # e.g. a typo'd Ashby slug answers 200 with `{"jobs": []}`; closing the
         # whole board on that would be data loss dressed up as a signal.
         result.skipped_closure_sweep = True

@@ -1,0 +1,121 @@
+{
+ "page": 0,
+ "page_count": 2,
+ "items_per_page": 20,
+ "took": 6,
+ "timed_out": false,
+ "total": 4,
+ "aggregations": {},
+ "results": [
+  {
+   "contents": "<p>At Sunrun, we're on a mission to change the way the world interacts with energy, and we're building a company and brand that puts power at the center of life. To do it, we're designing a dynamic culture where employee development, well-being, and safety come first. It's why we've become the #1 home solar and battery company in America. We're unlike any other residential energy company. Our vertically integrated model gives us total control over every part of the energy lifecycle - from sale through installation and beyond - so you can find endless opportunities for growth. Come join a career you can grow in and a culture you can run with.<br><br>Who We Are <br><br>We're on a mission to make energy more reliable and affordable for more people. We provide an opportunity with storage and solar to help people access greater energy independence without the big upfront costs. Sunrun is the largest dedicated residential solar and storage company in the country and has a mission to bring stably priced resilient power to the masses.<br><br><b>Overview</b><br><br>The Technical Engineering Lead serves as SnapNrack's technical authority for structural engineering, engineering calculations, ",
+   "name": "Technical Engineering Lead",
+   "type": "external",
+   "publication_date": "2026-09-03T21:01:54Z",
+   "short_name": "technical-engineering-lead",
+   "model_type": "jobs",
+   "id": 22029789,
+   "locations": [
+    {
+     "name": "Flexible / Remote"
+    }
+   ],
+   "categories": [
+    {
+     "name": "Software Engineering"
+    }
+   ],
+   "levels": [
+    {
+     "name": "Senior Level",
+     "short_name": "senior"
+    }
+   ],
+   "tags": [
+    {
+     "name": "Fast Growing Companies",
+     "short_name": "fast-growing-companies"
+    }
+   ],
+   "refs": {
+    "landing_page": "https://www.themuse.com/jobs/sunrun/technical-engineering-lead"
+   },
+   "company": {
+    "id": 1484,
+    "short_name": "sunrun",
+    "name": "Sunrun"
+   }
+  },
+  {
+   "contents": "<p><strong>About Genius AI</strong></p>\n\n<p>Genius AI is building technology to help local businesses run themselves. Genius AI products do the admin work that keeps practitioners from the work they love and the people they serve. From GlossGenius to Reception, its products work 24/7 on busywork like booking, marketing, client management, finances, staff and inventory management, and more.</p>\n\n<p>Genius AI technology has saved businesses 106M in admin hours, earned them $2.0B in additional revenue, and facilitated more than 624M client touch points.</p>\n\n<p><strong>About the Role</strong></p>\n\n<p>Genius AI is building 0-to-1 AI products we expect to be a massive revenue driver, and this role sits at the center of that build. As a Staff Backend Engineer, you'll be the technical anchor for our highest-innovation teams: setting architectural direction, validating options through proof-of-concepts, and turning ambitious initiatives into clear, buildable roadmaps. This is an IC role with real leadership weight, roughly 60% architecture, planning, and technical direction, 40% hands-on building. The person in this role will be a force multiplier: unblocking engineers before they know the",
+   "name": "Staff Software Engineer, Backend",
+   "type": "external",
+   "publication_date": "2026-07-20T18:44:45Z",
+   "short_name": "staff-software-engineer-backend-7d1ec3",
+   "model_type": "jobs",
+   "id": 21820572,
+   "locations": [
+    {
+     "name": "Flexible / Remote"
+    },
+    {
+     "name": "New York, NY"
+    }
+   ],
+   "categories": [
+    {
+     "name": "Software Engineering"
+    }
+   ],
+   "levels": [
+    {
+     "name": "Senior Level",
+     "short_name": "senior"
+    }
+   ],
+   "tags": [],
+   "refs": {
+    "landing_page": "https://www.themuse.com/jobs/glossgenius/staff-software-engineer-backend-7d1ec3"
+   },
+   "company": {
+    "id": 15000202,
+    "short_name": "glossgenius",
+    "name": "GlossGenius"
+   }
+  },
+  {
+   "contents": "<p><strong>About the role and team </strong><br><br>Engineering at Uber means building for real-world impact under real-world constraints. As a <strong>Senior Staff Software Engineer in Rider</strong>, you will shape the technical architecture and long-term evolution of the systems that power the Rider experience globally.<br><br>Deep mobile architecture expertise will be the anchor for this role, but not its boundary. You will operate across mobile clients, edge capabilities, and backend services, tackling problems spanning application architecture, performance, reliability, server-driven experiences, client-server contracts, and emerging on-device intelligence.<br><br>Your impact will extend well beyond the code you write. You will shape how multiple engineering teams build and ship Rider experiences-establishing durable technical foundations, simplifying complex systems, making high-leverage architectural decisions, and enabling teams to move faster without compromising performance, reliability, or quality.<br><br><strong>What you'll do </strong><br><ul><li>Define the multi-year technical strategy and architecture for Rider experiences across mobile applications, client platform",
+   "name": "Sr Staff Engineer, Mobile",
+   "type": "external",
+   "publication_date": "2026-09-12T22:21:04Z",
+   "short_name": "sr-staff-engineer-mobile",
+   "model_type": "jobs",
+   "id": 22159863,
+   "locations": [
+    {
+     "name": "Bangalore, India"
+    }
+   ],
+   "categories": [
+    {
+     "name": "Software Engineering"
+    }
+   ],
+   "levels": [
+    {
+     "name": "Senior Level",
+     "short_name": "senior"
+    }
+   ],
+   "tags": [],
+   "refs": {
+    "landing_page": "https://www.themuse.com/jobs/uber/sr-staff-engineer-mobile"
+   },
+   "company": {
+    "id": 61,
+    "short_name": "uber",
+    "name": "Uber"
+   }
+  }
+ ]
+}

@@ -13,6 +13,7 @@ import {
 
 import {
   fetchLlmEstimate,
+  fetchMatchesFunnel,
   llmStatus,
   pipelineStatus,
   runPipeline,
@@ -73,6 +74,8 @@ export function RunPanel({
   onRunningChange,
   /** A run finished with a deep read to price — the dialog reopens for it. */
   onNeedsConfirm,
+  /** A deep read confirmed here has finished — the dialog closes on it. */
+  onDeepReadDone,
 }: {
   prefsDirtySince: number;
   unsaved?: boolean;
@@ -80,12 +83,16 @@ export function RunPanel({
   onFinished: () => void;
   onRunningChange?: (running: boolean) => void;
   onNeedsConfirm?: () => void;
+  onDeepReadDone?: () => void;
 }) {
   const qc = useQueryClient();
   const [polling, setPolling] = useState(false);
   const [confirming, setConfirming] = useState<LlmEstimate | null>(null);
   // The finished deep read's summary stays up until dismissed or a new run.
-  const [llmSummaryDismissed, setLlmSummaryDismissed] = useState(true);
+  // Keyed on the read's `finished_at`, not on having watched it finish: a
+  // panel that mounted after the read (a reload) used to show nothing, and
+  // the line below still said "25 on the LLM shortlist" as if none were read.
+  const [dismissedReadAt, setDismissedReadAt] = useState<string | null>(null);
   const lastLlmState = useRef<LlmStatus["state"] | undefined>(undefined);
   const lastSeenPrefs = useRef(prefsDirtySince);
   const [nudge, setNudge] = useState(false);
@@ -100,20 +107,34 @@ export function RunPanel({
   const status = useQuery<PipelineStatus>({
     queryKey: ["pipeline"],
     queryFn: pipelineStatus,
-    // Poll only while a run is live. A background 1s poll for a job nobody
-    // started is pure noise in the network panel.
-    refetchInterval: polling ? 1000 : false,
+    // Poll while a run is live, judged by what the SERVER last said as well as
+    // by local state. Keyed on `polling` alone, a panel that mounted (reload,
+    // HMR) while a run was in flight read "validity" once and never asked
+    // again, so it spun on "Checking validity" after the run had finished.
+    refetchInterval: (query) => {
+      const s = query.state.data?.stage;
+      return polling || s === "validity" || s === "ranking" || s === "estimating"
+        ? 1000
+        : false;
+    },
   });
 
   const stage = status.data?.stage ?? "idle";
   const running = stage === "validity" || stage === "ranking" || stage === "estimating";
+  const lastStage = useRef<PipelineStage | undefined>(undefined);
 
   useEffect(() => {
     onRunningChange?.(running || polling);
   }, [running, polling, onRunningChange]);
 
   useEffect(() => {
-    if (!polling) return;
+    const previous = lastStage.current;
+    lastStage.current = stage;
+    // Finishes on either signal: a run this panel started, or one it watched
+    // go from live to finished after mounting mid-run.
+    const wasLive =
+      polling || previous === "validity" || previous === "ranking" || previous === "estimating";
+    if (!wasLive) return;
     if (stage === "done" || stage === "failed") {
       setPolling(false);
       for (const key of ["matches", "matches-funnel", "jobs", "jobs-funnel", "facets"]) {
@@ -133,51 +154,93 @@ export function RunPanel({
   // and every 2s while the pass runs. Without this poll the dashboard never
   // learned that a deep read had finished: the spinner ran forever and the
   // Matches list kept showing pre-read rows.
+  //
+  // `watchingLlm` keeps the poll on for a pass this panel confirmed, whatever
+  // the POST answered: keyed on `state === "running"` alone, a POST that
+  // answered before the pass had started ("idle") switched polling off for
+  // good, so the list never refreshed and the dialog never closed.
+  const [watchingLlm, setWatchingLlm] = useState(false);
+  // `finished_at` of the pass before the confirmed one — a "done" still
+  // carrying it describes the old pass, not this one.
+  const llmBaseline = useRef<string | null>(null);
   const llm = useQuery<LlmStatus>({
     queryKey: ["llm"],
     queryFn: llmStatus,
-    refetchInterval: (query) => (query.state.data?.state === "running" ? 2000 : false),
+    refetchInterval: (query) =>
+      watchingLlm || query.state.data?.state === "running" ? 2000 : false,
   });
   const llmState = llm.data?.state;
-  const llmRunning = llmState === "running";
+  const llmFinishedAt = llm.data?.finished_at ?? null;
+  const llmRunning = llmState === "running" || (watchingLlm && llmState !== "done");
 
   useEffect(() => {
     const previous = lastLlmState.current;
     lastLlmState.current = llmState;
-    if (previous === "running" && llmState === "done") {
-      for (const key of ["matches", "matches-funnel", "jobs", "jobs-funnel", "facets", "job"]) {
-        qc.invalidateQueries({ queryKey: [key] });
-      }
-      setLlmSummaryDismissed(false);
+    const watchedDone =
+      watchingLlm && llmState === "done" && llmFinishedAt !== llmBaseline.current;
+    const seenDone = previous === "running" && llmState === "done";
+    if (!watchedDone && !seenDone) return;
+    for (const key of [
+      "matches",
+      "matches-funnel",
+      "jobs",
+      "jobs-funnel",
+      "facets",
+      "job",
+      "llm-estimate",
+    ]) {
+      qc.invalidateQueries({ queryKey: [key] });
     }
-  }, [llmState, qc]);
+    if (watchingLlm) {
+      setWatchingLlm(false);
+      onDeepReadDone?.();
+    }
+  }, [llmState, llmFinishedAt, watchingLlm, qc, onDeepReadDone]);
+
+  // Live, unlike `ranking` below, which is the Run's snapshot and never moves
+  // after a deep read. Same key as the Matches funnel, so it shares that cache
+  // and the invalidation above refreshes both.
+  const funnel = useQuery({
+    queryKey: ["matches-funnel"],
+    queryFn: fetchMatchesFunnel,
+    staleTime: 30_000,
+  });
 
   const start = useMutation({
     mutationFn: async () => {
       await beforeRun?.();
       return runPipeline(false);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setNudge(false);
-      setLlmSummaryDismissed(true);
+      // Seed the cache with the live stage first: left holding the previous
+      // run's "done", the finish effect would end this run before it began.
+      qc.setQueryData(["pipeline"], data);
       setPolling(true);
-      qc.invalidateQueries({ queryKey: ["pipeline"] });
     },
   });
 
   const deepRead = useMutation({
-    mutationFn: (limit: number) => startLlmScreen({ limit }),
+    mutationFn: (limit: number) => {
+      llmBaseline.current = llm.data?.finished_at ?? null;
+      return startLlmScreen({ limit });
+    },
     onSuccess: (data) => {
       setConfirming(null);
-      setLlmSummaryDismissed(true);
-      // A pass with nothing to read can already be "done" in this response;
-      // marking it running first still gets the refresh and the summary.
-      lastLlmState.current = "running";
-      // Seeds the poll: `state: "running"` switches the interval on.
       qc.setQueryData(["llm"], data);
+      setWatchingLlm(true);
     },
   });
   const llmResult = llm.data?.result;
+  const readAt = llm.data?.finished_at ?? null;
+  const runAt = status.data?.finished_at ?? null;
+  // A read older than the last Run describes a ranking that no longer exists.
+  const showLlmSummary =
+    llmState === "done" &&
+    !running &&
+    readAt !== null &&
+    readAt !== dismissedReadAt &&
+    (runAt === null || readAt > runAt);
 
   const ranking = status.data?.ranking;
 
@@ -222,6 +285,13 @@ export function RunPanel({
             {" · "}
             <span className="text-ink">{ranking.shortlisted.toLocaleString()}</span> on the LLM
             shortlist
+            {funnel.data && !funnel.data.stale && funnel.data.read > 0 && (
+              <>
+                {" · "}
+                <span className="text-ink">{funnel.data.read.toLocaleString()}</span> read by the
+                LLM
+              </>
+            )}
             {/* Every count here is over the same jobs as the first number.
                 The whole-board validity tally used to sit on this line and
                 read as if it described the jobs you sent. */}
@@ -257,7 +327,7 @@ export function RunPanel({
       </div>
 
       {/* ------------------------------------------- finished deep read summary */}
-      {!llmSummaryDismissed && !llmRunning && llmState === "done" && (
+      {showLlmSummary && (
         <div
           className={cx(
             "flex items-start gap-2 border-t border-edge px-4 py-2.5 text-[12px] md:px-5",
@@ -280,6 +350,17 @@ export function RunPanel({
                 {" · "}
                 {llmResult.tokens.toLocaleString()} tokens ·{" "}
                 {(llmResult.duration_ms / 60000).toFixed(1)} min
+                {Object.keys(llmResult.bands).length > 0 && (
+                  <span className="block text-subtle">
+                    {Object.entries(llmResult.bands)
+                      .map(([band, n]) => `${n} ${band}`)
+                      .join(" · ")}
+                    {llmResult.blocked > 0 && ` · ${llmResult.blocked} blocked by the JD`}
+                    {(llmResult.statuses.ghost ?? 0) > 0 &&
+                      ` · ${llmResult.statuses.ghost} likely ghost`}
+                    {" — see them in the Matches list"}
+                  </span>
+                )}
               </>
             ) : (
               "Deep read finished"
@@ -288,7 +369,7 @@ export function RunPanel({
           </span>
           <button
             type="button"
-            onClick={() => setLlmSummaryDismissed(true)}
+            onClick={() => setDismissedReadAt(readAt)}
             aria-label="Dismiss"
             className="ml-auto rounded-md p-0.5 text-subtle transition-colors hover:text-ink"
           >

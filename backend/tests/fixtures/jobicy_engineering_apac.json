@@ -1,0 +1,119 @@
+{
+ "apiVersion": "2.2.16",
+ "documentationUrl": "https://jobi.cy/apidocs",
+ "friendlyNotice": "Thanks for using Jobicy API! Please ensure Jobicy is clearly credited with a direct link to the source, and all application buttons redirect to the original job URL provided in this feed. That’s all! You might be building something amazing, we wish you the best of luck!",
+ "jobCount": 5,
+ "lastUpdate": "2026-09-17T05:35:10+00:00",
+ "appliedFilters": {
+  "count": 200,
+  "industry": "engineering",
+  "geo": "apac"
+ },
+ "jobs": [
+  {
+   "id": 150846,
+   "url": "https://jobicy.com/jobs/150846-software-engineer-3",
+   "jobSlug": "150846-software-engineer-3",
+   "jobTitle": "Software engineer",
+   "companyName": "Sticker Mule",
+   "companyLogo": "https://jobicy.com/data/server-nyc0409/galaxy/mercury/2021/11/6c07b3f077342b052d6bb0a4db2e6ee6.png",
+   "jobIndustry": [
+    "Software Engineering"
+   ],
+   "jobType": [
+    "Full-Time"
+   ],
+   "jobGeo": "Anywhere",
+   "jobLevel": "Any",
+   "jobExcerpt": "Sticker Mule is building the Internet's most lucrative commerce platform by combining software, manufacturing, and AI into one fully integrated stack. No print company, or pure software company for that matter, can match what we're doing. We're privately owned, profitable, and doing 9-figures in annual revenue with no meddlesome investors. How we work Small, autonomous&hellip;",
+   "jobDescription": "<p>Sticker Mule is building the Internet's most lucrative commerce platform by combining software, manufacturing, and AI into one fully integrated stack. No print company, or pure software company for that matter, can match what we're doing. We're privately owned, profitable, and doing 9-figures in annual revenue with no meddlesome investors.</p>\r\n</p>\r\n<h3><strong>How we work</strong></h3>\r\n<ol>\r\n<li>\r\n<p>Small, autonomous teams that own products end-to-end.</p>\r\n</li>\r\n<li>\r\n<p>Prioritize what matters right now and pivot instantly when needed.</p>\r\n</li>\r\n<li>\r\n<p>Ship across web and mobile from the same codebase. We use Go, TypeScript, React, Expo, GraphQL, Postgres, and run on GCP.</p>\r\n</li>\r\n<li>\r\n<p>Use AI aggressively to push the limit of what we can do.</p>\r\n</li>\r\n<li>\r\n<p>Move fast, build for the masses, and deprioritize edge cases.</p>\r\n</li>\r\n<li>\r\n<p>Fully remote from 40+ countries and collaborate using Asana and Slack.</p>\r\n</li>\r\n</ol>\r\n<h3><strong>Requirements</strong></h3>\r\n<ol>\r\n<li>\r\n<p>You are an exceptional full-stack software engineer.</p>\r\n</li>\r\n<li>\r\n<p>You use AI aggressively and write well in English.</p>\r\n</p>\r\n</li>\r\n</ol>\r\n<h3><strong>What you will work on</strong></h3>\r\n<p>You'll help build and scale <strong>Sticker Mule Pro</strong> - a suite of software tools for creators and businesses:</p>\r\n<ol>\r\n<li>\r\n<p>Stores (Shopify alternative)</p>\r\n</li>\r\n<li>\r\n<p>AI tools (internal and customer-facing)</p>\r\n</li>\r\n<li>\r\n<p>Notify (Mailchimp alternat",
+   "pubDate": "2026-09-16T04:40:03+00:00",
+   "salaryMin": 150000,
+   "salaryMax": 250000,
+   "salaryCurrency": "USD",
+   "salaryPeriod": "yearly"
+  },
+  {
+   "id": 149527,
+   "url": "https://jobicy.com/jobs/149527-web-frontend-engineer-js-css-react-flutter",
+   "jobSlug": "149527-web-frontend-engineer-js-css-react-flutter",
+   "jobTitle": "Web Frontend Engineer - JS, CSS, React, Flutter",
+   "companyName": "Canonical",
+   "companyLogo": "https://jobicy.com/data/server-nyc0409/galaxy/mercury/2025/06/b4d068a9-221-1.png",
+   "jobIndustry": [
+    "Software Engineering"
+   ],
+   "jobType": [
+    "Full-Time"
+   ],
+   "jobGeo": "Anywhere",
+   "jobLevel": "Any",
+   "jobExcerpt": "Canonical is a leading provider of open-source software and operating systems to the global enterprise and technology markets. Our platform, Ubuntu, is very widely used in breakthrough enterprise initiatives such as public cloud, data science, AI, engineering innovation and IoT. Our customers include the world's leading public cloud and silicon providers, and industry leaders in&hellip;",
+   "jobDescription": "<p>Canonical is a leading provider of open-source software and operating systems to the global enterprise and technology markets. Our platform, Ubuntu, is very widely used in breakthrough enterprise initiatives such as public cloud, data science, AI, engineering innovation and IoT. Our customers include the world's leading public cloud and silicon providers, and industry leaders in many sectors. The company is a pioneer of globally distributed collaboration, with 1100+ colleagues in 75+ countries and very few office-based roles. Teams meet two to four times yearly in person, in interesting locations around the world, to align on strategy and execution.</p><p>The company is founder-led, profitable and growing.</p><p>For the entry level position in this advert, our compensation for US based candidates, lies between 48,000 USD to 70,000 USD. Our Early stage interview process will establish your level. If you are considered for a different level position than what is posted here, we will provide a wage scale or salary range specific to that level position.</p>",
+   "pubDate": "2026-08-22T16:35:06+00:00",
+   "salaryMin": 48000,
+   "salaryMax": 70000,
+   "salaryCurrency": "USD",
+   "salaryPeriod": "yearly"
+  },
+  {
+   "id": 153014,
+   "url": "https://jobicy.com/jobs/153014-binance-accelerator-program-applied-ai-application-engineer",
+   "jobSlug": "153014-binance-accelerator-program-applied-ai-application-engineer",
+   "jobTitle": "Binance Accelerator Program - Applied AI Application Engineer",
+   "companyName": "Binance",
+   "companyLogo": "https://jobicy.com/data/server-nyc0409/galaxy/mercury/2025/06/bc822f38-221.jpg",
+   "jobIndustry": [
+    "Software Engineering"
+   ],
+   "jobType": [
+    "Internship"
+   ],
+   "jobGeo": "APAC",
+   "jobLevel": "Entry-Level, Junior",
+   "jobExcerpt": "Binance is a leading global blockchain ecosystem behind the world’s largest cryptocurrency exchange by trading volume and registered users. Binance is trusted by more than 320 million people in 100+ countries for its industry-leading security, transparency, trading engine speed, protections for investors, and unmatched portfolio of digital asset products and offerings from trading and finance&hellip;",
+   "jobDescription": "<p>Binance is a leading global blockchain ecosystem behind the world’s largest cryptocurrency exchange by trading volume and registered users. Binance is trusted by more than 320 million people in 100+ countries for its industry-leading security, transparency, trading engine speed, protections for investors, and unmatched portfolio of digital asset products and offerings from trading and finance to education, research, social good, payments, institutional services, and Web3 features. Binance is devoted to building an inclusive crypto ecosystem to increase the freedom of money and financial access for people around the world with crypto as the fundamental means.</p>\n<p><strong>About Binance Accelerator Program</strong></p>\n<p>Binance Accelerator Program (BAP) is a 3-6 month internship program designed for Early Career talent to have firsthand experience in the rapidly expanding digital assets space. You will be given the opportunity to develop your skills at Binance and understand what it’s like to work at the world's leading blockchain ecosystem. As part of your internship in the BAP, there will also be opportunities for networking and development, which will expand your professional network and build transferable skills to propel you forward in your career. Learn about the BAP Program <a href=\"https://www.binance.com/en/blog/all/early-career-program-how-binance-gears-up-early-career-talent-6771140985933048651\" rel=\"nofollow ugc noopener\" target=\"_blank\">HERE</a>.</p>\n<p><str",
+   "pubDate": "2026-09-11T12:59:22+00:00"
+  },
+  {
+   "id": 145995,
+   "url": "https://jobicy.com/jobs/145995-ubuntu-linux-kernel-test-engineer",
+   "jobSlug": "145995-ubuntu-linux-kernel-test-engineer",
+   "jobTitle": "Ubuntu Linux Kernel Test Engineer",
+   "companyName": "Canonical",
+   "companyLogo": "https://jobicy.com/data/server-nyc0409/galaxy/mercury/2025/06/b4d068a9-221-1.png",
+   "jobIndustry": [
+    "QA & Testing"
+   ],
+   "jobType": [
+    "Full-Time"
+   ],
+   "jobGeo": "APAC,  China",
+   "jobLevel": "Senior",
+   "jobExcerpt": "Ubuntu is the most widely used Linux distribution in the world, delivering kernels across a vast matrix of versions, architectures, and configurations – with up to 15 years of security and maintenance commitments for Long Term Support (LTS) releases. Ensuring the quality and reliability of these kernels demands a dedicated, systematic approach to testing at&hellip;",
+   "jobDescription": "<p>Ubuntu is the most widely used Linux distribution in the world, delivering kernels across a vast matrix of versions, architectures, and configurations – with up to 15 years of security and maintenance commitments for Long Term Support (LTS) releases. Ensuring the quality and reliability of these kernels demands a dedicated, systematic approach to testing at scale.</p><p>The Canonical Kernel Team is looking for a Test Engineer to take ownership of our kernel testing strategy and infrastructure. You will design and maintain test plans covering functional correctness, stability, performance, and security. You will build and evolve automated test frameworks – including stress testing, fuzzing, code coverage analysis, and regression detection – that not only must remain effective across many concurrently supported kernel versions spanning years of maintenance, but must be able to scale with the high demand for Ubuntu kernels (currently more than 160 under active support).</p><p>The successful candidate will bring strong Python skills, familiarity with Linux kernel internals, and experience building test infrastructure that scales. You will work closely with kernel engineers to catch regressions early, validate fixes, and ensure every kernel we ship meets the highest standards of reliability.</p><p><strong>Location:</strong> This role will be based remotely in the APAC region, except for Taipei, Taiwan, and Beijing, China, which are office-based locations.</p><h2>What your day w",
+   "pubDate": "2026-09-14T05:12:44+00:00"
+  },
+  {
+   "id": 145996,
+   "url": "https://jobicy.com/jobs/145996-customer-solutions-architect-2",
+   "jobSlug": "145996-customer-solutions-architect-2",
+   "jobTitle": "Customer Solutions Architect",
+   "companyName": "Fivetran",
+   "companyLogo": "https://jobicy.com/data/server-nyc0409/galaxy/mercury/2025/06/3b8e4532-221-1.jpg",
+   "jobIndustry": [
+    "Software Engineering"
+   ],
+   "jobType": [
+    "Full-Time"
+   ],
+   "jobGeo": "Japan",
+   "jobLevel": "Senior",
+   "jobExcerpt": "From Fivetran’s founding until now, our mission has remained the same: to make access to data as simple and reliable as electricity. With Fivetran, customer data arrives in their warehouses, canonical and ready to query, with no engineering or maintenance required. We’re proud that more organizations continue to leverage our technology every day to become&hellip;",
+   "jobDescription": "<div><p>From Fivetran’s founding until now, our mission has remained the same: to make access to data as simple and reliable as electricity. With Fivetran, customer data arrives in their warehouses, canonical and ready to query, with no engineering or maintenance required. We’re proud that more organizations continue to leverage our technology every day to become truly data-driven.</p></div><p><strong>About the Role</strong></p><p>We’re looking for a Customer Solutions Architect (CSA) to join our Enterprise team, focused on driving adoption, value realisation and expansion across our existing customer base. The CSA is the primary post-sales technical owner for Enterprise customers. Working alongside Account Executives (AEs) and Sales Engineers (SEs), the CSA ensures that customers not only successfully deploy Fivetran, but continue to scale and expand its usage over time.</p><p>This role operates as a technical account manager and strategic advisor, acting as the bridge between initial onboarding success and long-term growth. The CSA owns the technical narrative post-go-live, guding customers through architecture evolution, adoption, and expansion initiatives.Unlike implementation-focused roles, the CSA is a non-billable, expansion-focused position, measured on driving incremental ARR, adoption, and Net Revenue Retention (NRR).You will act as a trusted advisor, advocate and accelerator for your customers - ensuring they derive maximum value from their data investments while a",
+   "pubDate": "2026-09-16T04:35:06+00:00"
+  }
+ ],
+ "statusCode": 200,
+ "success": true
+}

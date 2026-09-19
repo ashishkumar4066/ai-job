@@ -27,6 +27,17 @@ class Notifier(Protocol):
     async def notify_new_jobs(self, jobs: list[JobPosting]) -> int: ...
 
 
+# Boards whose jobs must carry the board's name when they are surfaced.
+_ATTRIBUTED_SOURCES = {
+    "remotive": "Remotive",
+    "jobicy": "Jobicy",
+    "themuse": "The Muse",
+    "remoteok": "Remote OK",
+    "weworkremotely": "We Work Remotely",
+    "remoteyeah": "RemoteYeah",
+}
+
+
 def _format_salary(job: JobPosting) -> str | None:
     if job.salary_min is None and job.salary_max is None:
         return None
@@ -66,10 +77,12 @@ def _format_job(job: JobPosting) -> str:
         lines.append(f"🗓 Posted {job.posted_at:%Y-%m-%d}")
 
     lines.append(f'\n<a href="{html.escape(job.apply_url, quote=True)}">Apply →</a>')
-    # Remotive's terms require naming it as the source wherever its jobs are
-    # surfaced, alongside the link back to its own URL (already `apply_url`).
-    if job.ats == "remotive":
-        lines.append("<i>Source: Remotive</i>")
+    # Remotive's, Jobicy's and Remote OK's terms require naming them as the
+    # source wherever their jobs are surfaced, alongside the link back to their
+    # own URL (already `apply_url`). The other boards are credited the same way.
+    source = _ATTRIBUTED_SOURCES.get(job.ats)
+    if source:
+        lines.append(f"<i>Source: {source}</i>")
 
     message = "\n".join(lines)
     return message[:_MAX_MESSAGE_CHARS]

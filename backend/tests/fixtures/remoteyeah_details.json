@@ -1,0 +1,126 @@
+{
+ "remote-backend-engineer-go-endpoint-security-pragmatike": {
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "Backend Engineer (Go) – Endpoint Security",
+  "description": "<p>Description:</p> <ul> <li>Join a global enterprise cybersecurity company focused on securing AI agents and LLM-powered applications.</li> <li>Build Go-based endpoint components and backend services for endpoint visibility and security enforcement across various operating systems.</li> </ul> <p>Requirements:</p> <ul> <li>5+ years of backend or systems development experience, with 3+ years in Go.</li> <li>Hands-on experience with OS-level programming on Windows, macOS, and Linux.</li> <li>Strong understanding of concurrency, networking, and performance in Go.</li> <li>Working knowledge of Python, gRPC/REST APIs, Docker, Kubernetes, and cloud providers.</li> <li>Strong testing discipline across multiple operating systems.</li> <li>Fluent English with strong communication skills.</li> <li>Experience with AI coding assistants is a must.</li> <li>Ability to work independently in a remote-first team.</li> </ul> <p>Benefits:</p> <ul> <li>Work on a greenfield product at the intersection of cybersecurity and AI.</li> <li>Solve challenging systems problems at enterprise scale.</li> <li>Take ownership of critical workstreams and influence architecture.</li> <li>Collaborate with a highly technical, distributed team where AI is integral to development.</li> </ul>",
+  "datePosted": "2026-09-18T10:01:37+00:00",
+  "validThrough": "2026-12-18T10:01:37+00:00",
+  "employmentType": [
+   "FULL_TIME"
+  ],
+  "applicantLocationRequirements": [
+   {
+    "@type": "Country",
+    "name": "India"
+   }
+  ],
+  "jobLocationType": "TELECOMMUTE",
+  "directApply": false,
+  "workHours": "Flexible",
+  "image": "https://remoteyeah.com/image.png?p=company%2Fpragmatike-59.webp&w=100&h=100&q=75&e=webp&s=ZjBN",
+  "occupationalCategory": "15-1252.00 Software Developers",
+  "skills": "gRPC, Docker, Software as a Service, REST, Kubernetes, GitHub, Web security, Large Language Models, Python, Go",
+  "hiringOrganization": {
+   "@type": "Organization",
+   "name": "Pragmatike",
+   "sameAs": "https://www.pragmatike.com/",
+   "logo": "https://remoteyeah.com/image.png?p=company%2Fpragmatike-59.webp&w=100&h=100&q=75&e=webp&s=ZjBN"
+  },
+  "experienceRequirements": {
+   "@type": "OccupationalExperienceRequirements",
+   "monthsOfExperience": 60
+  }
+ },
+ "remote-senior-backend-engineer-clera-3": {
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "Senior Backend Engineer",
+  "description": "<p>Description:</p> <ul> <li>High-impact individual contributor role on the backend engineering team for an AI-native platform.</li> <li>Design and build intelligent systems for observability, architecture modeling, and AI-driven recommendations.</li> </ul> <p>Requirements:</p> <ul> <li>4+ years of backend engineering experience in high-growth startups or tech companies.</li> <li>Proven experience in designing scalable, distributed systems and microservices architectures.</li> <li>Expertise in Go or Python with a focus on clean, maintainable code.</li> <li>Experience with data pipelines, observability systems, and monitoring infrastructure.</li> <li>Hands-on experience with DevOps tooling and cloud-native technologies.</li> <li>Familiarity with LLM-based systems and AI workflows.</li> <li>Track record of building systems from inception in startup environments.</li> <li>Skills in performance tuning, debugging, and technical architecture design.</li> <li>Experience with fault-tolerant workflow design in mission-critical services.</li> <li>Strong computer science fundamentals; graduate-level education is a plus.</li> </ul> <p>Benefits:</p> <ul> <li>Base salary: $160,000 to $200,000 USD annually, plus equity.</li> <li>Fully remote work environment.</li> </ul>",
+  "datePosted": "2026-09-17T10:04:07+00:00",
+  "validThrough": "2026-12-17T10:04:07+00:00",
+  "employmentType": [
+   "FULL_TIME"
+  ],
+  "applicantLocationRequirements": [
+   {
+    "@type": "Country",
+    "name": "Worldwide"
+   }
+  ],
+  "jobLocationType": "TELECOMMUTE",
+  "directApply": false,
+  "workHours": "Flexible",
+  "image": "https://remoteyeah.com/image.png?p=company%2Fclera-56.webp&w=100&h=100&q=75&e=webp&s=n4J5",
+  "occupationalCategory": "15-1252.00 Software Developers",
+  "skills": "Machine Learning, Large Language Models, Python, Go",
+  "hiringOrganization": {
+   "@type": "Organization",
+   "name": "Clera",
+   "sameAs": "http://getclera.com",
+   "logo": "https://remoteyeah.com/image.png?p=company%2Fclera-56.webp&w=100&h=100&q=75&e=webp&s=n4J5"
+  },
+  "baseSalary": {
+   "@type": "MonetaryAmount",
+   "currency": "USD",
+   "value": {
+    "@type": "QuantitativeValue",
+    "minValue": 160000,
+    "maxValue": 200000,
+    "unitText": "YEAR"
+   }
+  },
+  "experienceRequirements": {
+   "@type": "OccupationalExperienceRequirements",
+   "monthsOfExperience": 48
+  }
+ },
+ "remote-senior-platform-engineer-lifen": {
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "Senior Platform Engineer",
+  "description": "<p>Description:</p> <ul> <li>Join Lifen as a Senior Platform Engineer to enhance cloud-native infrastructure services.</li> <li>Contribute to the development of a secure internal development platform for application deployment and operation.</li> </ul> <p>Requirements:</p> <ul> <li>Proven experience in infrastructure, SRE, or Platform Engineering in a demanding production environment.</li> <li>Deep expertise in a cloud service provider (CSP) and management of services like Kubernetes, Object Storage, and Databases.</li> <li>Strong experience with infrastructure as code (Terraform/Terragrunt) and automated deployment pipelines (FluxCD).</li> <li>Significant experience with monitoring tools (Victoria Metrics, Grafana, EFK stack).</li> <li>Problem-solving skills in a dynamic cloud-native environment.</li> <li>Experience working in distributed teams and a collaborative mindset.</li> </ul> <p>Benefits:</p> <ul> <li>Work fully remote with a focus on asynchronous communication and team collaboration.</li> <li>Opportunity to impact healthcare data accessibility and improve patient outcomes.</li> </ul>",
+  "datePosted": "2026-09-19T10:01:11+00:00",
+  "validThrough": "2026-12-19T10:01:11+00:00",
+  "employmentType": [
+   "FULL_TIME"
+  ],
+  "applicantLocationRequirements": [
+   {
+    "@type": "Country",
+    "name": "Europe"
+   },
+   {
+    "@type": "Country",
+    "name": "France"
+   }
+  ],
+  "jobLocationType": "TELECOMMUTE",
+  "directApply": false,
+  "workHours": "Flexible",
+  "image": "https://remoteyeah.com/image.png?p=company%2Flifen-2.webp&w=100&h=100&q=75&e=webp&s=bcGI",
+  "jobBenefits": "Async collaboration, Distributed team, Flexible working hours, Generous vacation, Unlimited vacation",
+  "occupationalCategory": "15-1252.00 Software Developers",
+  "skills": "AWS, GCP, Software as a Service, Kubernetes, Terraform, GitHub, R, Grafana",
+  "hiringOrganization": {
+   "@type": "Organization",
+   "name": "LIFEN",
+   "sameAs": "https://www.lifen.fr/",
+   "logo": "https://remoteyeah.com/image.png?p=company%2Flifen-2.webp&w=100&h=100&q=75&e=webp&s=bcGI"
+  },
+  "baseSalary": {
+   "@type": "MonetaryAmount",
+   "currency": "EUR",
+   "value": {
+    "@type": "QuantitativeValue",
+    "minValue": 65000,
+    "maxValue": 75000,
+    "unitText": "YEAR"
+   }
+  },
+  "experienceRequirements": {
+   "@type": "OccupationalExperienceRequirements",
+   "monthsOfExperience": 60
+  }
+ }
+}

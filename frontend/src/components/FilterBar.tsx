@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { MAX_POSTING_AGE_DAYS, type Facets, type Filters, type SortField } from "@/lib/types";
-import { titleCase } from "@/lib/format";
+import { sourceLabel } from "@/lib/format";
 import { MultiSelect } from "./MultiSelect";
 import { Segmented, VDivider, cx } from "./primitives";
 
@@ -244,7 +244,7 @@ export function FilterBar({
             <Chip key={value} label={value} onRemove={() => onToggle("companies", value)} />
           ))}
           {filters.ats.map((value) => (
-            <Chip key={value} label={titleCase(value)} onRemove={() => onToggle("ats", value)} />
+            <Chip key={value} label={sourceLabel(value)} onRemove={() => onToggle("ats", value)} />
           ))}
           {filters.departments.map((value) => (
             <Chip key={value} label={value} onRemove={() => onToggle("departments", value)} />

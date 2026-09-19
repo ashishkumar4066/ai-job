@@ -28,7 +28,7 @@ import json
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -78,6 +78,28 @@ class Compensation(BaseModel):
     preferred_currency: str = "USD"
 
 
+class Evidence(BaseModel):
+    """One capability and the résumé fact that proves it — what the LLM reads.
+
+    `depth` is the distinction the skill list cannot carry: "used an LLM API
+    in a side project" and "built LLM infrastructure in production" both put
+    `llm` in `skills`, and a JD asking for production experience must be able
+    to tell them apart.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    area: str
+    depth: Literal["production", "project"] = "production"
+    proof: str
+
+
+# Bump when `llm.py`'s fit prompt or schema changes meaning. It is hashed into
+# `Profile.version`, so every fit verdict read under the old wording goes stale
+# instead of sitting on screen next to verdicts read under the new one.
+FIT_PROMPT_VERSION = "2"
+
+
 class Profile(BaseModel):
     """`profile.yaml`, whole."""
 
@@ -92,6 +114,12 @@ class Profile(BaseModel):
     # Kept nested on disk because a flat 80-entry list is unreadable to edit.
     skills: dict[str, dict[str, int]] = Field(default_factory=dict)
     gaps: dict[str, int] = Field(default_factory=dict)
+
+    # The LLM's view of the résumé: depth-tagged proof, plus capabilities the
+    # résumé does not show. `skills`/`gaps` above feed the regex ranker.
+    evidence: list[Evidence] = Field(default_factory=list)
+    unproven: list[str] = Field(default_factory=list)
+    domains: list[str] = Field(default_factory=list)
 
     experience: list[dict[str, Any]] = Field(default_factory=list)
     projects: list[dict[str, Any]] = Field(default_factory=list)
@@ -143,6 +171,13 @@ class Profile(BaseModel):
                 "work_authorization": self.work_authorization.model_dump(),
                 "compensation": self.compensation.model_dump(),
                 "country": self.identity.country,
+                "evidence": [e.model_dump() for e in self.evidence],
+                "unproven": self.unproven,
+                "domains": self.domains,
+                "education": [
+                    e.get("degree") for e in self.education if isinstance(e, dict)
+                ],
+                "fit_prompt": FIT_PROMPT_VERSION,
             },
             sort_keys=True,
             separators=(",", ":"),

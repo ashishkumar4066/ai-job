@@ -1,0 +1,145 @@
+{
+ "component": "WaasJobListingsPage",
+ "props": {
+  "title": "Software Engineer jobs at Y Combinator startups in India",
+  "location": {
+   "id": 189,
+   "place_id": "ChIJkbeSa_BfYzARphNChaFPjNc",
+   "name": "India",
+   "coordinates": [
+    20.593684,
+    78.96288
+   ],
+   "slug": "india"
+  },
+  "jobRoles": [
+   {
+    "slug": "software-engineer",
+    "name": "Software Engineer"
+   },
+   {
+    "slug": "designer",
+    "name": "Design & UI/UX"
+   },
+   {
+    "slug": "product-manager",
+    "name": "Product Manager"
+   },
+   {
+    "slug": "recruiting-hr",
+    "name": "Recruiting & HR"
+   },
+   {
+    "slug": "sales-manager",
+    "name": "Sales"
+   },
+   {
+    "slug": "marketing",
+    "name": "Marketing"
+   },
+   {
+    "slug": "support",
+    "name": "Support & Success"
+   },
+   {
+    "slug": "operations",
+    "name": "Operations"
+   },
+   {
+    "slug": "science",
+    "name": "Science"
+   }
+  ],
+  "jobPostings": [
+   {
+    "id": 110698,
+    "title": "AI Reliability Intern",
+    "url": "/companies/patched/jobs/hPsUPP4-ai-reliability-intern",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D110698&defaults%5BsignUpActive%5D=true",
+    "location": "IN / Remote (IN)",
+    "askUs": false,
+    "type": "Internship",
+    "role": "eng",
+    "roleSpecificType": "Machine learning",
+    "prettyRole": "Engineering",
+    "salaryRange": "₹25K - ₹75K INR / monthly",
+    "equityRange": "",
+    "minExperience": null,
+    "minSchoolYear": "Any",
+    "visa": "US citizenship/visa not required",
+    "skills": [
+     "Python"
+    ],
+    "isIncomplete": false,
+    "companyUrl": "/companies/patched",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/fb149bb2976430923620abcb50a97acc06ab22c0.png",
+    "companyName": "Patched",
+    "companyBatchName": "S24",
+    "companyOneLiner": "Reliable AI for Regulated Ops",
+    "hiringManager": null,
+    "createdAt": "1 day",
+    "lastActive": null,
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D110698&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=29968"
+   },
+   {
+    "id": 109577,
+    "title": "Marketing Design Lead",
+    "url": "/companies/firstwork/jobs/lgyvomJ-marketing-design-lead",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D109577&defaults%5BsignUpActive%5D=true",
+    "location": "Remote (US)",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "marketing",
+    "roleSpecificType": null,
+    "prettyRole": "Marketing",
+    "salaryRange": "",
+    "equityRange": "",
+    "minExperience": "5+ years",
+    "minSchoolYear": null,
+    "visa": "US citizen/visa only",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/firstwork",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/d263d80a559ff3f8f00a1086c466c45905a09911.png",
+    "companyName": "FirstWork",
+    "companyBatchName": "S24",
+    "companyOneLiner": "Rippling for seasonal workers",
+    "hiringManager": null,
+    "createdAt": "7 days",
+    "lastActive": null,
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D109577&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=29651"
+   },
+   {
+    "id": 108894,
+    "title": "Telephony/VOIP Engineer - Remote",
+    "url": "/companies/retell-ai/jobs/b03bugG-telephony-voip-engineer-remote",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D108894&defaults%5BsignUpActive%5D=true",
+    "location": "Remote (US)",
+    "askUs": false,
+    "type": "Contract",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "$6K - $7.5K / monthly",
+    "equityRange": "",
+    "minExperience": "Any (new grads ok)",
+    "minSchoolYear": null,
+    "visa": "US citizen/visa only",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/retell-ai",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/c0856f230de1a84be083cff84a3298664d32f0a3.png",
+    "companyName": "Retell AI",
+    "companyBatchName": "W24",
+    "companyOneLiner": "Supercharge Your Contact Center Operations with AI Phone Agents",
+    "hiringManager": null,
+    "createdAt": "10 days",
+    "lastActive": null,
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D108894&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=29441"
+   }
+  ]
+ }
+}

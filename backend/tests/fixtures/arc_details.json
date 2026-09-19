@@ -1,0 +1,810 @@
+{
+ "arc:pkmiiyi85w": {
+  "page": "/remote-jobs/details/[urlString]",
+  "props": {
+   "pageProps": {
+    "job": {
+     "randomKey": "pkmiiyi85w",
+     "title": "Senior Full-Stack Developer",
+     "jobType": "fulltime",
+     "jobRole": "engineering",
+     "availableHoursPerWeek": null,
+     "description": "### Join Our Team at Supreme Optimization\n\nAre you a seasoned Full-Stack Developer looking to make a significant impact in the life science and biotechnology industry? Supreme Optimization, a leading marketing agency with a team of over 50 Ph.D. professionals, is seeking a Senior Full-Stack Developer to join our innovative team.\n\n### About Us\n\nAt Supreme Optimization, we specialize in providing tailored marketing solutions to elevate the brands of life science and biotechnology companies. With a focus on supreme optimization, we are dedicated to delivering top-notch services that drive success for our clients.\n\n### Role Overview\n\nAs a Senior Full-Stack Developer at Supreme Optimization, you will play a crucial role in developing cutting-edge solutions that integrate Node.js, Laravel, React, and more. Your expertise will contribute to the seamless integration of AI and ILM technologies, ensuring our clients receive the best-in-class marketing solutions.\n\n### Why Join Us?\n\nJoining our team means being part of a dynamic and forward-thinking environment where your skills and creativity will be valued. You will have the opportunity to work with a team of industry experts and contribute to projects that make a real difference in the life science and biotechnology sectors.\n\n### Ready to Elevate Your Career?\n\nIf you are a Senior Full-Stack Developer with a passion for innovation and a drive to excel in a fast-paced environment, we want to hear from you. Take the next step in your career and join Supreme Optimization in revolutionizing the marketing landscape for life science and biotechnology companies.",
+     "estimatedWeeks": null,
+     "urlString": "senior-full-stack-developer",
+     "requiredCountries": [],
+     "englishLevel": null,
+     "visaOrRelocationRequired": null,
+     "overlapHours": null,
+     "minAnnualSalary": 80000,
+     "maxAnnualSalary": 120000,
+     "numberOfOpenings": 1,
+     "experienceLevel": "senior",
+     "requiredLocations": [
+      "worldwide"
+     ],
+     "jobLink": null,
+     "interviewLink": "",
+     "interviewDescription": "",
+     "interestCount": 297,
+     "discipline": "full-stack",
+     "createdAt": 1789573095,
+     "updatedAt": 1789576759,
+     "startAt": 1789573529,
+     "state": "opened",
+     "aasmState": "open",
+     "broadcastCount": 200,
+     "timezone": "Pacific Time (US & Canada)",
+     "timezoneOffset": "-07:00",
+     "clientTimezoneRestriction": "overlap",
+     "categories": [
+      {
+       "name": "Laravel",
+       "urlString": "laravel",
+       "alternatives": []
+      },
+      {
+       "name": "React",
+       "urlString": "reactjs",
+       "alternatives": []
+      },
+      {
+       "name": "Ai & llm integration",
+       "urlString": "ai-llm-integration",
+       "alternatives": []
+      },
+      {
+       "name": "AWS",
+       "urlString": "aws",
+       "alternatives": []
+      },
+      {
+       "name": "Next.js",
+       "urlString": "nextjs",
+       "alternatives": []
+      },
+      {
+       "name": "Ai/llm apis",
+       "urlString": "ai-llm-apis",
+       "alternatives": []
+      },
+      {
+       "name": "PHP",
+       "urlString": "php",
+       "alternatives": []
+      },
+      {
+       "name": "MySQL",
+       "urlString": "mysql",
+       "alternatives": []
+      },
+      {
+       "name": "Node.js",
+       "urlString": "nodejs",
+       "alternatives": []
+      },
+      {
+       "name": "DevOps",
+       "urlString": "devops",
+       "alternatives": []
+      }
+     ],
+     "optionalCategories": [],
+     "aiCategorySuggestion": null,
+     "closed": false,
+     "public": true,
+     "company": null,
+     "languageRequirement": null,
+     "maxHourlyRate": 0,
+     "minHourlyRate": 0,
+     "isBroadcasted": true,
+     "isCompleted": null,
+     "ats": null
+    },
+    "company": null
+   }
+  }
+ },
+ "arc:pkvft6v137": {
+  "page": "/remote-jobs/details/[urlString]",
+  "props": {
+   "pageProps": {
+    "job": {
+     "randomKey": "pkvft6v137",
+     "title": "AI Trading Developer",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "availableHoursPerWeek": 40,
+     "description": "### Role Overview\n\nWe are seeking an experienced **AI Trading Developer** to join our team. The ideal candidate will have a strong background in creating trading algorithms or utilizing trading systems. This role requires exceptional problem-solving skills and expertise in quantitative development to enhance our trading strategies and systems.\n\n#### Responsibilities\n\n*   Develop and implement trading algorithms to optimize performance and efficiency.\n*   Utilize existing trading systems, enhancing them with innovative AI solutions.\n*   Collaborate with quantitative analysts to refine and test trading strategies.\n*   Analyze market data to identify opportunities for algorithmic trading.\n*   Continuously monitor and improve the performance of trading algorithms.\n\n#### Required Skills\n\n*   Proven experience in developing trading algorithms or working with trading systems.\n*   Strong problem-solving abilities and analytical mindset.\n*   Expertise in quantitative development and data analysis.\n\n#### Nice to Have\n\n*   Familiarity with AI and machine learning techniques in the context of trading.\n*   Experience with backtesting frameworks and financial modeling.",
+     "estimatedWeeks": 12,
+     "urlString": "ai-trading-developer",
+     "requiredCountries": [],
+     "englishLevel": null,
+     "visaOrRelocationRequired": null,
+     "overlapHours": null,
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "numberOfOpenings": 1,
+     "experienceLevel": "mid",
+     "requiredLocations": [
+      "worldwide"
+     ],
+     "jobLink": null,
+     "interviewLink": null,
+     "interviewDescription": null,
+     "interestCount": 80,
+     "discipline": "data-science",
+     "createdAt": 1789658467,
+     "updatedAt": 1789660317,
+     "startAt": 1789658467,
+     "state": "opened",
+     "aasmState": "open",
+     "broadcastCount": 184,
+     "timezone": "no-preference",
+     "timezoneOffset": null,
+     "clientTimezoneRestriction": null,
+     "categories": [
+      {
+       "name": "Pandas",
+       "urlString": "pandas",
+       "alternatives": [
+        {
+         "name": "Dask",
+         "urlString": "dask"
+        },
+        {
+         "name": "TensorFlow",
+         "urlString": "tensorflow"
+        },
+        {
+         "name": "Matplotlib",
+         "urlString": "matplotlib"
+        }
+       ]
+      },
+      {
+       "name": "Python",
+       "urlString": "python",
+       "alternatives": [
+        {
+         "name": "JavaScript",
+         "urlString": "javascript"
+        },
+        {
+         "name": "Ruby",
+         "urlString": "ruby"
+        },
+        {
+         "name": "1. python ",
+         "urlString": "1-python"
+        }
+       ]
+      },
+      {
+       "name": "SQL",
+       "urlString": "sql",
+       "alternatives": [
+        {
+         "name": "GraphQL",
+         "urlString": "graphql"
+        },
+        {
+         "name": "NoSQL",
+         "urlString": "nosql"
+        },
+        {
+         "name": "SQL Queries",
+         "urlString": "sql-queries"
+        }
+       ]
+      }
+     ],
+     "optionalCategories": [
+      {
+       "name": "Machine Learning",
+       "urlString": "machine-learning"
+      },
+      {
+       "name": "Deep Learning",
+       "urlString": "deep-learning"
+      },
+      {
+       "name": "Keras",
+       "urlString": "keras"
+      }
+     ],
+     "aiCategorySuggestion": {
+      "requiredCategories": [
+       {
+        "name": "Pandas",
+        "urlString": "pandas",
+        "alternatives": [
+         {
+          "name": "TensorFlow",
+          "urlString": "tensorflow"
+         },
+         {
+          "name": "Matplotlib",
+          "urlString": "matplotlib"
+         },
+         {
+          "name": "Dask",
+          "urlString": "dask"
+         }
+        ]
+       },
+       {
+        "name": "Python",
+        "urlString": "python",
+        "alternatives": [
+         {
+          "name": "Ruby",
+          "urlString": "ruby"
+         },
+         {
+          "name": "1. python ",
+          "urlString": "1-python"
+         },
+         {
+          "name": "JavaScript",
+          "urlString": "javascript"
+         }
+        ]
+       },
+       {
+        "name": "SQL",
+        "urlString": "sql",
+        "alternatives": [
+         {
+          "name": "GraphQL",
+          "urlString": "graphql"
+         },
+         {
+          "name": "NoSQL",
+          "urlString": "nosql"
+         },
+         {
+          "name": "SQL Queries",
+          "urlString": "sql-queries"
+         }
+        ]
+       }
+      ],
+      "optionalCategories": [
+       {
+        "name": "Deep Learning",
+        "urlString": "deep-learning"
+       },
+       {
+        "name": "Machine Learning",
+        "urlString": "machine-learning"
+       },
+       {
+        "name": "Keras",
+        "urlString": "keras"
+       }
+      ]
+     },
+     "closed": false,
+     "public": true,
+     "company": null,
+     "languageRequirement": null,
+     "maxHourlyRate": 45,
+     "minHourlyRate": 30,
+     "isBroadcasted": true,
+     "isCompleted": true,
+     "ats": null
+    },
+    "company": null
+   }
+  }
+ },
+ "arc:p85gjg24ve": {
+  "page": "/remote-jobs/details/[urlString]",
+  "props": {
+   "pageProps": {
+    "job": {
+     "randomKey": "p85gjg24ve",
+     "title": "Quantitative Strategy Developer",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "availableHoursPerWeek": 20,
+     "description": "### Role Overview\n\nWe are looking for a **Quantitative Strategy Developer** to work on developing and validating systematic trading strategies. This role offers the flexibility to work remotely from anywhere, with a focus on strategy validation rather than fixed working hours. You'll be part of a team that builds and licenses trading strategies to retail clients using platforms like NinjaTrader and Charles Schwab.\n\n#### Responsibilities\n\n*   Port a defined trading strategy to NinjaScript, ensuring the backtest matches a Python reference implementation.\n*   Develop a Python-based walk-forward validation framework to assess strategy performance, including in-sample vs. out-of-sample results and parameter sensitivity.\n*   Document the validation framework for usability by other team members.\n*   Engage in ongoing strategy development, contributing to the refinement and expansion of trading strategies across futures and equities.\n*   Maintain clear communication and documentation to support asynchronous collaboration across time zones.\n\n#### Required Skills\n\n*   Proven experience in building and testing systematic trading strategies, particularly in futures or equities.\n*   Proficiency in NinjaScript/C# for NinjaTrader 8 and Python for research, with familiarity in libraries such as pandas and vectorbt.\n*   Strong understanding of avoiding overfitting through walk-forward analysis and proper out-of-sample testing.\n*   Ability to model transaction costs accurately and discuss strategy capacity constraints and potential failures.\n*   Excellent written English communication skills.\n\n#### Nice to Have\n\n*   Experience with REST APIs for broker connectivity on the equities side.\n*   Background in discussing and managing regime dependence in trading strategies.",
+     "estimatedWeeks": 12,
+     "urlString": "quantitative-strategy-developer",
+     "requiredCountries": [],
+     "englishLevel": null,
+     "visaOrRelocationRequired": null,
+     "overlapHours": null,
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "numberOfOpenings": 1,
+     "experienceLevel": "senior",
+     "requiredLocations": [
+      "worldwide"
+     ],
+     "jobLink": null,
+     "interviewLink": null,
+     "interviewDescription": null,
+     "interestCount": 165,
+     "discipline": "data-science",
+     "createdAt": 1785277461,
+     "updatedAt": 1786380884,
+     "startAt": 1785277461,
+     "state": "opened",
+     "aasmState": "interviewing",
+     "broadcastCount": 553,
+     "timezone": "no-preference",
+     "timezoneOffset": null,
+     "clientTimezoneRestriction": null,
+     "categories": [
+      {
+       "name": "Python",
+       "urlString": "python",
+       "alternatives": []
+      },
+      {
+       "name": "C#",
+       "urlString": "c_sharp",
+       "alternatives": []
+      },
+      {
+       "name": "NinjaScript",
+       "urlString": "ninjascript",
+       "alternatives": [
+        {
+         "name": "TradeStation",
+         "urlString": "tradestation"
+        },
+        {
+         "name": "MetaTrader",
+         "urlString": "metatrader"
+        },
+        {
+         "name": "TradingView",
+         "urlString": "tradingview"
+        },
+        {
+         "name": "NinjaTrader",
+         "urlString": "ninjatrader"
+        },
+        {
+         "name": "Quantitative Finance",
+         "urlString": "quantitative-finance"
+        }
+       ]
+      }
+     ],
+     "optionalCategories": [
+      {
+       "name": "RESTful API",
+       "urlString": "restful-api"
+      }
+     ],
+     "aiCategorySuggestion": {
+      "requiredCategories": [
+       {
+        "name": "Python",
+        "urlString": "python",
+        "alternatives": [
+         {
+          "name": "Ruby",
+          "urlString": "ruby"
+         },
+         {
+          "name": "1. python ",
+          "urlString": "1-python"
+         },
+         {
+          "name": "JavaScript",
+          "urlString": "javascript"
+         }
+        ]
+       },
+       {
+        "name": "C#",
+        "urlString": "c_sharp",
+        "alternatives": [
+         {
+          "name": "Java",
+          "urlString": "java"
+         },
+         {
+          "name": "Entity Framework",
+          "urlString": "entity-framework"
+         },
+         {
+          "name": "C# 3.0",
+          "urlString": "c_sharp-30"
+         }
+        ]
+       }
+      ],
+      "optionalCategories": [
+       {
+        "name": "RESTful API",
+        "urlString": "restful-api"
+       }
+      ]
+     },
+     "closed": false,
+     "public": true,
+     "company": null,
+     "languageRequirement": null,
+     "maxHourlyRate": 100,
+     "minHourlyRate": 20,
+     "isBroadcasted": true,
+     "isCompleted": true,
+     "ats": null
+    },
+    "company": null
+   }
+  }
+ },
+ "ext:pl4nlujaxp": {
+  "page": "/remote-jobs/j/[urlString]",
+  "props": {
+   "pageProps": {
+    "job": {
+     "randomKey": "pl4nlujaxp",
+     "requiredCountries": [
+      "IN"
+     ],
+     "title": "Agentic AI Engineer",
+     "companyName": "Jobgether",
+     "url": "https://in.linkedin.com/jobs/view/agentic-ai-engineer-at-jobgether-4466175247",
+     "timeZoneMin": null,
+     "timeZoneMax": null,
+     "urlString": "jobgether-agentic-ai-engineer",
+     "description": "<strong>This position is listed on behalf of a partner company, who manages all applications and next steps. Our partner is looking for an Agentic AI Engineer based in India.  \n  \n</strong>This is a hands-on, customer-facing opportunity to build the next generation of AI-powered products from early prototypes through production deployment. You’ll architect scalable Generative AI and agentic systems that solve complex enterprise problems and create measurable business value. The role combines solution architecture, advanced AI engineering, and direct collaboration with customers, product teams, and engineers. You’ll work with LLMs, multi-agent workflows, RAG, NLP, vector databases, and modern cloud-native architectures. Beyond implementation, you’ll help establish reliable AI practices around observability, responsible AI, performance, and lifecycle management. This role is ideal for an experienced ML/GenAI engineer who enjoys technical ownership, rapid experimentation, and turning emerging AI capabilities into production-ready solutions.  \n  \nAccountabilities  \n  \n\n*   Architect and build scalable Generative AI and agentic AI applications from initial concept and prototyping through production deployment.\n*   Design LLM-powered workflows, prompt strategies, reflexive systems, self-learning approaches, and multi-agent architectures.\n*   Develop intelligent AI agents using LangChain, LangGraph, or comparable agentic frameworks for use cases including NL-to-SQL, autonomous task execution, and RAG.\n*   Evaluate, customize, fine-tune, and optimize state-of-the-art large language models for specific business and technical requirements.\n*   Design, implement, and own complete ML/GenAI pipelines covering training, deployment, monitoring, evaluation, and lifecycle management.\n*   Build APIs, microservices, integration frameworks, and supporting infrastructure that embed AI capabilities into enterprise products.\n*   Apply responsible AI principles to mitigate hallucinations, bias, reliability issues, and other risks associated with production AI systems.\n*   Work directly with customers, product leaders, and engineering teams to translate business requirements into robust AI architectures and solutions.\n*   Mentor engineers and contribute to the development of long-term AI platform strategies, engineering standards, and best practices.\n*   Continuously evaluate emerging AI models, frameworks, infrastructure, and optimization techniques to improve product capabilities and performance.\n*   Contribute to AI observability, monitoring, governance, and operational processes required to run reliable AI systems at scale.  \n      \n    \n\n<strong>Requirements  \n  \n</strong>\n\n*   6+ years of experience in traditional Machine Learning, including at least 2 years of hands-on Generative AI experience.\n*   Strong practical expertise with LLMs, GPT and comparable models, prompt engineering, and agentic AI systems.\n*   Proven production experience with LangChain, LangGraph, or similar agentic AI frameworks.\n*   Strong Python skills, including API development, third-party integrations, internal tooling, and AI application development.\n*   Solid understanding of Transformers, CNNs, RNNs, and practical experience with frameworks such as TensorFlow, PyTorch, and Scikit-learn.\n*   Experience with NLP, embedding models, vector databases, retrieval-augmented generation, and semantic search.\n*   Hands-on experience with models and platforms such as OpenAI, Llama/Llama 2, Azure OpenAI, and other open-source LLMs.\n*   Experience designing distributed, cloud-native architectures using microservices, REST APIs, and scalable integration patterns.\n*   Proficiency with at least one major cloud platform, such as AWS, Azure, or GCP, along with experience using Docker and Kubernetes.\n*   Practical MLOps/LLMOps experience covering model training, deployment, monitoring, evaluation, and lifecycle management.\n*   Excellent communication skills and the ability to explain sophisticated AI concepts and technical decisions to non-technical stakeholders.\n*   Bachelor’s or Master’s degree in Computer Science, Data Science, Engineering, Mathematics, Statistics, or a related field.\n*   Strong ownership mentality and the ability to thrive in a fast-moving startup or high-growth environment.\n*   Preferred experience includes LLM fine-tuning using techniques such as LoRA, RLHF, or PEFT.\n*   Knowledge of AI performance optimization techniques, including GPU/TPU acceleration, quantization, pruning, or distillation, is advantageous.\n*   Experience with AI observability and monitoring tools, AI governance, or compliance frameworks such as GDPR and SOC 2 is a plus.\n*   Prior consulting, solution architecture, or enterprise AI product delivery experience is highly desirable.\n*   Experience in financial services, healthcare, or insurance is an additional advantage.  \n      \n    \n\n<strong>Benefits  \n  \n</strong>\n\n*   Location: India — Remote.\n*   Employment type: Full-time.\n*   Compensation: ₹25,00,000–₹45,00,000 per year.\n*   Opportunity to architect and build next-generation Generative AI and agentic AI products from prototype through production.\n*   Hands-on exposure to LLMs, multi-agent systems, RAG, NLP, vector databases, and modern AI engineering frameworks.\n*   Customer-facing role offering direct exposure to enterprise AI architecture, business requirements, and solution design.\n*   Opportunity to influence long-term AI platform strategy and engineering standards.\n*   Collaboration with product, engineering, and customer teams in a fast-paced technology environment.\n*   Opportunities to mentor engineers and expand technical leadership responsibilities.\n*   Exposure to modern cloud-native infrastructure, MLOps/LLMOps, AI observability, and responsible AI practices.\n*   High degree of technical ownership and autonomy in a rapidly evolving AI environment.  \n      \n    \n\n<strong>How Jobgether Works  \n  \n</strong>We use an <strong>AI-powered matching process</strong> to ensure your application is reviewed quickly, objectively, and fairly against the role's core requirements. Our system identifies the top-fitting candidates, and this shortlist is then shared directly with the hiring company. The final decision and next steps (interviews, assessments) are managed by their internal team.  \n  \nWe appreciate your interest and wish you the best!  \n  \nWhy Apply Through Jobgether?  \n  \n<strong>Data Privacy Notice:</strong> By submitting your application, you acknowledge that Jobgether will process your personal data to evaluate your candidacy and share relevant information with the hiring employer. This processing is based on legitimate interest and pre-contractual measures under applicable data protection laws (including GDPR). You may exercise your rights (access, rectification, erasure, objection) at any time.  \n  \nWe may use artificial intelligence (AI) tools to support parts of the hiring process, such as reviewing applications, analyzing resumes, or assessing responses and identifying potential inconsistencies or verification signals in application materials based on available information. These tools assist our recruitment team but do not replace human judgment. Final hiring decisions are ultimately made by humans. If you would like more information about how your data is processed, please contact us.",
+     "experienceLevels": [],
+     "contractType": "permanent",
+     "usVisaRequired": false,
+     "postedAt": 1789703742,
+     "closed": false,
+     "techStackDetails": [
+      {
+       "name": "AI",
+       "urlString": "ai"
+      },
+      {
+       "name": "Wireframing/prototyping",
+       "urlString": "wireframing-prototyping"
+      },
+      {
+       "name": "Database",
+       "urlString": "database"
+      },
+      {
+       "name": "Microservices",
+       "urlString": "microservices"
+      },
+      {
+       "name": "Azure",
+       "urlString": "azure"
+      },
+      {
+       "name": "Machine Learning",
+       "urlString": "machine-learning"
+      },
+      {
+       "name": "Data",
+       "urlString": "data"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "Infrastructure",
+       "urlString": "infrastructure"
+      },
+      {
+       "name": "Amazon",
+       "urlString": "amazon"
+      },
+      {
+       "name": "Docker",
+       "urlString": "docker"
+      },
+      {
+       "name": "Web Development",
+       "urlString": "web-development"
+      },
+      {
+       "name": "TensorFlow",
+       "urlString": "tensorflow"
+      },
+      {
+       "name": "Kubernetes",
+       "urlString": "kubernetes"
+      },
+      {
+       "name": "NLP",
+       "urlString": "nlp"
+      },
+      {
+       "name": "Data Science",
+       "urlString": "data-science"
+      },
+      {
+       "name": "Cloud",
+       "urlString": "cloud"
+      },
+      {
+       "name": "GDPR",
+       "urlString": "gdpr"
+      },
+      {
+       "name": "Mobile App Development",
+       "urlString": "mobile-app-development"
+      },
+      {
+       "name": "PyTorch",
+       "urlString": "pytorch"
+      },
+      {
+       "name": "Communications",
+       "urlString": "communications"
+      },
+      {
+       "name": "Mathematics",
+       "urlString": "mathematics"
+      },
+      {
+       "name": "Statistics",
+       "urlString": "statistics"
+      },
+      {
+       "name": "Team collaboration",
+       "urlString": "team-collaboration"
+      },
+      {
+       "name": "Compliance",
+       "urlString": "compliance"
+      },
+      {
+       "name": "Support",
+       "urlString": "support"
+      },
+      {
+       "name": "Generative AI",
+       "urlString": "generative-ai"
+      },
+      {
+       "name": "LLM",
+       "urlString": "llm"
+      },
+      {
+       "name": "Workflows",
+       "urlString": "workflows"
+      },
+      {
+       "name": "R",
+       "urlString": "r"
+      },
+      {
+       "name": "Vectorization",
+       "urlString": "vectorization"
+      },
+      {
+       "name": "Cloud Native",
+       "urlString": "cloud-native"
+      },
+      {
+       "name": "Langchain",
+       "urlString": "langchain"
+      },
+      {
+       "name": "Scikit-learn",
+       "urlString": "scikit-learn"
+      },
+      {
+       "name": "MLOps",
+       "urlString": "mlops"
+      },
+      {
+       "name": "AWS",
+       "urlString": "aws"
+      },
+      {
+       "name": "Google Cloud Platform",
+       "urlString": "google-cloud-platform"
+      }
+     ],
+     "categories": [
+      {
+       "name": "AI",
+       "urlString": "ai"
+      },
+      {
+       "name": "Wireframing/prototyping",
+       "urlString": "wireframing-prototyping"
+      },
+      {
+       "name": "Database",
+       "urlString": "database"
+      },
+      {
+       "name": "Microservices",
+       "urlString": "microservices"
+      },
+      {
+       "name": "Azure",
+       "urlString": "azure"
+      },
+      {
+       "name": "Machine Learning",
+       "urlString": "machine-learning"
+      },
+      {
+       "name": "Data",
+       "urlString": "data"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "Infrastructure",
+       "urlString": "infrastructure"
+      },
+      {
+       "name": "Amazon",
+       "urlString": "amazon"
+      },
+      {
+       "name": "Docker",
+       "urlString": "docker"
+      },
+      {
+       "name": "Web Development",
+       "urlString": "web-development"
+      },
+      {
+       "name": "TensorFlow",
+       "urlString": "tensorflow"
+      },
+      {
+       "name": "Kubernetes",
+       "urlString": "kubernetes"
+      },
+      {
+       "name": "NLP",
+       "urlString": "nlp"
+      },
+      {
+       "name": "Data Science",
+       "urlString": "data-science"
+      },
+      {
+       "name": "Cloud",
+       "urlString": "cloud"
+      },
+      {
+       "name": "GDPR",
+       "urlString": "gdpr"
+      },
+      {
+       "name": "Mobile App Development",
+       "urlString": "mobile-app-development"
+      },
+      {
+       "name": "PyTorch",
+       "urlString": "pytorch"
+      },
+      {
+       "name": "Communications",
+       "urlString": "communications"
+      },
+      {
+       "name": "Mathematics",
+       "urlString": "mathematics"
+      },
+      {
+       "name": "Statistics",
+       "urlString": "statistics"
+      },
+      {
+       "name": "Team collaboration",
+       "urlString": "team-collaboration"
+      },
+      {
+       "name": "Compliance",
+       "urlString": "compliance"
+      },
+      {
+       "name": "Support",
+       "urlString": "support"
+      },
+      {
+       "name": "Generative AI",
+       "urlString": "generative-ai"
+      },
+      {
+       "name": "LLM",
+       "urlString": "llm"
+      },
+      {
+       "name": "Workflows",
+       "urlString": "workflows"
+      },
+      {
+       "name": "R",
+       "urlString": "r"
+      },
+      {
+       "name": "Vectorization",
+       "urlString": "vectorization"
+      },
+      {
+       "name": "Cloud Native",
+       "urlString": "cloud-native"
+      },
+      {
+       "name": "Langchain",
+       "urlString": "langchain"
+      },
+      {
+       "name": "Scikit-learn",
+       "urlString": "scikit-learn"
+      },
+      {
+       "name": "MLOps",
+       "urlString": "mlops"
+      },
+      {
+       "name": "AWS",
+       "urlString": "aws"
+      },
+      {
+       "name": "Google Cloud Platform",
+       "urlString": "google-cloud-platform"
+      }
+     ],
+     "company": {
+      "name": "Jobgether",
+      "employeeSizeMin": 11,
+      "employeeSizeMax": 50,
+      "logoUrl": "https://lever-client-logos.s3.us-west-2.amazonaws.com/b9babb10-6786-42c6-a3c5-9eebd25117d5-1762181104361.png",
+      "randomKey": "kp4xf5qy6a",
+      "urlString": "jobgether",
+      "headline": "Jobgether is the Largest Remote Job Platform worldwide with more than 160k remote jobs available across the world. Access the best flexible and remote jobs in just one click. Jobgether is your guide to the future of work, offering a variety of job oppo...",
+      "industry": "recruiting",
+      "headquartersName": "Brussels",
+      "officialSiteUrl": "https://www.jobgether.com",
+      "remoteLevel": "hybrid",
+      "country": "Belgium",
+      "city": "Brussels",
+      "industries": [
+       "Employment",
+       "Placement Agencies",
+       "Staffing & Recruiting",
+       "Agency",
+       "Technology",
+       "Internet",
+       "Human Resources",
+       "B2B",
+       "Marketplace",
+       "SAAS"
+      ],
+      "industryCategory": "Human Resource & Employment Services"
+     }
+    },
+    "company": {
+     "name": "Jobgether",
+     "headquarters": {
+      "name": "Brussels",
+      "location": {
+       "latitude": null,
+       "longitude": null
+      }
+     },
+     "officialSiteUrl": "https://www.jobgether.com",
+     "remoteLevel": "hybrid",
+     "urlString": "jobgether"
+    }
+   }
+  }
+ }
+}

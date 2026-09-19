@@ -66,6 +66,7 @@ import asyncio
 import json
 import logging
 import random
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -75,6 +76,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.config import Settings, get_settings
+from app.matching import _term_pattern
 from app.profile import Profile
 from app.ratelimit import (
     LimitExhausted,
@@ -107,13 +109,12 @@ class LLMNotConfigured(LLMError):
 SCREEN_SCHEMA: Final[dict[str, Any]] = {
     "type": "object",
     "additionalProperties": False,
+    # Order is generation order: posting facts first, then the evidence for and
+    # against, and the band LAST — so the band is decided from the lists the
+    # model has already written, not asserted first and justified after.
     "required": [
         "posting_status",
         "status_reason",
-        "fit_band",
-        "fit_reasons",
-        "strengths",
-        "gaps",
         "seniority",
         "tech_stack",
         "sponsorship_required",
@@ -121,123 +122,72 @@ SCREEN_SCHEMA: Final[dict[str, Any]] = {
         "work_mode",
         "compensation_text",
         "inconsistencies",
+        "strengths",
+        "must_have_gaps",
+        "nice_to_have_gaps",
+        "fit_reasons",
+        "fit_band",
     ],
     "properties": {
         "posting_status": {
             "type": "string",
             "enum": ["active", "evergreen", "ghost"],
             "description": (
-                "Is this a real opening being hired for right now? 'active' = a specific role "
-                "with concrete duties and a team. 'evergreen' = a perpetual talent-pool or "
-                "pipeline post ('always looking', 'future openings', 'join our talent "
-                "community'). 'ghost' = internally inconsistent, contentless, or an agency "
-                "advert naming no real employer or duties. Default to 'active' unless the text "
-                "gives positive evidence otherwise."
+                "Is this a real current opening? 'active' = a specific role with concrete "
+                "duties. 'evergreen' = a talent-pool or pipeline post ('always looking', "
+                "'future openings'). 'ghost' = contentless, self-contradictory, or an agency "
+                "advert naming no employer or duties. Default 'active' unless the text shows "
+                "otherwise."
             ),
         },
         "status_reason": {
             "type": "string",
-            "description": "One sentence, quoting the phrase from the posting that decided posting_status.",
-        },
-        "fit_band": {
-            "type": "string",
-            "enum": ["excellent", "strong", "moderate", "weak", "poor"],
-            "description": (
-                "How well the CANDIDATE PROFILE fits this job's stated requirements. Anchors: "
-                "'excellent' = the JD's core stack and seniority are the candidate's strongest "
-                "skills, years align, and no blocking requirement is missing. "
-                "'strong' = most core requirements met, at most one non-blocking gap. "
-                "'moderate' = right role family, but it leans on a stack the candidate has not "
-                "shipped, or the seniority is off by one level. "
-                "'weak' = the JD centres on the candidate's listed gap technologies, or wants a "
-                "different specialization. "
-                "'poor' = a different job entirely, or a hard blocker such as requiring work "
-                "authorization the candidate does not have. "
-                "Judge the FIT to this candidate, not how attractive the job is."
-            ),
-        },
-        "fit_reasons": {
-            "type": "array",
-            "items": {"type": "string"},
-            "maxItems": 4,
-            "description": (
-                "2-4 short reasons for fit_band, each naming a specific requirement the posting "
-                "actually states. Include the reasons against, not only the ones for."
-            ),
-        },
-        "strengths": {
-            "type": "array",
-            "items": {"type": "string"},
-            "maxItems": 6,
-            "description": "Candidate skills this posting explicitly asks for, in the posting's own wording.",
-        },
-        "gaps": {
-            "type": "array",
-            "items": {"type": "string"},
-            "maxItems": 6,
-            "description": (
-                "Requirements the posting states that the profile does not evidence. "
-                "Empty array if there are none. Do not invent a gap the posting never asks for."
-            ),
+            "description": "One sentence quoting the phrase that decided posting_status.",
         },
         "seniority": {
             "type": "string",
             "enum": ["intern", "junior", "mid", "senior", "staff", "lead", "unclear"],
-            "description": (
-                "The level this posting is pitched at, from its title and stated requirements. "
-                "'unclear' when the posting never indicates a level."
-            ),
+            "description": "Level the posting targets, from its title and requirements.",
         },
         "tech_stack": {
             "type": "array",
             "items": {"type": "string"},
             "maxItems": 8,
-            "description": (
-                "Technologies the posting names as requirements. Only ones it actually writes "
-                "down — an empty array is the correct answer for a JD that names none."
-            ),
+            "description": "Technologies the posting names. Empty if it names none.",
         },
         "sponsorship_required": {
             "type": "string",
             "enum": ["yes", "no", "unstated"],
             "description": (
-                "'yes' = the posting requires existing work authorization the candidate lacks "
-                "(e.g. 'must be authorized to work in the US without sponsorship'). "
-                "'no' = it offers sponsorship or is open worldwide. 'unstated' = silent."
+                "'yes' = requires work authorization the candidate lacks (e.g. 'authorized to "
+                "work in the US without sponsorship'). 'no' = offers sponsorship or hires "
+                "worldwide. 'unstated' = silent."
             ),
         },
         "location_policy": {
             "type": "string",
             "enum": ["open_to_india", "excludes_india", "unstated"],
             "description": (
-                "What THE POSTING says about where a candidate may live. Describe the posting's "
-                "own policy and ignore the candidate completely. "
-                "'open_to_india' = it names India, IST, worldwide or anywhere, OR the job itself "
-                "is located in an Indian city (Bengaluru, Hyderabad, Ahmedabad, ...). A job in "
-                "India is open_to_india even when it is on-site. "
-                "'excludes_india' = it restricts hiring to a region that does not include India, "
-                "e.g. 'US applicants only', 'must reside in the EU'. "
-                "'unstated' = the posting does not say. "
-                "Whether the work is remote or on-site is a different question — answer that in "
-                "work_mode and never let it change this field."
+                "Where THE POSTING lets candidates live; ignore the candidate. "
+                "'open_to_india' = names India, IST, worldwide or anywhere, or the job is in "
+                "an Indian city, even on-site. 'excludes_india' = limits hiring to regions "
+                "without India ('US only', 'EU residents'). 'unstated' = silent. Remote vs "
+                "on-site belongs in work_mode and never changes this field."
             ),
         },
         "work_mode": {
             "type": "string",
             "enum": ["remote", "hybrid", "onsite", "unstated"],
             "description": (
-                "How the posting says the work is done. 'remote' = fully remote or "
-                "work-from-anywhere. 'hybrid' = some days in an office. 'onsite' = requires "
-                "working from a specific location. 'unstated' = the posting does not say."
+                "'remote' = fully remote. 'hybrid' = some office days. 'onsite' = must work "
+                "from a set location. 'unstated' = silent."
             ),
         },
         "compensation_text": {
             "type": "string",
             "description": (
-                "The compensation sentence copied VERBATIM from the posting, e.g. "
-                "'$120k - $150k' or 'INR 25,00,000 per annum'. This is a quotation, not a "
-                "question: if the posting mentions no pay at all, return an EMPTY STRING. "
-                "Never answer 'No', 'None', 'N/A' or 'Not stated'."
+                "The pay sentence copied verbatim, e.g. '$120k - $150k'. If no pay is "
+                "mentioned, an EMPTY STRING. Never answer 'No', 'None' or 'N/A'."
             ),
         },
         "inconsistencies": {
@@ -245,18 +195,71 @@ SCREEN_SCHEMA: Final[dict[str, Any]] = {
             "items": {"type": "string"},
             "maxItems": 4,
             "description": (
-                "Internal contradictions in the posting — a title saying Senior while the body "
-                "asks for one year, a remote tag with an on-site requirement. Empty if none."
+                "Contradictions inside the posting (Senior title but 1 year asked; remote tag "
+                "but on-site duty). Empty if none."
+            ),
+        },
+        "strengths": {
+            "type": "array",
+            "items": {"type": "string"},
+            "maxItems": 6,
+            "description": (
+                "Up to 6 posting requirements the candidate's EVIDENCE proves, most important "
+                "first, each a short phrase (max 8 words, no citations). A skill-list mention or a "
+                "side project alone counts only when the posting asks for familiarity."
+            ),
+        },
+        "must_have_gaps": {
+            "type": "array",
+            "items": {"type": "string"},
+            "maxItems": 6,
+            "description": (
+                "REQUIRED items (must-have / minimum qualifications, or the role's core stack) "
+                "the profile does not prove, up to 6, each a short phrase (max 8 words). Append "
+                "' (partial)' when only adjacent or side-project evidence exists. Never list "
+                "what the posting does not ask for. Empty if none."
+            ),
+        },
+        "nice_to_have_gaps": {
+            "type": "array",
+            "items": {"type": "string"},
+            "maxItems": 4,
+            "description": (
+                "Up to 4 preferred / bonus items the profile does not prove, each a short phrase "
+                "(max 8 words). Empty if none."
+            ),
+        },
+        "fit_reasons": {
+            "type": "array",
+            "items": {"type": "string"},
+            "maxItems": 4,
+            "description": (
+                "2-4 reasons for fit_band, one sentence each, tied to a stated requirement; "
+                "include the reasons against."
+            ),
+        },
+        "fit_band": {
+            "type": "string",
+            "enum": ["excellent", "strong", "moderate", "weak", "poor"],
+            "description": (
+                "Fit of THIS candidate to the stated requirements, decided from the lists "
+                "above. 'excellent' = every must-have proven at production depth and the "
+                "level and years align. 'strong' = at most one must-have gap, and it is "
+                "partial or adjacent. 'moderate' = right role family, but 2+ must-have gaps "
+                "or the level is off by one. 'weak' = the posting centres on the candidate's "
+                "unproven stacks or a different specialization. 'poor' = a different job, or "
+                "a hard blocker (work authorization, on-site). Judge fit, not how attractive "
+                "the job is."
             ),
         },
     },
 }
 
 _SYSTEM_PROMPT: Final[str] = (
-    "You screen job postings for one specific candidate. Judge only what the posting text "
-    "states; never assume a requirement it does not write down. Every field has a description "
-    "and explicit anchors — follow them exactly. Prefer the evidence you can quote over your "
-    "impression of the role."
+    "You screen job postings for one candidate, as a strict technical recruiter. Use only "
+    "what the posting and the profile state; never assume a requirement or a skill. "
+    "Production evidence outweighs a skill-list mention. Follow each field's description. "
+    "Think briefly: decide each requirement once, do not deliberate."
 )
 
 
@@ -267,10 +270,6 @@ class JobScreen(BaseModel):
 
     posting_status: str
     status_reason: str = ""
-    fit_band: str
-    fit_reasons: list[str] = Field(default_factory=list)
-    strengths: list[str] = Field(default_factory=list)
-    gaps: list[str] = Field(default_factory=list)
     seniority: str = "unclear"
     tech_stack: list[str] = Field(default_factory=list)
     sponsorship_required: str = "unstated"
@@ -278,6 +277,11 @@ class JobScreen(BaseModel):
     work_mode: str = "unstated"
     compensation_text: str = ""
     inconsistencies: list[str] = Field(default_factory=list)
+    strengths: list[str] = Field(default_factory=list)
+    must_have_gaps: list[str] = Field(default_factory=list)
+    nice_to_have_gaps: list[str] = Field(default_factory=list)
+    fit_reasons: list[str] = Field(default_factory=list)
+    fit_band: str
 
     # One call, two answers, two cache keys — and therefore two homes.
     #
@@ -312,7 +316,8 @@ class JobScreen(BaseModel):
         "fit_band",
         "fit_reasons",
         "strengths",
-        "gaps",
+        "must_have_gaps",
+        "nice_to_have_gaps",
     )
 
     def validity_half(self) -> dict[str, Any]:
@@ -354,53 +359,74 @@ class JobScreen(BaseModel):
 
 
 def profile_brief(profile: Profile) -> str:
-    """The candidate half of the prompt.
+    """The candidate half of the prompt — the résumé as evidence, not keywords.
 
-    A brief, not the whole `profile.yaml`. Everything here is scoring-relevant
-    and nothing else is: the file also carries contact details, links and
-    Phase 3 form answers, none of which help judge a JD and all of which would
-    be billed on every one of the routed rows.
+    A brief, not the whole `profile.yaml`: contact details, links and Phase 3
+    answers cannot change a fit and would be billed on every read.
 
-    Skills are grouped by weight rather than listed flat, because the weights
-    are the point — `fit_band`'s anchors refer to "the candidate's strongest
-    skills", and a flat list gives the model no way to tell which those are.
+    `evidence` leads because it is what separates "used an LLM API" from
+    "built LLM infrastructure in production"; a skill list alone cannot, and
+    the fit anchors ask for production depth. Skills follow as a vocabulary
+    so an adjacent term is not mistaken for a gap, grouped by weight because
+    `fit_band` refers to the candidate's strongest ones. `unproven` and `gaps`
+    are stated outright so the model names them instead of guessing.
     """
-    by_weight: dict[int, list[str]] = {}
-    for group in profile.skills.values():
-        for name, weight in group.items():
-            by_weight.setdefault(int(weight), []).append(name)
-
+    auth = profile.work_authorization
+    sen = profile.seniority
     lines = [
         "CANDIDATE PROFILE",
-        f"Seniority: {profile.seniority.total_years} years total, "
-        f"{profile.seniority.ai_years} in AI. "
-        f"Current title: {profile.seniority.current_title}.",
-        f"Based in {profile.identity.location} ({profile.identity.timezone}). "
-        f"Remote only: {profile.work_authorization.remote_only}.",
-        f"Work authorization: citizen of {profile.work_authorization.citizenship}, "
-        f"authorized in {', '.join(profile.work_authorization.authorized_in)}. "
+        f"{sen.total_years} years in production software, {sen.ai_years} on AI/LLM systems. "
+        f"Current title: {sen.current_title}.",
+        f"Based in {profile.identity.location} ({profile.identity.timezone}); remote only: "
+        f"{auth.remote_only}. Authorized to work in {', '.join(auth.authorized_in)}; "
         + (
-            "REQUIRES visa sponsorship for roles outside those countries."
-            if profile.work_authorization.needs_sponsorship
-            else "Needs no sponsorship."
+            "REQUIRES visa sponsorship anywhere else."
+            if auth.needs_sponsorship
+            else "needs no sponsorship."
         ),
     ]
+    if profile.education:
+        degrees = [str(e.get("degree")) for e in profile.education if e.get("degree")]
+        if degrees:
+            lines.append(f"Education: {'; '.join(degrees)}.")
+    if profile.domains:
+        lines.append(f"Domains: {', '.join(profile.domains)}.")
+
+    if profile.evidence:
+        lines.append("EVIDENCE ([P] = shipped in production at work, [S] = side project only):")
+        for e in profile.evidence:
+            tag = "P" if e.depth == "production" else "S"
+            lines.append(f"[{tag}] {e.area}: {e.proof}")
+
+    # A skill the evidence already names is billed twice for nothing, and so is
+    # a plural alias the ranker needs (`websockets`) — drop both here only.
+    said = " ".join(f"{e.area} {e.proof}" for e in profile.evidence).lower()
+    skills = profile.flat_skills
+    by_weight: dict[int, list[str]] = {}
+    for name, weight in skills.items():
+        if re.search(_term_pattern(name), said) or (name.endswith("s") and name[:-1] in skills):
+            continue
+        by_weight.setdefault(int(weight), []).append(name)
     for weight in sorted(by_weight, reverse=True):
         label = {3: "Strongest skills (shipped repeatedly)", 2: "Solid working experience"}.get(
             weight, "Used, would not headline"
         )
         lines.append(f"{label}: {', '.join(sorted(by_weight[weight]))}.")
-    if profile.gaps:
+
+    unproven = " ".join(profile.unproven).lower()
+    gaps = sorted(g for g in profile.gaps if not re.search(_term_pattern(g), unproven))
+    if gaps or profile.unproven:
         lines.append(
-            "NOT SHIPPED — treat as genuine gaps when a posting requires them: "
-            f"{', '.join(sorted(profile.gaps))}."
+            "NOT SHIPPED — genuine gaps when a posting requires them: "
+            + "; ".join(part for part in [*profile.unproven, ", ".join(gaps)] if part)
+            + "."
         )
-    if profile.seniority.target_titles:
-        lines.append(f"Target titles: {', '.join(profile.seniority.target_titles)}.")
+    if sen.target_titles:
+        lines.append(f"Target titles: {', '.join(sen.target_titles)}.")
     lines.append(
         f"Compensation floor: INR {profile.compensation.min_annual_inr:,.0f} per year."
     )
-    return "\n".join(lines)
+    return "\n".join(line for line in lines if line)
 
 
 def build_messages(

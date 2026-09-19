@@ -212,6 +212,19 @@ export const DEFAULT_FILTERS: Filters = {
  *  so a 73-vs-68 distinction is noise dressed as precision. */
 export type MatchBand = "excellent" | "strong" | "moderate" | "weak" | "poor";
 
+/** The LLM's fit band, or `unread` — no current deep read of this JD. */
+export type LlmBandFilter = MatchBand | "unread";
+
+/** The Validator's band, or `unchecked` — the validity pass has not run. */
+export type ValidityBandFilter = ValidityBand | "unchecked";
+
+/** The Matches filter popover: three independent multi-selects, ANDed. */
+export interface MatchBandFilters {
+  fit: MatchBand[];
+  llm: LlmBandFilter[];
+  validity: ValidityBandFilter[];
+}
+
 export interface Match {
   job: Job;
   score: number;
@@ -257,6 +270,11 @@ export interface LlmFitVerdict {
   fit_band?: MatchBand;
   fit_reasons?: string[];
   strengths?: string[];
+  /** Required items the profile does not prove; " (partial)" = adjacent evidence only. */
+  must_have_gaps?: string[];
+  /** Preferred / bonus items the profile does not prove. */
+  nice_to_have_gaps?: string[];
+  /** Verdicts read before the must-have / nice-to-have split. */
   gaps?: string[];
   /** A hard stop the free pass cannot see: sponsorship demanded, or on-site. */
   blocked?: boolean;
@@ -286,6 +304,11 @@ export interface MatchList {
   items: Match[];
   /** Histogram over the whole filtered set, not the current page. */
   bands: Partial<Record<MatchBand, number>>;
+  /** The same rows by the LLM's fit band; `unread` = no current deep read. */
+  llm_bands: Partial<Record<LlmBandFilter, number>>;
+  /** By the Validator's band. Each histogram is counted with the OTHER two
+   *  band filters applied, never its own. */
+  validity_bands: Partial<Record<ValidityBandFilter, number>>;
   shortlisted: number;
   /** Rows before the band selection — the "All" chip. `total` is the selected band. */
   total_all: number;

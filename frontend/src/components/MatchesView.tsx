@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   AlertTriangle,
   ArrowUpDown,
   ArrowUpRight,
   Banknote,
+  BrainCircuit,
   Clock,
   Gauge,
   Loader2,
@@ -17,11 +19,18 @@ import {
 
 import { clearTransfer, fetchMatches, fetchMatchesFunnel, fetchProfile } from "@/lib/api";
 import { absoluteDate, relativeTime } from "@/lib/format";
-import { LlmBadge, VerifierBadge } from "./CheckBadges";
+import { usePrefetchJob } from "@/lib/hooks";
+import { FIT_BANDS, LlmBadge, VerifierBadge, fitBand } from "./CheckBadges";
+import {
+  EMPTY_BAND_FILTERS,
+  MatchFilterButton,
+  activeFilterCount,
+  describeFilters,
+} from "./MatchFilters";
 import { Funnel } from "./Funnel";
 import { JobDrawer } from "./JobDrawer";
 import { PrefsPanel } from "./PrefsPanel";
-import type { Match, MatchBand, MatchSort } from "@/lib/types";
+import type { Match, MatchBandFilters, MatchSort } from "@/lib/types";
 import { CompanyAvatar, EmptyState, SkeletonRow, cx, useSpotlight } from "./primitives";
 
 /**
@@ -42,13 +51,7 @@ import { CompanyAvatar, EmptyState, SkeletonRow, cx, useSpotlight } from "./prim
  *    number is shown small, beside it, for ordering.
  */
 
-const BANDS: { id: MatchBand; label: string; tone: string; dot: string }[] = [
-  { id: "excellent", label: "Excellent", tone: "text-success", dot: "bg-success" },
-  { id: "strong", label: "Strong", tone: "text-accent-text", dot: "bg-accent" },
-  { id: "moderate", label: "Moderate", tone: "text-highlight", dot: "bg-highlight" },
-  { id: "weak", label: "Weak", tone: "text-muted", dot: "bg-muted" },
-  { id: "poor", label: "Poor", tone: "text-subtle", dot: "bg-subtle" },
-];
+const BANDS = FIT_BANDS;
 
 const USD_PAY_SOURCE: Record<NonNullable<Match["usd_pay_source"]>, string> = {
   board: "from the board's salary field",
@@ -61,6 +64,11 @@ const SORTS: { id: MatchSort; label: string }[] = [
   { id: "score", label: "Best fit" },
   { id: "first_seen_at", label: "Recently found" },
 ];
+
+/** Rows per request. The list is virtualized, so this bounds payload, not DOM. */
+const PAGE_SIZE = 50;
+/** First guess at a card's height; each row is measured once it renders. */
+const ESTIMATED_ROW_HEIGHT = 118;
 
 export function MatchesView({
   transferNonce,
@@ -75,7 +83,11 @@ export function MatchesView({
   onBrowseJobs: () => void;
 }) {
   const qc = useQueryClient();
-  const [band, setBand] = useState<MatchBand | null>(null);
+  // Ranker fit, LLM fit and Validator bands — the Filter popover. Separate
+  // on purpose: "Strong" by the ranker and "Strong" by the LLM are different
+  // rows, and validity says nothing about fit.
+  const [bandFilters, setBandFilters] = useState<MatchBandFilters>(EMPTY_BAND_FILTERS);
+  const filtering = activeFilterCount(bandFilters) > 0;
   // Newest posting first by default; the server sorts `posted_at` desc with
   // unstated dates last.
   const [sort, setSort] = useState<MatchSort>("posted_at");
@@ -108,28 +120,49 @@ export function MatchesView({
     },
   });
 
-  const matches = useQuery({
-    queryKey: ["matches", band, sort, onlyShortlisted, hideBlocked, showPrefMisses],
-    queryFn: () =>
+  // Paged, not one 200-row request: the first screen arrives after 50 rows,
+  // and the rest load as the list scrolls toward them.
+  const matches = useInfiniteQuery({
+    queryKey: ["matches", bandFilters, sort, onlyShortlisted, hideBlocked, showPrefMisses],
+    queryFn: ({ pageParam }) =>
       fetchMatches({
-        band,
+        bands: bandFilters,
         sort,
         shortlisted: onlyShortlisted ? true : null,
         hideBlocked,
         // Preference misses are hidden by default — that is the shape of this
         // surface. They are never lost: the Jobs tile shows the whole board.
         matchPrefs: !showPrefMisses,
-        limit: 200,
+        limit: PAGE_SIZE,
+        offset: pageParam,
       }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, page) => sum + page.items.length, 0);
+      return loaded < lastPage.total ? loaded : undefined;
+    },
     staleTime: 30_000,
   });
 
-  const bands = matches.data?.bands ?? {};
-  const total = matches.data?.total ?? 0;
+  // Counts describe the whole result, so the first page carries them.
+  const summary = matches.data?.pages[0];
+  const bandCounts = {
+    fit: summary?.bands ?? {},
+    llm: summary?.llm_bands ?? {},
+    validity: summary?.validity_bands ?? {},
+  };
+  const total = summary?.total ?? 0;
   // Before the band selection: the "All" chip and the header count stay put
   // when a band is clicked; only `total` (the selected band) moves.
-  const totalAll = matches.data?.total_all ?? 0;
-  const items = matches.data?.items ?? [];
+  const totalAll = summary?.total_all ?? 0;
+  const items = useMemo(
+    () => matches.data?.pages.flatMap((page) => page.items) ?? [],
+    [matches.data],
+  );
+  // Join a page request already in flight rather than cancel and restart it
+  // (the default) — the list asks on every scroll frame until it lands.
+  const { fetchNextPage } = matches;
+  const loadMore = useCallback(() => void fetchNextPage({ cancelRefetch: false }), [fetchNextPage]);
 
   // The drawer walks the match list, not the Jobs list, so j/k-style prev/next
   // stays inside what is on screen here.
@@ -145,7 +178,7 @@ export function MatchesView({
   const unscored =
     matches.isSuccess &&
     total === 0 &&
-    !band &&
+    !filtering &&
     !onlyShortlisted &&
     !hideBlocked &&
     !showPrefMisses;
@@ -220,9 +253,9 @@ export function MatchesView({
             <div className="leading-tight">
               <div className="text-[13.5px] font-semibold text-ink">
                 {totalAll.toLocaleString()} ranked
-                {band && (
+                {filtering && (
                   <span className="ml-1.5 text-[11.5px] font-normal text-subtle">
-                    · showing {total.toLocaleString()} {band}
+                    · showing {total.toLocaleString()}
                   </span>
                 )}
               </div>
@@ -244,10 +277,8 @@ export function MatchesView({
                 className="size-3.5 accent-[var(--accent)]"
               />
               LLM shortlist
-              {matches.data && (
-                <span className="font-mono text-[11px] text-subtle">
-                  {matches.data.shortlisted}
-                </span>
+              {summary && (
+                <span className="font-mono text-[11px] text-subtle">{summary.shortlisted}</span>
               )}
             </label>
 
@@ -267,10 +298,16 @@ export function MatchesView({
                 className="size-3.5 accent-[var(--accent)]"
               />
               Hide blocked
-              {matches.data && (
-                <span className="font-mono text-[11px] opacity-70">{matches.data.blocked}</span>
+              {summary && (
+                <span className="font-mono text-[11px] opacity-70">{summary.blocked}</span>
               )}
             </label>
+
+            <MatchFilterButton
+              value={bandFilters}
+              onChange={setBandFilters}
+              counts={bandCounts}
+            />
 
             <div className="relative">
               <ArrowUpDown
@@ -311,20 +348,22 @@ export function MatchesView({
           </div>
         </div>
 
-        {/* Band filter chips. Counts describe the whole result, not the page. */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <Chip active={band === null} onClick={() => setBand(null)} label="All" count={totalAll} />
-          {BANDS.map((b) => (
-            <Chip
-              key={b.id}
-              active={band === b.id}
-              onClick={() => setBand(band === b.id ? null : b.id)}
-              label={b.label}
-              count={bands[b.id] ?? 0}
-              dot={b.dot}
-            />
-          ))}
-        </div>
+        {/* What the Filter popover is narrowing to, with a one-click reset. */}
+        {filtering && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11.5px]">
+            <span className="rounded-full border border-accent/40 bg-accent/12 px-2.5 py-0.5 text-accent-text">
+              {describeFilters(bandFilters)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setBandFilters(EMPTY_BAND_FILTERS)}
+              className="flex items-center gap-0.5 rounded-md px-1 text-subtle hover:text-ink"
+            >
+              <X size={11} />
+              Clear
+            </button>
+          </div>
+        )}
 
         {/* Preference misses are hidden by default, but never silently: the
             count is always visible and one click reveals them, with the
@@ -341,6 +380,17 @@ export function MatchesView({
       </div>
 
       {/* ------------------------------------------------------------ list */}
+      {matches.isSuccess && items.length > 0 ? (
+        <MatchList
+          items={items}
+          total={total}
+          hasMore={Boolean(matches.hasNextPage)}
+          loadingMore={matches.isFetchingNextPage}
+          onLoadMore={loadMore}
+          selectedJobId={selectedJobId}
+          onSelectJob={onSelectJob}
+        />
+      ) : (
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 md:px-3">
         {matches.isPending && (
           <div className="space-y-1.5 p-1">
@@ -386,7 +436,7 @@ export function MatchesView({
           <EmptyState
             icon={<Gauge size={26} />}
             title="No matches for these filters"
-            description="Try clearing the band filter or the search box."
+            description="Try clearing some filters."
             action={
               <button
                 onClick={onBrowseJobs}
@@ -398,16 +448,15 @@ export function MatchesView({
           />
         )}
 
-        {items.map((m) => (
-          <MatchRow key={m.job.id} match={m} onSelect={() => onSelectJob(m.job.id)} />
-        ))}
       </div>
+      )}
     </div>
 
       {selectedJobId !== null && (
         <JobDrawer
           jobId={selectedJobId}
           summary={items[selectedIndex]?.job}
+          match={items[selectedIndex]}
           onClose={() => onSelectJob(null)}
           onPrev={() => stepTo(-1)}
           onNext={() => stepTo(1)}
@@ -419,39 +468,110 @@ export function MatchesView({
   );
 }
 
-function Chip({
-  active,
-  onClick,
-  label,
-  count,
-  dot,
+/**
+ * The scored list, virtualized: only the cards near the viewport are mounted,
+ * however many pages have loaded. Cards vary in height (skill chips wrap,
+ * reasons are optional), so each one is measured after it renders rather than
+ * assumed to be a fixed size.
+ */
+function MatchList({
+  items,
+  total,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  selectedJobId,
+  onSelectJob,
 }: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-  dot?: string;
+  items: Match[];
+  total: number;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  selectedJobId: number | null;
+  onSelectJob: (id: number | null) => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prefetch = usePrefetchJob();
+  const select = useCallback((id: number) => onSelectJob(id), [onSelectJob]);
+
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: 6,
+    getItemKey: (index) => items[index]?.job.id ?? index,
+  });
+  const rows = virtualizer.getVirtualItems();
+
+  // Pull the next page once the tail is in view.
+  useEffect(() => {
+    const last = rows[rows.length - 1];
+    if (last && hasMore && !loadingMore && last.index >= items.length - 8) onLoadMore();
+  }, [rows, hasMore, loadingMore, items.length, onLoadMore]);
+
+  // Keep the drawer's prev/next selection on screen.
+  useEffect(() => {
+    if (selectedJobId === null) return;
+    const index = items.findIndex((m) => m.job.id === selectedJobId);
+    if (index >= 0) virtualizer.scrollToIndex(index, { align: "auto" });
+  }, [selectedJobId, items, virtualizer]);
+
   return (
-    <button
-      onClick={onClick}
-      className={cx(
-        "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] transition-colors",
-        active
-          ? "border-accent/40 bg-accent/12 text-accent-text"
-          : "border-edge bg-panel text-muted hover:border-edge-strong",
-      )}
+    <div
+      ref={scrollRef}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2 md:px-3"
     >
-      {dot && <span className={cx("size-1.5 rounded-full", dot)} />}
-      {label}
-      <span className="font-mono text-[10.5px] opacity-70">{count.toLocaleString()}</span>
-    </button>
+      <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+        {rows.map((row) => {
+          const match = items[row.index];
+          if (!match) return null;
+          return (
+            <div
+              key={row.key}
+              data-index={row.index}
+              ref={virtualizer.measureElement}
+              // Padding, not the card's margin: measureElement reads the
+              // border box, and a margin would go uncounted and overlap rows.
+              className="absolute top-0 left-0 w-full pb-1.5 [contain:layout_paint_style]"
+              style={{ transform: `translateY(${row.start}px)` }}
+            >
+              <MatchRow match={match} onSelect={select} onHover={prefetch} />
+            </div>
+          );
+        })}
+      </div>
+      {loadingMore && (
+        <div className="flex items-center justify-center gap-2 py-3 text-[12.5px] text-subtle">
+          <Loader2 size={13} className="animate-spin" />
+          Loading more…
+        </div>
+      )}
+      {!hasMore && items.length > PAGE_SIZE && (
+        <p className="py-3 text-center text-[12px] text-subtle">
+          All {total.toLocaleString()} matches loaded
+        </p>
+      )}
+    </div>
   );
 }
 
-function MatchRow({ match, onSelect }: { match: Match; onSelect: () => void }) {
+/** Memoized: loading the next page must not re-render the cards already up. */
+const MatchRow = memo(function MatchRow({
+  match,
+  onSelect: onSelectId,
+  onHover,
+}: {
+  match: Match;
+  onSelect: (id: number) => void;
+  onHover: (id: number) => void;
+}) {
+  const onSelect = () => onSelectId(match.job.id);
   const onPointerMove = useSpotlight<HTMLDivElement>();
   const band = BANDS.find((b) => b.id === match.band)!;
+  // The LLM's own fit band, only when a current read succeeded. It is a band,
+  // never a number: the model's 0-100 figure moved ±7.5 between identical runs.
+  const llmBand = match.llm_read ? fitBand(match.llm_verdict?.fit_band) : undefined;
 
   // The reasons the ranker emitted, minus the bookkeeping ones the row shows
   // structurally anyway (freshness, the raw skill list).
@@ -480,26 +600,55 @@ function MatchRow({ match, onSelect }: { match: Match; onSelect: () => void }) {
         }
       }}
       onPointerMove={onPointerMove}
+      onPointerEnter={() => onHover(match.job.id)}
       className={cx(
-        "spotlight group relative mb-1.5 w-full cursor-pointer overflow-hidden rounded-xl border border-edge bg-panel px-3 py-2.5 text-left",
+        "spotlight group relative w-full cursor-pointer overflow-hidden rounded-xl border border-edge bg-panel px-3 py-2.5 text-left",
         "transition-colors duration-150 hover:border-edge-strong hover:bg-panel-strong",
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Fit score + band. Labelled "fit" because the Validator's validity
-            score (on the tag, right) is a different 0-100 number, and an
-            unlabelled 42 beside it read as a contradiction. */}
-        <div
-          className="flex w-14 shrink-0 flex-col items-center pt-0.5"
-          title={`Fit ${match.score}/100 — how well this job matches your profile (skills, experience, role). Not the same as validity, which the Validator tag reports.`}
-        >
-          <span className="text-[9.5px] font-medium tracking-wide text-subtle uppercase">Fit</span>
-          <span className={cx("text-[19px] leading-none font-semibold", band.tone)}>
-            {match.score}
-          </span>
-          <span className={cx("mt-1 text-[10px] font-medium tracking-wide uppercase", band.tone)}>
-            {band.label}
-          </span>
+        {/* Two fit verdicts, each labelled with where it came from. The
+            number is the free keyword ranker (`matching.py`, the subscores on
+            the right add up to it); the LLM band below it appears only once a
+            deep read has actually happened. Neither is the Validator's
+            validity score, which is a separate 0-100 in the tag's tooltip. */}
+        <div className="flex w-16 shrink-0 flex-col items-center pt-0.5">
+          <div
+            className="flex flex-col items-center"
+            title={`Ranker fit ${match.score}/100: a free keyword score of this JD against your profile (skill + years + role family + India + freshness − penalties). No LLM involved.`}
+          >
+            <span className="text-[9.5px] font-medium tracking-wide text-subtle uppercase">
+              Ranker
+            </span>
+            <span className={cx("text-[19px] leading-none font-semibold", band.tone)}>
+              {match.score}
+            </span>
+            <span
+              className={cx("mt-1 text-[10px] font-medium tracking-wide uppercase", band.tone)}
+            >
+              {band.label}
+            </span>
+          </div>
+          {llmBand && (
+            <div
+              className="mt-1.5 flex flex-col items-center border-t border-edge pt-1"
+              title={`LLM fit: ${llmBand.label}. The model read the full JD against your profile.${
+                match.llm_verdict?.fit_reasons?.length
+                  ? ` ${match.llm_verdict.fit_reasons.join(" · ")}`
+                  : ""
+              }`}
+            >
+              <span className="flex items-center gap-0.5 text-[9.5px] font-medium tracking-wide text-subtle uppercase">
+                <BrainCircuit size={9} />
+                LLM
+              </span>
+              <span
+                className={cx("text-[10px] font-semibold tracking-wide uppercase", llmBand.tone)}
+              >
+                {llmBand.label}
+              </span>
+            </div>
+          )}
         </div>
 
         <CompanyAvatar name={match.job.company} size={30} />
@@ -647,7 +796,7 @@ function MatchRow({ match, onSelect }: { match: Match; onSelect: () => void }) {
               reasons={match.job.validity_reasons}
               checkedAt={match.job.validity_checked_at}
             />
-            <LlmBadge read={match.llm_read} />
+            <LlmBadge read={match.llm_read} band={match.llm_verdict?.fit_band} />
           </span>
           <span
             className="flex items-center gap-1 text-[11.5px] whitespace-nowrap text-muted tabular-nums"
@@ -675,7 +824,7 @@ function MatchRow({ match, onSelect }: { match: Match; onSelect: () => void }) {
       </div>
     </div>
   );
-}
+});
 
 /** Shown when `profile.yaml` is missing — the one failure the panel can't
  *  recover from on its own, since matching has nothing to score against. */

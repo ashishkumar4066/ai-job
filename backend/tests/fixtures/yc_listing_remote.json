@@ -1,0 +1,231 @@
+{
+ "component": "WaasJobListingsPage",
+ "props": {
+  "title": "Remote Software Engineer jobs at Y Combinator startups",
+  "location": {
+   "is_remote": true,
+   "name": "Remote",
+   "byline": "Work has gone remote, and YC startups around the world have followed suit. Find some of the top YC companies -- large and small -- that are already working remotely and actively hiring ${role_name} at Y Combinator.",
+   "remote_only": true,
+   "slug": "remote"
+  },
+  "jobRoles": [
+   {
+    "slug": "software-engineer",
+    "name": "Software Engineer"
+   },
+   {
+    "slug": "designer",
+    "name": "Design & UI/UX"
+   },
+   {
+    "slug": "product-manager",
+    "name": "Product Manager"
+   },
+   {
+    "slug": "recruiting-hr",
+    "name": "Recruiting & HR"
+   },
+   {
+    "slug": "sales-manager",
+    "name": "Sales"
+   },
+   {
+    "slug": "marketing",
+    "name": "Marketing"
+   },
+   {
+    "slug": "support",
+    "name": "Support & Success"
+   },
+   {
+    "slug": "operations",
+    "name": "Operations"
+   },
+   {
+    "slug": "science",
+    "name": "Science"
+   }
+  ],
+  "jobPostings": [
+   {
+    "id": 97376,
+    "title": "Senior Backend & Infrastructure Engineer",
+    "url": "/companies/scispot-io/jobs/QX1c0xf-senior-backend-infrastructure-engineer",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D97376&defaults%5BsignUpActive%5D=true",
+    "location": "US / ES / DE / GB / PL / IN / CA / Remote (US; ES; DE; GB; PL; IN; CA)",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "$100K - $175K",
+    "equityRange": "0.10%",
+    "minExperience": "6+ years",
+    "minSchoolYear": null,
+    "visa": "US citizen/visa only",
+    "skills": [
+     "Software Security"
+    ],
+    "isIncomplete": false,
+    "companyUrl": "/companies/scispot-io",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/996a065b9b830e170e3a68e207d6245f28dc54b8.png",
+    "companyName": "Scispot",
+    "companyBatchName": "S21",
+    "companyOneLiner": "The Best Data Infrastructure for Biotechs",
+    "hiringManager": null,
+    "createdAt": "3 months",
+    "lastActive": "5 days",
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D97376&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=24367"
+   },
+   {
+    "id": 78821,
+    "title": "Forward Deployed Engineer",
+    "url": "/companies/plexe/jobs/eocGfXv-forward-deployed-engineer",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D78821&defaults%5BsignUpActive%5D=true",
+    "location": "IN / Remote (IN)",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "₹1.5M - ₹3M INR",
+    "equityRange": "0.01% - 0.03%",
+    "minExperience": "3+ years",
+    "minSchoolYear": null,
+    "visa": "US citizenship/visa not required",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/plexe",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/4911874a37ff01bfa27bb33e5f83f49e6970068e.png",
+    "companyName": "Plexe",
+    "companyBatchName": "P25",
+    "companyOneLiner": "Open-source agents to build predictive ML models from a prompt",
+    "hiringManager": null,
+    "createdAt": "about 1 year",
+    "lastActive": "8 days",
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D78821&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=30400"
+   },
+   {
+    "id": 107231,
+    "title": "Product Engineer (AI / Full-Stack)",
+    "url": "/companies/great-question/jobs/agEqBYD-product-engineer-ai-full-stack",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D107231&defaults%5BsignUpActive%5D=true",
+    "location": "CA / Remote (CA)",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "$150K - $180K CAD",
+    "equityRange": "",
+    "minExperience": "6+ years",
+    "minSchoolYear": null,
+    "visa": "US citizen/visa only",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/great-question",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/cbc38c395f4f32191dcaac60013ed038a0a40611.png",
+    "companyName": "Great Question",
+    "companyBatchName": "W21",
+    "companyOneLiner": "User research on autopilot. ",
+    "hiringManager": null,
+    "createdAt": "18 days",
+    "lastActive": "4 days",
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D107231&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=22947"
+   },
+   {
+    "id": 100839,
+    "title": "Forward Deployed Engineer, Battery Engineering",
+    "url": "/companies/ohm-2/jobs/p4AdikP-forward-deployed-engineer-battery-engineering",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D100839&defaults%5BsignUpActive%5D=true",
+    "location": "San Francisco, CA / Remote (US)",
+    "askUs": true,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "",
+    "equityRange": "",
+    "minExperience": "Any (new grads ok)",
+    "minSchoolYear": null,
+    "visa": "US citizen/visa only",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/ohm-2",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/55b1c275e0ba176abf2805a822f08b78ecea7eba.png",
+    "companyName": "Ohm",
+    "companyBatchName": "W23",
+    "companyOneLiner": "Ohm helps engineering teams accelerate hardware development & testing.",
+    "hiringManager": null,
+    "createdAt": "about 2 months",
+    "lastActive": "1 day",
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D100839&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=27762"
+   },
+   {
+    "id": 78968,
+    "title": "Backend Engineer",
+    "url": "/companies/gogograndparent/jobs/2vbzAw8-backend-engineer",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D78968&defaults%5BsignUpActive%5D=true",
+    "location": "Remote",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Backend",
+    "prettyRole": "Engineering",
+    "salaryRange": "$80K - $180K",
+    "equityRange": "",
+    "minExperience": "6+ years",
+    "minSchoolYear": null,
+    "visa": "US citizenship/visa not required",
+    "skills": [
+     "Node.js"
+    ],
+    "isIncomplete": false,
+    "companyUrl": "/companies/gogograndparent",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/170a38c5489e5546c20519b88a72ef0957c7bb63.png",
+    "companyName": "GoGoGrandparent",
+    "companyBatchName": "S16",
+    "companyOneLiner": "A concierge service for seniors’ rides, meals, meds, home and more.",
+    "hiringManager": null,
+    "createdAt": "about 1 year",
+    "lastActive": "3 days",
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D78968&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=1264"
+   },
+   {
+    "id": 108124,
+    "title": "Growth Engineer Intern",
+    "url": "/companies/flick/jobs/2fRbygf-growth-engineer-intern",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D108124&defaults%5BsignUpActive%5D=true",
+    "location": "Remote (US)",
+    "askUs": true,
+    "type": "Internship",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "$6K - $7K / monthly",
+    "equityRange": "",
+    "minExperience": null,
+    "minSchoolYear": "Any",
+    "visa": "US citizen/visa only",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/flick",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/9f96ddb243962497e60383676b01ce3b0cd4cb76.png",
+    "companyName": "Flick",
+    "companyBatchName": "F25",
+    "companyOneLiner": "We Handle AI. You Direct Films.",
+    "hiringManager": null,
+    "createdAt": "14 days",
+    "lastActive": "1 day",
+    "ctaText": "Apply",
+    "ctaUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D108124&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=30884"
+   }
+  ]
+ }
+}

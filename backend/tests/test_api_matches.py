@@ -78,14 +78,14 @@ async def test_matches_list_funnel_and_transfer_over_http(
         # count and the shortlist count must not collapse to that band.
         some_band = body["items"][0]["band"]
         banded = (
-            await client.get("/matches", params={"match_prefs": "false", "band": some_band})
+            await client.get("/matches", params={"match_prefs": "false", "fit_band": some_band})
         ).json()
         assert banded["total_all"] == body["total_all"] == 2
         assert banded["bands"] == body["bands"]
         assert banded["shortlisted"] == body["shortlisted"]
         empty_band = next(b for b in ("excellent", "poor") if b != some_band)
         other = (
-            await client.get("/matches", params={"match_prefs": "false", "band": empty_band})
+            await client.get("/matches", params={"match_prefs": "false", "fit_band": empty_band})
         ).json()
         assert other["total_all"] == 2 and other["bands"] == body["bands"]
 
@@ -129,3 +129,76 @@ async def test_hide_blocked_removes_blocked_jobs(session_factory, monkeypatch, t
     # The toggle's own count is what it removes, so it does not drop to 0 when on.
     assert hidden["blocked"] == 1
     assert all(not item["blockers"] for item in hidden["items"])
+
+
+async def test_llm_band_selects_on_the_deep_read(session_factory, monkeypatch, tmp_path) -> None:
+    """`llm_band` filters on the LLM's fit_band; stale and failed reads count as unread."""
+    from sqlalchemy import select
+
+    from app.models import JobMatch
+
+    profile = Profile(skills={"backend": {"python": 3}}, gaps={})
+    monkeypatch.setattr("app.api.get_profile", lambda: profile)
+    monkeypatch.setenv("PREFS_FILE", str(tmp_path / "prefs.yaml"))
+    from app.config import get_settings
+    from app.prefs import get_prefs
+
+    get_settings.cache_clear()
+    get_prefs.cache_clear()
+
+    async with session_factory() as session:
+        session.add_all([_job(21), _job(22), _job(23), _job(24)])
+        await session.commit()
+        await run_matching(session, profile=profile, weights=MatchWeights(), prefs=Prefs())
+        rows = {
+            m.job_id: m
+            for m in (await session.execute(select(JobMatch))).scalars()
+        }
+        jobs = {
+            j.source_key: j for j in (await session.execute(select(JobPosting))).scalars()
+        }
+        read = {"fit_band": "moderate", "fit_reasons": [], "blocked": False}
+        for key, verdict, hash_ok in (
+            ("test:acme:21", read, True),
+            ("test:acme:22", read, False),  # JD changed since the read
+            ("test:acme:23", {"error": "boom"}, True),  # failed read
+        ):
+            job = jobs[key]
+            match = rows[job.id]
+            match.llm_used = "error" not in verdict
+            match.llm_verdict = verdict
+            match.llm_content_hash = job.content_hash if hash_ok else "old"
+        await session.commit()
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        base = {"match_prefs": "false"}
+        everything = (await client.get("/matches", params=base)).json()
+        moderate = (await client.get("/matches", params={**base, "llm_band": "moderate"})).json()
+        unread = (await client.get("/matches", params={**base, "llm_band": "unread"})).json()
+        both = (
+            await client.get("/matches", params={**base, "llm_band": ["moderate", "unread"]})
+        ).json()
+        # Filters combine: an LLM band AND a ranker band nobody is in is empty,
+        # and the LLM counts follow the ranker selection, not their own.
+        fit = everything["items"][0]["band"]
+        crossed = (
+            await client.get("/matches", params={**base, "llm_band": "moderate", "fit_band": fit})
+        ).json()
+        suspect = (await client.get("/matches", params={**base, "validity": "suspect"})).json()
+        other_fit = next(b for b in ("excellent", "poor") if b != fit)
+        none = (
+            await client.get("/matches", params={**base, "llm_band": "moderate", "fit_band": other_fit})
+        ).json()
+
+    assert everything["llm_bands"] == {"moderate": 1, "unread": 3}
+    assert moderate["total"] == 1
+    assert moderate["items"][0]["job"]["source_key"] == "test:acme:21"
+    assert unread["total"] == 3 and unread["total_all"] == 4
+    assert both["total"] == 4
+    # A chip's own filter never shrinks its own counts.
+    assert moderate["llm_bands"] == everything["llm_bands"]
+    assert crossed["total"] == 1
+    assert none["total"] == 0 and none["llm_bands"] == {}
+    assert everything["validity_bands"] == {"solid": 4}
+    assert suspect["total"] == 0 and suspect["validity_bands"] == {"solid": 4}

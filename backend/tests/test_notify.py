@@ -42,6 +42,11 @@ class TestFormatting:
         assert "San Francisco, CA" in message
         assert "https://boards.greenhouse.io/stripe/jobs/1" in message
 
+    def test_attributes_boards_whose_terms_require_it(self) -> None:
+        for ats, name in [("remotive", "Remotive"), ("jobicy", "Jobicy"), ("themuse", "The Muse")]:
+            assert f"<i>Source: {name}</i>" in _format_job(make_job(ats=ats))
+        assert "Source:" not in _format_job(make_job())
+
     def test_escapes_html_in_titles(self) -> None:
         message = _format_job(make_job(title="Engineer <script>alert(1)</script>"))
         assert "<script>" not in message

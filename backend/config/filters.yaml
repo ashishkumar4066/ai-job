@@ -57,6 +57,13 @@ fx_to_inr:
   CHF: 100.0
   ZAR: 4.8
   PLN: 22.0
+  # The rest of Europe outside the euro. Approximate, 2026-09.
+  SEK: 9.2
+  NOK: 8.6
+  DKK: 12.7
+  CZK: 3.9
+  HUF: 0.25
+  RON: 19.0
 
 # A salary with no stated period has to be read from its magnitude, because
 # `parse_salary_text` recovers numbers but not always a period:
@@ -75,6 +82,15 @@ fx_to_inr:
 salary_period_bands:
   default: { hourly_below: 500, monthly_below: 20000 }
   INR: { hourly_below: 5000, monthly_below: 100000 }
+  # Small-unit currencies: a normal MONTHLY salary here is above the default
+  # 20,000 cut-off, so without a band it would be read as annual and dropped
+  # (SEK 60,000/month is ~INR 66L/yr, but ~INR 5.5L read as a year).
+  SEK: { hourly_below: 5000, monthly_below: 150000 }
+  NOK: { hourly_below: 5000, monthly_below: 150000 }
+  DKK: { hourly_below: 5000, monthly_below: 150000 }
+  CZK: { hourly_below: 5000, monthly_below: 300000 }
+  HUF: { hourly_below: 100000, monthly_below: 5000000 }
+  RON: { hourly_below: 1000, monthly_below: 60000 }
 
 # --------------------------------------------------------------------------
 # Rule 4 — role family and seniority.

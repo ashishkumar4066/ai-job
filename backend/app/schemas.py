@@ -358,6 +358,11 @@ class MatchListOut(BaseModel):
     # Band histogram over the whole filtered set, not just this page — the
     # panel header shows the shape of the result, which pagination would hide.
     bands: dict[str, int]
+    # The same rows by the LLM's fit band; `unread` = no current deep read.
+    llm_bands: dict[str, int] = Field(default_factory=dict)
+    # By the Validator's band; `unchecked` = the validity pass has not run.
+    # Each of the three is counted with the other two filters applied.
+    validity_bands: dict[str, int] = Field(default_factory=dict)
     shortlisted: int
     # Rows before the band selection is applied — the "All" chip. `total` is
     # the selected band's size.

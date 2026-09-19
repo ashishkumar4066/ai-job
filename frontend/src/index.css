@@ -316,8 +316,11 @@
 @utility glass-strong {
   background-color: var(--panel-strong);
   background-image: var(--glass-tint);
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  /* 24px, not 36px: blur cost grows with the radius, and this tier backs the
+     scrolling job list, so it is re-applied over every scrolled frame. At the
+     panel's opacity the difference is not visible; the frame time is. */
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--border-strong);
   box-shadow:
     inset 0 1px 0 var(--edge-light),
@@ -489,8 +492,14 @@
 /* ---------------------------------------------------------------------------
    Ambient backdrop — aurora + grid veil + grain
 
-   Back to front: a near-black radial base, three drifting violet blobs, a faint
-   ruled grid masked to a soft ellipse, and film grain over the whole UI.
+   Back to front: a near-black radial base, three violet blobs, a faint ruled
+   grid masked to a soft ellipse, and film grain over the whole UI.
+
+   The blobs are STATIC on purpose. They used to drift forever, and every glass
+   panel above them has a backdrop-filter — so a moving backdrop forced the GPU
+   to re-blur the top bar, rail, stat tiles, filter bar and job list on every
+   frame, idle or not. That was the app's constant background jank. Painted
+   once, the backdrop costs nothing after first paint.
 --------------------------------------------------------------------------- */
 .aurora {
   position: fixed;
@@ -498,6 +507,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  contain: strict;
   background: radial-gradient(125% 90% at 50% -10%, var(--bg) 42%, var(--bg-deep) 100%);
 }
 
@@ -507,7 +517,6 @@
   position: absolute;
   border-radius: 50%;
   filter: blur(90px);
-  will-change: transform;
 }
 
 .aurora::before {
@@ -516,7 +525,6 @@
   top: -26vw;
   left: -12vw;
   background: radial-gradient(circle at 30% 30%, var(--aurora-1), transparent 70%);
-  animation: drift-a 26s ease-in-out infinite alternate;
 }
 
 .aurora::after {
@@ -525,7 +533,6 @@
   top: -22vw;
   right: -10vw;
   background: radial-gradient(circle at 70% 30%, var(--aurora-2), transparent 70%);
-  animation: drift-b 32s ease-in-out infinite alternate;
 }
 
 .aurora-third {
@@ -537,7 +544,6 @@
   border-radius: 50%;
   filter: blur(100px);
   background: radial-gradient(circle, var(--aurora-3), transparent 70%);
-  animation: drift-c 38s ease-in-out infinite alternate;
 }
 
 /* Architectural grid: gives the black something to be measured against, so it
@@ -568,22 +574,6 @@
   opacity: var(--grain-opacity);
   mix-blend-mode: var(--grain-blend);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-@keyframes drift-a {
-  to {
-    transform: translate3d(8vw, 6vh, 0) scale(1.15);
-  }
-}
-@keyframes drift-b {
-  to {
-    transform: translate3d(-7vw, 9vh, 0) scale(1.1);
-  }
-}
-@keyframes drift-c {
-  to {
-    transform: translate3d(6vw, -7vh, 0) scale(1.2);
-  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -626,15 +616,19 @@
   }
 }
 
+/* Transform + opacity only, on a pseudo-element: the compositor runs it
+   without repainting. The old version animated box-shadow, which repaints the
+   element (and whatever it overlaps) on every frame for as long as the
+   "new jobs" pill is on screen. */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 var(--accent-soft);
+    opacity: 0.9;
+    transform: scale(1);
   }
-  70% {
-    box-shadow: 0 0 0 8px transparent;
-  }
+  70%,
   100% {
-    box-shadow: 0 0 0 0 transparent;
+    opacity: 0;
+    transform: scale(1.18, 1.35);
   }
 }
 
@@ -660,6 +654,15 @@
   animation: slide-in-right 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .animate-pulse-ring {
+  position: relative;
+}
+.animate-pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  pointer-events: none;
   animation: pulse-ring 2.4s ease-out infinite;
 }
 .animate-breathe {

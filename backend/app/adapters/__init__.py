@@ -4,7 +4,10 @@ Two families, one interface:
 
   * **Curated ATS** — Greenhouse, Lever, Ashby. One board per company, driven
     by a `companies.yaml` entry with a board token.
-  * **Aggregator boards** — Himalayas, Remotive. Whole-board feeds carrying
+  * **Aggregator boards** — Himalayas, Remotive, Wellfound, Jobicy, The Muse,
+    YC jobs, Arc.dev, Cutshort, Hirist, Built In, Remote OK, We Work Remotely,
+    RemoteYeah.
+    Whole-board feeds carrying
     candidate-eligibility metadata, driven by query params rather than a token.
 
 Adding a company on an already-supported ATS is a `companies.yaml` edit.
@@ -15,14 +18,24 @@ from __future__ import annotations
 
 import httpx
 
+from app.adapters.arc import ArcAdapter
 from app.adapters.ashby import AshbyAdapter
 from app.adapters.base import AdapterError, BaseAdapter
+from app.adapters.builtin import BuiltInAdapter
+from app.adapters.cutshort import CutshortAdapter
 from app.adapters.greenhouse import GreenhouseAdapter
 from app.adapters.himalayas import HimalayasAdapter
+from app.adapters.hirist import HiristAdapter
+from app.adapters.jobicy import JobicyAdapter
 from app.adapters.lever import LeverAdapter
 from app.adapters.playwright_adapter import PlaywrightAdapter
+from app.adapters.remoteok import RemoteOkAdapter
+from app.adapters.remoteyeah import RemoteYeahAdapter
 from app.adapters.remotive import RemotiveAdapter
+from app.adapters.themuse import TheMuseAdapter
 from app.adapters.wellfound import WellfoundAdapter
+from app.adapters.weworkremotely import WeWorkRemotelyAdapter
+from app.adapters.yc import YcAdapter
 
 _REGISTRY: dict[str, type[BaseAdapter]] = {
     GreenhouseAdapter.ats: GreenhouseAdapter,
@@ -31,13 +44,37 @@ _REGISTRY: dict[str, type[BaseAdapter]] = {
     HimalayasAdapter.ats: HimalayasAdapter,
     RemotiveAdapter.ats: RemotiveAdapter,
     WellfoundAdapter.ats: WellfoundAdapter,
+    JobicyAdapter.ats: JobicyAdapter,
+    TheMuseAdapter.ats: TheMuseAdapter,
+    YcAdapter.ats: YcAdapter,
+    ArcAdapter.ats: ArcAdapter,
+    CutshortAdapter.ats: CutshortAdapter,
+    HiristAdapter.ats: HiristAdapter,
+    BuiltInAdapter.ats: BuiltInAdapter,
+    RemoteOkAdapter.ats: RemoteOkAdapter,
+    WeWorkRemotelyAdapter.ats: WeWorkRemotelyAdapter,
+    RemoteYeahAdapter.ats: RemoteYeahAdapter,
     PlaywrightAdapter.ats: PlaywrightAdapter,
 }
 
 # Sources that aggregate many employers onto one board. Their `company` column
 # holds the employer from the feed, not the board name.
 AGGREGATOR_SOURCES = frozenset(
-    {HimalayasAdapter.ats, RemotiveAdapter.ats, WellfoundAdapter.ats}
+    {
+        HimalayasAdapter.ats,
+        RemotiveAdapter.ats,
+        WellfoundAdapter.ats,
+        JobicyAdapter.ats,
+        TheMuseAdapter.ats,
+        YcAdapter.ats,
+        ArcAdapter.ats,
+        CutshortAdapter.ats,
+        HiristAdapter.ats,
+        BuiltInAdapter.ats,
+        RemoteOkAdapter.ats,
+        WeWorkRemotelyAdapter.ats,
+        RemoteYeahAdapter.ats,
+    }
 )
 
 # Aliases people naturally write in config.
@@ -53,6 +90,27 @@ _ALIASES = {
     "wellfound.com": "wellfound",
     "angellist": "wellfound",
     "angel.co": "wellfound",
+    "jobicy.com": "jobicy",
+    "muse": "themuse",
+    "the_muse": "themuse",
+    "themuse.com": "themuse",
+    "ycombinator": "yc",
+    "ycombinator.com": "yc",
+    "workatastartup": "yc",
+    "arc.dev": "arc",
+    "cutshort.io": "cutshort",
+    "hirist.tech": "hirist",
+    "hirist.com": "hirist",
+    "built_in": "builtin",
+    "builtin.com": "builtin",
+    "remote_ok": "remoteok",
+    "remote-ok": "remoteok",
+    "remoteok.com": "remoteok",
+    "remoteok.io": "remoteok",
+    "wwr": "weworkremotely",
+    "we_work_remotely": "weworkremotely",
+    "weworkremotely.com": "weworkremotely",
+    "remoteyeah.com": "remoteyeah",
 }
 
 
@@ -92,14 +150,24 @@ def register_adapter(adapter_cls: type[BaseAdapter]) -> None:
 __all__ = [
     "AGGREGATOR_SOURCES",
     "AdapterError",
+    "ArcAdapter",
     "AshbyAdapter",
     "BaseAdapter",
+    "BuiltInAdapter",
+    "CutshortAdapter",
     "GreenhouseAdapter",
     "HimalayasAdapter",
+    "HiristAdapter",
+    "JobicyAdapter",
     "LeverAdapter",
     "PlaywrightAdapter",
+    "RemoteOkAdapter",
+    "RemoteYeahAdapter",
     "RemotiveAdapter",
+    "TheMuseAdapter",
+    "WeWorkRemotelyAdapter",
     "WellfoundAdapter",
+    "YcAdapter",
     "canonical_ats",
     "get_adapter",
     "is_aggregator",

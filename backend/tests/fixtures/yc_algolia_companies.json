@@ -1,0 +1,48 @@
+{
+ "hits": [
+  {
+   "name": "Groww",
+   "slug": "groww",
+   "all_locations": "Bengaluru, KA, India",
+   "team_size": 1050,
+   "isHiring": true,
+   "regions": [
+    "India",
+    "South Asia"
+   ],
+   "objectID": "1839"
+  },
+  {
+   "name": "Meesho",
+   "slug": "meesho",
+   "all_locations": "Bengaluru, KA, India",
+   "team_size": 1450,
+   "isHiring": true,
+   "regions": [
+    "India",
+    "South Asia",
+    "Remote",
+    "Partly Remote"
+   ],
+   "objectID": "1266"
+  },
+  {
+   "name": "Deel",
+   "slug": "deel",
+   "all_locations": "San Francisco, CA, USA; Remote",
+   "team_size": 5000,
+   "isHiring": true,
+   "regions": [
+    "United States of America",
+    "America / Canada",
+    "Remote",
+    "Fully Remote"
+   ],
+   "objectID": "12064"
+  }
+ ],
+ "nbHits": 251,
+ "page": 0,
+ "nbPages": 51,
+ "hitsPerPage": 5
+}

@@ -1,7 +1,21 @@
 import { BrainCircuit, ShieldCheck } from "lucide-react";
 import { absoluteDate } from "@/lib/format";
 import { validityBand } from "@/lib/types";
+import type { MatchBand } from "@/lib/types";
 import { cx } from "./primitives";
+
+/** Fit bands, shared by the ranker's score and the LLM's verdict. */
+export const FIT_BANDS: { id: MatchBand; label: string; tone: string; dot: string }[] = [
+  { id: "excellent", label: "Excellent", tone: "text-success", dot: "bg-success" },
+  { id: "strong", label: "Strong", tone: "text-accent-text", dot: "bg-accent" },
+  { id: "moderate", label: "Moderate", tone: "text-highlight", dot: "bg-highlight" },
+  { id: "weak", label: "Weak", tone: "text-muted", dot: "bg-muted" },
+  { id: "poor", label: "Poor", tone: "text-subtle", dot: "bg-subtle" },
+];
+
+export function fitBand(id: string | undefined) {
+  return FIT_BANDS.find((b) => b.id === id);
+}
 
 /**
  * The "Validator" and "LLM" tags.
@@ -50,11 +64,16 @@ export function VerifierBadge({
   );
 }
 
-export function LlmBadge({ read }: { read: boolean }) {
+export function LlmBadge({ read, band }: { read: boolean; band?: string }) {
   if (!read) return null;
+  const label = fitBand(band)?.label;
   return (
     <span
-      title="The LLM has read this job's current description"
+      title={
+        label
+          ? `The LLM read this job's current description against your profile and rated the fit ${label}.`
+          : "The LLM has read this job's current description"
+      }
       className="inline-flex items-center gap-1 rounded-md border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-[10.5px] font-medium whitespace-nowrap text-accent-text"
     >
       <BrainCircuit size={10} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -21,16 +21,18 @@ import {
   X,
 } from "lucide-react";
 import { api, llmStatus, startLlmOne } from "@/lib/api";
-import { LlmBadge, VerifierBadge } from "./CheckBadges";
-import { absoluteDate, formatSalary, relativeTime, titleCase } from "@/lib/format";
+import { LlmBadge, VerifierBadge, fitBand } from "./CheckBadges";
+import { absoluteDate, formatSalary, relativeTime, sourceLabel, titleCase } from "@/lib/format";
+import { JOB_DETAIL_STALE_MS } from "@/lib/hooks";
 import { sanitizeHtml } from "@/lib/sanitize";
-import type { Job, LlmValidity } from "@/lib/types";
+import type { Job, LlmValidity, Match } from "@/lib/types";
 import { validityBand } from "@/lib/types";
 import { Badge, CompanyAvatar, cx } from "./primitives";
 
 export function JobDrawer({
   jobId,
   summary,
+  match,
   onClose,
   onPrev,
   onNext,
@@ -39,6 +41,8 @@ export function JobDrawer({
 }: {
   jobId: number;
   summary: Job | undefined;
+  /** Present when opened from Matches: carries the ranker and LLM fit verdicts. */
+  match?: Match;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -48,7 +52,7 @@ export function JobDrawer({
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["job", jobId],
     queryFn: () => api.job(jobId),
-    staleTime: 5 * 60_000,
+    staleTime: JOB_DETAIL_STALE_MS,
   });
 
   const [copied, setCopied] = useState(false);
@@ -66,6 +70,14 @@ export function JobDrawer({
   useEffect(() => setCopied(false), [jobId]);
 
   const job = data ?? summary;
+
+  // A full DOM parse of the JD — once per job, not on every drawer render
+  // (the copy toast and the deep-read poll both re-render it).
+  const descriptionHtml = data?.description_html;
+  const safeHtml = useMemo(
+    () => (descriptionHtml ? sanitizeHtml(descriptionHtml) : ""),
+    [descriptionHtml],
+  );
 
   return (
     <>
@@ -99,7 +111,7 @@ export function JobDrawer({
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
                   <span className="font-medium text-ink">{job.company}</span>
                   <span className="opacity-40">·</span>
-                  <span className="capitalize">{job.ats}</span>
+                  <span>{sourceLabel(job.ats)}</span>
                   {job.status === "closed" && <Badge tone="danger">Closed</Badge>}
                   {job.remote && <Badge tone="accent">Remote</Badge>}
                 </p>
@@ -206,6 +218,8 @@ export function JobDrawer({
 
         {job && <ChecksBar job={job} />}
 
+        {match && <FitSection match={match} />}
+
         {/* Validity — the deterministic verdict, plus the deep read when one
             exists. Shown ABOVE the JD because it is the thing that decides
             whether the JD is worth reading at all. */}
@@ -229,15 +243,15 @@ export function JobDrawer({
             <p className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-[13px] text-danger">
               Couldn't load this description: {(error as Error).message}
             </p>
-          ) : data?.description_html ? (
+          ) : safeHtml ? (
             // Sanitized before it reaches the DOM. The board carries
-            // aggregator feeds (Himalayas, Remotive, Wellfound) whose HTML is
+            // aggregator feeds (Himalayas, Remotive, Wellfound, Jobicy, The Muse, YC) whose HTML is
             // written by whoever posted the job rather than by a vetted ATS,
             // so this is third-party markup executing on the same origin as
             // the API. `sanitizeHtml` is allowlist-only — see its module docs.
             <div
               className="jd"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.description_html) }}
+              dangerouslySetInnerHTML={{ __html: safeHtml }}
             />
           ) : data?.description_text ? (
             <p className="jd whitespace-pre-wrap">{data.description_text}</p>
@@ -255,7 +269,7 @@ export function JobDrawer({
               rel="noopener noreferrer"
               className="btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-semibold"
             >
-              Apply on {titleCase(job.ats)}
+              Apply on {sourceLabel(job.ats)}
               <ArrowUpRight size={15} />
             </a>
             <button
@@ -378,6 +392,103 @@ function Meta({
         {value}
       </p>
       {hint && <p className="truncate text-[11px] text-subtle">{hint}</p>}
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------------- fit */
+
+/**
+ * Both fit verdicts side by side, each named for its source, so a Strong from
+ * the keyword ranker and a Moderate from the LLM read as two opinions rather
+ * than one contradictory number.
+ */
+function FitSection({ match }: { match: Match }) {
+  const ranker = fitBand(match.band);
+  const verdict = match.llm_read ? match.llm_verdict : null;
+  const llm = fitBand(verdict?.fit_band);
+  // Older verdicts carry one undivided `gaps` list; show it as must-have.
+  const mustHaveGaps = verdict?.must_have_gaps ?? verdict?.gaps ?? [];
+  const niceGaps = verdict?.nice_to_have_gaps ?? [];
+
+  return (
+    <div className="border-b border-edge px-5 py-4">
+      <div className="mb-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12.5px]">
+        <span
+          className="flex items-center gap-1.5"
+          title="Free keyword ranker (matching.py): skill + years + role family + India + freshness − penalties. No LLM."
+        >
+          <span className="text-subtle">Ranker fit</span>
+          <span className={cx("font-semibold", ranker?.tone)}>
+            {match.score}
+            <span className="ml-1 text-[11px] font-medium">{ranker?.label}</span>
+          </span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <BrainCircuit size={13} className="text-accent-text" />
+          <span className="text-subtle">LLM fit</span>
+          {llm ? (
+            <span className={cx("font-semibold", llm.tone)}>{llm.label}</span>
+          ) : (
+            <span className="text-subtle">not read yet</span>
+          )}
+        </span>
+        {verdict?.model && (
+          <span className="ml-auto text-[10.5px] text-subtle">{verdict.model}</span>
+        )}
+      </div>
+
+      {verdict && (
+        <div className="space-y-2 text-[11.5px]">
+          {verdict.fit_reasons && verdict.fit_reasons.length > 0 && (
+            <ul className="ml-4 list-disc space-y-0.5 text-muted">
+              {verdict.fit_reasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          )}
+          {((verdict.strengths?.length ?? 0) > 0 ||
+            mustHaveGaps.length > 0 ||
+            niceGaps.length > 0) && (
+            <div className="flex flex-wrap gap-1">
+              {verdict.strengths?.map((s) => (
+                <span
+                  key={`s-${s}`}
+                  className="rounded-md border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10.5px] text-success"
+                >
+                  {s}
+                </span>
+              ))}
+              {mustHaveGaps.map((g) => (
+                <span
+                  key={`g-${g}`}
+                  title="Required by the posting, not proven by the profile"
+                  className="flex items-center gap-0.5 rounded-md border border-danger/25 bg-danger/8 px-1.5 py-0.5 text-[10.5px] text-danger"
+                >
+                  <X size={8} />
+                  {g}
+                </span>
+              ))}
+              {niceGaps.map((g) => (
+                <span
+                  key={`n-${g}`}
+                  title="Nice-to-have, not proven by the profile"
+                  className="flex items-center gap-0.5 rounded-md border border-edge-strong px-1.5 py-0.5 text-[10.5px] text-subtle"
+                >
+                  <X size={8} />
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
+          {verdict.blocked && (
+            <p className="flex items-start gap-1.5 text-danger">
+              <AlertTriangle size={12} className="mt-px shrink-0" />
+              The JD states a hard blocker: sponsorship required, excludes India, or on-site.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

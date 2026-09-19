@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss">
+  <channel>
+    <title>We Work Remotely: Remote jobs in design, programming, marketing and more</title>
+    <link>https://weworkremotely.com/categories/remote-programming-jobs.rss</link>
+    <description>We Work Remotely: Remote jobs in design, programming, marketing and more</description>
+    <language>en-US</language>
+    <ttl>60</ttl>
+    <item>
+      <media:content url="https://wwr-pro.s3.amazonaws.com/logos/0017/1267/logo.gif" type="image/png"/>
+      <title>Twikey: Java Developer</title>
+      <region>Anywhere in the World</region>
+      <country>🇦🇩 Andorra, 🇦🇱 Albania, 🇦🇹 Austria, 🇧🇦 Bosnia and Herzegovina, 🇧🇬 Bulgaria, 🇨🇭 Switzerland, 🇨🇿 Czechia, 🇩🇪 Germany, 🇩🇰 Denmark, 🇪🇪 Estonia, 🇪🇸 Spain, 🇫🇮 Finland, 🇫🇷 France, 🇬🇧 United Kingdom of Great Britain and Northern Ireland, 🇬🇷 Greece, 🇭🇷 Croatia, 🇭🇺 Hungary, 🇮🇹 Italy, 🇱🇹 Lithuania, 🇲🇩 Moldova (Republic of), 🇲🇪 Montenegro, 🇲🇰 North Macedonia, 🇳🇱 Netherlands, 🇳🇴 Norway, 🇵🇱 Poland, 🇵🇹 Portugal, 🇷🇴 Romania, 🇸🇪 Sweden, 🇸🇮 Slovenia, 🇸🇰 Slovakia, and 🇺🇦 Ukraine</country>
+      <state>Région Flamande</state>
+      <skills>Java, PostgreSQL, and Spring</skills>
+      <category>Back-End Programming</category>
+      <type>Full-Time</type>
+      <description>&lt;img src="https://we-work-remotely.imgix.net/logos/0017/1267/logo.gif?ixlib=rails-4.0.0&amp;w=50&amp;h=50&amp;dpr=2&amp;fit=fill&amp;auto=compress" /&gt;
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; Ghent - Belgium
+    &lt;br /&gt;&lt;strong&gt;URL:&lt;/strong&gt; &lt;a href="https://www.twikey.com"&gt;https://www.twikey.com&lt;/a&gt;
+&lt;/p&gt;
+
+&lt;p&gt;Are you a driven back-end developer who doesn't wait for instructions, but is already thinking two steps ahead? Who experiments with new technologies and smart solutions alongside the job? Then we want to talk to you.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Straight forward but clear: Twikey isn't looking for someone to just execute. We're looking for someone who thinks, does and keeps going when the going gets tough.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Because fintech is evolving at breakneck speed. That calls for real ownership and for someone who can dive deep on the technical side to keep innovating and improving our platform. You get plenty in return, such as the freedom and responsibility to deliver your own projects. Thanks in part to our organisational structure, you can shape your ideas in the short term and see the results of your hard work quickly.&lt;/p&gt;
+&lt;p&gt;Driven by your passion for building scalable, performant and secure back-end systems, you continuously raise the bar for your own skills and for our product.&lt;/p&gt;
+&lt;p&gt;As a member of our development team you work closely with our CTO, 3 fellow developers and 2 testers on the core of our software application. A small, strong team in which you take on a role with real impact on the future of our product.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;You focus on&amp;nbsp;&lt;strong&gt;developing and improving the back-end&lt;/strong&gt;&amp;nbsp;of our platform, optimising the architecture and data processing while keeping the security and stability of our system in mind. This lets you put your technical skills to full use and come up with innovative solutions.&lt;/li&gt;
+&lt;li&gt;With your expertise you'll&amp;nbsp;&lt;strong&gt;make valuable suggestions and streamline processes&lt;/strong&gt;&amp;nbsp;for all our stakeholders, so we can work more efficiently and achieve better results.&lt;/li&gt;
+&lt;li&gt;You provide&amp;nbsp;&lt;strong&gt;technical support on integration projects&lt;/strong&gt;&amp;nbsp;with software houses, banks and large companies, solving complex technical problems. That gives you the chance to work on challenging projects and to get in touch with a wide range of technologies and industries.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Once you know our product inside out, there are plenty of challenging projects for you to help build.&lt;/p&gt;
+&lt;h4 class="sec-title-9"&gt;What are we looking for in you?&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;You are&amp;nbsp;&lt;strong&gt;driven, curious and enterprising.&lt;/strong&gt;&amp;nbsp;Not only in your job, but outside of it too. You have a&amp;nbsp;&lt;strong&gt;pro-active attitude&lt;/strong&gt;&amp;nbsp;and are always a few steps ahead: you spot opportunities, grab them and get to work.&lt;/li&gt;
+&lt;li&gt;Technical challenges? You take them on, not because you have to, but because you want to&amp;nbsp;&lt;strong&gt;learn&lt;/strong&gt;. You're a&amp;nbsp;&lt;strong&gt;self-starter&lt;/strong&gt;&amp;nbsp;and quickly get to grips with new technologies, languages or frameworks.&lt;/li&gt;
+&lt;li&gt;You understand that a good product is never "finished". You draw energy from that&amp;nbsp;&lt;strong&gt;mix of creating and fine-tuning&lt;/strong&gt;. You think along, question things and keep building new solutions.&lt;/li&gt;
+&lt;li&gt;You have experience using AI tools to build integrations. You're&amp;nbsp;&lt;strong&gt;actively exploring how AI can contribute&lt;/strong&gt;&amp;nbsp;to smarter user experiences and more efficient software development. Experience with data analytics is an asset.&lt;/li&gt;
+&lt;li&gt;You therefore attach&amp;nbsp;&lt;strong&gt;a lot of importance to the security, stability and reliability&lt;/strong&gt;&amp;nbsp;of a system and know what it takes to get there. You work in a structured, meticulous way and write code that is clean, reusable and easy to test.&lt;/li&gt;
+&lt;li&gt;You have demonstrable experience with&amp;nbsp;&lt;strong&gt;Java, Go and the Spring framework&lt;/strong&gt;. Experience with API integrations, web services, Linux or other relevant areas is a plus.&lt;/li&gt;
+&lt;li&gt;You have&amp;nbsp;&lt;strong&gt;a deep understanding of databases.&lt;/strong&gt;&amp;nbsp;You don't just know how to use them, you know how they work. You have an opinion on structured, high-quality code, architecture and back-end technologies.&lt;/li&gt;
+&lt;li&gt;You have a very good command of&amp;nbsp;&lt;strong&gt;English&lt;/strong&gt;, for smooth collaboration with all colleagues and stakeholders. Dutch is an asset.&lt;/li&gt;
+&lt;li&gt;You are based in a time zone within&amp;nbsp;&lt;strong&gt;one hour of CET&lt;/strong&gt;, so your working day overlaps with the team's for the daily stand-ups and close day-to-day collaboration.&lt;/li&gt;
+&lt;li&gt;You can work independently and enjoy a small team where switching gears quickly, collaboration and knowledge sharing are central.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 class="sec-title-9"&gt;Twikey offers you:&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;An environment where challenge, innovation and autonomy come first.&lt;/li&gt;
+&lt;li&gt;The room to&amp;nbsp;&lt;strong&gt;experiment, to challenge and to improve.&lt;/strong&gt;&amp;nbsp;And we expect you to really take that room.&lt;/li&gt;
+&lt;li&gt;An ideal setting if you want to grow fast and healthily, both technically and personally. Training, ownership, taking on new or additional roles based on your talents and interests, ... a lot is possible here, and you're at the wheel!&lt;/li&gt;
+&lt;li&gt;A&amp;nbsp;&lt;strong&gt;complementary team of more than 35 colleagues&lt;/strong&gt;&amp;nbsp;who move forward together in a respectful and open atmosphere.&lt;/li&gt;
+&lt;li&gt;A motivating workplace with&amp;nbsp;&lt;strong&gt;plenty of knowledge and expertise&lt;/strong&gt;, shared both formally during the daily stand-ups and the weekly Friday call, and informally at the coffee machine.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Appreciation, openness and critical dialogue.&lt;/strong&gt;&amp;nbsp;Our Friction Hunter Trophy is an example: every month we celebrate the colleague who made the biggest difference for customers, teammates or internally. Your impact gets noticed!&lt;/li&gt;
+&lt;li&gt;A modern workplace with different zones (conference, connect, co-work, concentrate) in a recently built, industrial-style office building. Easy to reach by car, by bike and by public transport on the edge of Ghent, right next to the KBC tower.&lt;/li&gt;
+&lt;li&gt;A&amp;nbsp;&lt;strong&gt;salary package tailored&lt;/strong&gt;&amp;nbsp;to your experience and skills, with plenty of extra-legal benefits, a collective bonus system and a cafeteria plan to convert your 13th month as you choose.&lt;/li&gt;
+&lt;li&gt;The chance to work in an&amp;nbsp;&lt;strong&gt;innovative Belgian fintech scale-up&lt;/strong&gt;&amp;nbsp;that is active in several countries, in a sector that is growing fast!&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A job ad doesn't tell you everything. Our colleagues tell you&amp;nbsp;&lt;a class="link" href="https://www.twikey.com/jobs/testimonials.html"&gt;here&lt;/a&gt; what it's really like to work at Twikey.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/twikey-java-developer"&gt;https://weworkremotely.com/remote-jobs/twikey-java-developer&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Thu, 17 Sep 2026 10:51:23 +0000</pubDate>
+      <expires_at>Sat, 17 Oct 2026 10:51:23 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/twikey-java-developer</guid>
+      <link>https://weworkremotely.com/remote-jobs/twikey-java-developer</link>
+    </item>
+    <item>
+      <title>Reddit: Backend Engineer, IAM</title>
+      <region>Anywhere in the World</region>
+      <country></country>
+      <state></state>
+      <skills></skills>
+      <category>Back-End Programming</category>
+      <type>Full-Time</type>
+      <description>
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; Remote - United States
+&lt;/p&gt;
+
+&lt;div class="content-intro"&gt;&lt;div class="c-message_kit__blocks c-message_kit__blocks--rich_text"&gt;
+&lt;div class="c-message__message_blocks c-message__message_blocks--rich_text"&gt;
+&lt;div class="p-block_kit_renderer"&gt;
+&lt;div class="p-block_kit_renderer__block_wrapper p-block_kit_renderer__block_wrapper--first"&gt;
+&lt;div class="p-rich_text_block"&gt;
+&lt;div class="p-rich_text_section"&gt;Reddit is a community of communities. It’s built on shared interests, passion, and trust, and is home to the most open and authentic conversations on the internet. Every day, Reddit users submit, vote, and comment on the topics they care most about. With 100,000+ active communities and approximately 130 million daily active unique visitors, Reddit is one of the internet’s largest sources of information. For more information, visit &lt;a class="c-link" href="http://www.redditinc.com/"&gt;www.redditinc.com&lt;/a&gt;.&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;This is a remote-friendly role. Reddit has a flexible first workforce.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;The Identity and Access Management team develops and maintains a set of mission critical, highly performant, and highly scalable systems that manage user identity, authentication, and authorization for all of our millions of daily users and backend services.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Some of our present and future challenges include:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Building systems around consumer IAM to meet the needs of Reddit’s engineering organization and millions of daily users.&lt;/li&gt;
+&lt;li&gt;Design, build and ship backend services powering experiences for one of the most visited sites in the world.&lt;/li&gt;
+&lt;li&gt;Work with product management, security, client engineering, and backend teams to define and implement Reddit’s IAM vision and roadmap.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;In your day-to-day, you will:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Steer: Work with the team to select, scope, and execute on high leverage projects that align with Reddit’s goals.&lt;/li&gt;
+&lt;li&gt;Build: Execute on a strategy and create a more performant, more scalable, higher quality architecture around IAM.&lt;/li&gt;
+&lt;li&gt;XFN Collaboration: Work together with a variety of cross functional teams across Reddit Engineering.&lt;/li&gt;
+&lt;li&gt;Evolve: Learn and improve your own technical and non-technical abilities.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Who you might be:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;3+ years of experience designing and developing distributed backend systems&amp;nbsp;&lt;/li&gt;
+&lt;li&gt;IAM backend experience in either authorization or authentication domain&lt;/li&gt;
+&lt;li&gt;Proficiency in one or more general purpose programming languages (preferably Go).&lt;/li&gt;
+&lt;li&gt;Capability with essential cloud infrastructure (Kubernetes, CI/CD, AWS, GCP).&lt;/li&gt;
+&lt;li&gt;High empathy and excellent communication skills to collaborate across the organization.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Benefits:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Comprehensive Healthcare Benefits and Income Replacement Programs&lt;/li&gt;
+&lt;li&gt;401k with Employer Match&lt;/li&gt;
+&lt;li&gt;Global Benefit programs that fit your lifestyle, from workspace to professional development to caregiving support&lt;/li&gt;
+&lt;li&gt;Family Planning Support&lt;/li&gt;
+&lt;li&gt;Gender-Affirming Care&lt;/li&gt;
+&lt;li&gt;Mental Health &amp;amp; Coaching Benefits&lt;/li&gt;
+&lt;li&gt;Flexible Vacation &amp;amp; Paid Volunteer Time Off&lt;/li&gt;
+&lt;li&gt;Generous Paid Parental Leave&amp;nbsp;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;div class="content-pay-transparency"&gt;&lt;div class="pay-input"&gt;&lt;div class="description"&gt;&lt;p&gt;&lt;strong&gt;Pay Transparency:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;This job posting may span more than one career level.&lt;/p&gt;
+&lt;p&gt;In addition to base salary, this job is eligible to receive equity in the form of restricted stock units, and depending on the position offered, it may also be eligible to receive a commission. Additionally, Reddit offers a wide range of benefits to U.S.-based employees, including medical, dental, and vision insurance, 401(k) program with employer match, generous time off for vacation, and parental leave. To learn more, please visit &lt;a href="https://www.redditinc.com/careers/"&gt;https://www.redditinc.com/careers/&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;To provide greater transparency to candidates, we share base salary ranges for all US-based job postings regardless of state. We set standard base pay ranges for all roles based on function, level, and country location, benchmarked against similar stage growth companies. Final offer amounts are determined by multiple factors including, skills, depth of work experience and relevant licenses/credentials, and may vary from the amounts listed below.&lt;/p&gt;&lt;/div&gt;&lt;div class="title"&gt;The base salary range for this position is:&lt;/div&gt;&lt;div class="pay-range"&gt;&lt;span&gt;$164,200&lt;/span&gt;&lt;span class="divider"&gt;—&lt;/span&gt;&lt;span&gt;$229,900 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="content-conclusion"&gt;&lt;p&gt;In select roles and locations, the interviews will be recorded, transcribed and summarized by artificial intelligence (AI). You will have the opportunity to opt out of recording, transcription and summarization prior to any scheduled interviews.&lt;/p&gt;
+&lt;p&gt;&lt;span&gt;During the interview, we will collect the following categories of personal information: Identifiers, Professional and Employment-Related Information, Sensory Information (audio/video recording), and any other categories of personal information you choose to share with us. We will use this information to evaluate your application for employment or an independent contractor role, as applicable.&amp;nbsp; We will not sell your personal information or disclose it to any third party for their marketing purposes.&amp;nbsp; We will delete any recording of your interview promptly after making a hiring decision.&amp;nbsp; For more information about how we will handle your personal information, including our retention of it, please refer to our &lt;a href="https://redditinc.com/policies/candidate-privacy-policy"&gt;Candidate Privacy Policy for Potential Employees and Contractors&lt;/a&gt;.&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;&lt;span&gt;Reddit is proud to be an equal opportunity employer, and is committed to building a workforce representative of the diverse communities we serve.&amp;nbsp; Reddit is committed to providing reasonable accommodations for qualified individuals with disabilities and disabled veterans in our job application procedures. If, due to a disability, you need an accommodation during the interview process, please let your recruiter know.&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/reddit-backend-engineer-iam"&gt;https://weworkremotely.com/remote-jobs/reddit-backend-engineer-iam&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Mon, 14 Sep 2026 07:31:07 +0000</pubDate>
+      <expires_at>Wed, 14 Oct 2026 07:31:07 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/reddit-backend-engineer-iam</guid>
+      <link>https://weworkremotely.com/remote-jobs/reddit-backend-engineer-iam</link>
+    </item>
+    <item>
+      <media:content url="https://wwr-pro.s3.amazonaws.com/logos/0074/7274/logo.gif" type="image/png"/>
+      <title>Toggl: Senior Full Stack</title>
+      <region>Anywhere in the World</region>
+      <country></country>
+      <state>Alabama</state>
+      <skills></skills>
+      <category>Full-Stack Programming</category>
+      <type>Full-Time</type>
+      <description>&lt;img src="https://we-work-remotely.imgix.net/logos/0074/7274/logo.gif?ixlib=rails-4.0.0&amp;w=50&amp;h=50&amp;dpr=2&amp;fit=fill&amp;auto=compress" /&gt;
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; Tallinn, Estonia
+    &lt;br /&gt;&lt;strong&gt;URL:&lt;/strong&gt; &lt;a href="https://toggl.com/jobs/"&gt;https://toggl.com/jobs/&lt;/a&gt;
+&lt;/p&gt;
+
+&lt;div class="_descriptionText_5yu8i_201 ashby-job-posting-description"&gt;
+&lt;p&gt;We are looking for a Senior Full Stack Engineer to join one of our Product Tribes, the cross-functional units that own the end-to-end experience for a specific Toggl user role. You'll join the Tribe building for managers, the people who plan work, protect margins, and keep projects on time and on budget.&lt;/p&gt;
+&lt;p&gt;You own significant parts of that experience end-to-end, working hands-on with product and design to ship work that matters. You'll do this as we build and launch Toggl 2.0, our consolidated planning, time tracking, and time intelligence product.&lt;/p&gt;
+&lt;p&gt;The salary for this position is&amp;nbsp;&lt;strong&gt;€83,000 annually.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;You can work from anywhere in the world&amp;nbsp;&lt;strong&gt;as long as your main location is between UTC-4 and UTC+4.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;The Role&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;As a Senior Full Stack Engineer, you own meaningful parts of the product end-to-end, from the data model and the API to the interface someone actually clicks: the technical approach, the quality of what ships, and whether it actually works for the people using it. You are accountable not for tickets closed, but for clarity, craft, and outcomes.&lt;/p&gt;
+&lt;p&gt;You'll work in the Tribe serving managers, across planning and capacity management, dashboards, and billable work. This is some of the most data-dense, interaction-heavy surface area in the product: schedules and capacity views, reports, and visualizations that have to stay fast and readable at real customer scale. The interesting problems live on both sides of the API here - the query behind a capacity view matters as much as how that view renders. You'll build with React and TypeScript on the frontend and our backend services (mostly Golang) and data layer (Postgres) behind them, alongside a product manager, a designer, and engineers who are used to owning their work and pushing back when something isn't right. In a tribe of 5 other engineers, your impact and visibility are high.&lt;/p&gt;
+&lt;p&gt;Our team meetings are scheduled between 11:00 and 16:00 UTC. Your availability and commitment to participate in these sessions are essential for effective collaboration and team alignment.&lt;/p&gt;
+&lt;p&gt;Your main responsibilities will be:&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Ownership and delivery&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Take projects from problem to production. Own the technical approach for major features front to back, break the work down sensibly, sequence it, and ship in slices rather than one big drop.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Make the technical calls in your area. Choose between options, name the tradeoffs, and decide without waiting for permission or escalating routine judgment.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Keep your work visible without being chased. Flag risks and slips early, keep the Tribe in the loop, and unblock yourself.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Craft and quality across the stack&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Build interfaces people trust with dense, real-world data. Planning views, dashboards, and reports that stay fast, accessible, and readable when the dataset gets ugly.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Design the data and API layer those views depend on. Model it so the feature you're building now doesn't make the next three harder.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Own performance as a feature, end to end. Profile, measure, and fix the slow query and the slow render instead of hoping the data stays small.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Write code others can work in. Sensible components and services, real test coverage where it earns its keep, and a codebase that's easier to change after you touch it.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Working with product and design&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Shape solutions, don't just implement them. Push on the problem, question requirements that don't hold up, and propose simpler paths when you see one.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Partner closely with design. Prototype early, spot the edge cases in a flow before it's built, and hold the bar on UX quality with your designer rather than after handoff.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Stay close to users and evidence. Join user tests, read the feedback, look at the data, and let it change what you build.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Raising the bar&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Review code with intent. Give precise, actionable feedback that makes the change and the person better.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Mentor and interview. Help other engineers grow, and help us hire well.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Improve things across team boundaries. Spot shared components and duplicated work between Tribes, and raise it before we build the same thing twice.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;AI as core leverage&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Use AI tools extensively in your daily work for exploration, prototyping, code generation and review, debugging, research, and writing. AI fluency is not optional. It's part of how you increase your speed, depth, and impact - and you're expected to help the rest of the Tribe get better at it too.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;About You&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;You will thrive in this role if you:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Have significant experience building and shipping production web applications end to end, and can lead major projects rather than just contribute to them.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Are genuinely comfortable on both sides of the stack. You're deep on one side and properly capable on the other, not someone who hands off at the API boundary.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Have deep, practical knowledge of&amp;nbsp;&lt;strong&gt;JavaScript, TypeScript, React, and modern CSS&lt;/strong&gt;&amp;nbsp;- including state management and side-effect handling in large applications.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Are solid on backend fundamentals: at least one backend language you know well, API design, relational data modelling, and enough instinct for query performance to spot the problem before production does.&amp;nbsp;&lt;strong&gt;Prior Golang experience is not mandatory but you have to be willing to adopt it and become comfortable with it fast.&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Hold an extremely high bar for quality. You know what great looks like, you notice the details others miss, and you don't ship work you wouldn't put your name on.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Have a knack for data-heavy product surfaces - performance, readability, and the principles behind a chart that actually communicates something.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Care about the user's problem, not just the ticket. You start from what someone is trying to get done and work back to the implementation.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Own outcomes, not output. You follow your work into production, watch how it behaves, and fix what needs fixing.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Thrive in ambiguity and move fast. You make confident decisions with incomplete information, adapt when things change, and course-correct without drama.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Are hands-on with AI tools. You actively use AI as a core part of how you build, not a side experiment, and you have opinions about where it helps and where it doesn't.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Don't need to be managed. You set your own direction, keep people in the loop, and ask for help when it matters.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Have excellent written and verbal English communication skills. You write clearly, explain technical tradeoffs to non-engineers without jargon, and default to async communication that others can follow.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Are eager to contribute to the engineering team's growth - code review, mentoring, and interviewing included.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Value transparency, ownership, and speed over perfection. You ship, learn, and improve rather than waiting for the perfect plan.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Nice to have:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Experience with TanStack is a bonus, and so is a real understanding of frontend caching and eventual consistency, we'd love to hire someone who's dealt with that tradeoff directly.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Experience with capacity planning, scheduling, reporting, or other complex B2B SaaS products.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Experience working with distributed or microservice systems, a basic understanding of infrastructure and infrastructure as code, and some experience creating, improving, or debugging CI/CD pipelines.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;This Role Is NOT&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;A ticket-taker role. If you want fully specced work handed to you, this isn't the right fit.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A pixel-pusher translating finished designs into code with no say in the problem or the solution.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A role where you hand off at the API boundary. If "that's a backend ticket" is your instinct, this will frustrate you.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A role where quality is someone else's job. Toggl doesn't have a dedicated QA&lt;br&gt;team or layer: there's no separate team that will catch your bugs, write your&lt;br&gt;tests, or own your performance regressions.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A place to work in isolation from users. You'll be expected to know who you're building for and why.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;A role for people who need heavy process, frequent approvals, or top-down direction to do their best work.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The Team&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;We are a global team of ~80 awesome people working from over 40 countries around the globe. We hire globally, you work locally—in the heart of London, a beach outside of Río de Janeiro, or a quiet village near Florence, the choice is yours. Every few months we travel to meet up somewhere in the world and spend some quality time together. We place a huge amount of trust in our people, and we measure the outcomes rather than the work itself.&amp;nbsp;&lt;a href="https://toggl.com/culture/"&gt;Our values&lt;/a&gt;&amp;nbsp;fuel our results.&lt;br&gt;&lt;br&gt;&lt;strong&gt;What's Happening at Toggl&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Toggl is at an exciting turning point. We're taking our best-in-class time tracking - trusted and loved by millions of users worldwide - and expanding it into something bigger:&amp;nbsp;&lt;a href="https://toggl.com/focus/"&gt;Toggl 2.0&lt;/a&gt;. One product that brings together time tracking, planning, capacity management, reporting, and insight. The idea is simple: better time tracking creates better data, which powers everything else. We call it time intelligence. We build with AI throughout, and we think it's a real multiplier for strong engineers rather than a substitute for them. The judgment, the tradeoffs, and the accountability for what ships stay with people.&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Benefits&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Freedom to choose when and how much you work—we only measure results&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;24 days of paid time off a year, plus your local holidays&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Unlimited sick leave&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;In-person meetups for team-building (expenses covered)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;4-6 weeks paid sabbatical (depending on tenure)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Laptop budget up to 2,500€ and it renews every 3 years&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;€2,000 budget to set up your home office and an additional €300 every year after 3 years of tenure&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;€3,000 per year for co-working space membership and/or internet service at home&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;€4,000 per year contribution to use for training, workshops, and conferences&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;€2,400 per year contribution for any equipment or services to improve and/or maintain your physical and mental health&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Support for buying tools you need for doing your best work (even eyeglasses if you need a new pair)&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/toggl-senior-full-stack"&gt;https://weworkremotely.com/remote-jobs/toggl-senior-full-stack&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Fri, 28 Aug 2026 14:51:27 +0000</pubDate>
+      <expires_at>Sun, 27 Sep 2026 14:51:27 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/toggl-senior-full-stack</guid>
+      <link>https://weworkremotely.com/remote-jobs/toggl-senior-full-stack</link>
+    </item>
+    <item>
+      <title>CircleCI: Software Engineer</title>
+      <region>Anywhere in the World</region>
+      <country></country>
+      <state></state>
+      <skills></skills>
+      <category>DevOps and Sysadmin</category>
+      <type>Full-Time</type>
+      <description>
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; Ontario, Canada (Remote)
+&lt;/p&gt;
+
+&lt;h2&gt;&lt;strong&gt;About CircleCI Engineering&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;CI/CD has been solved. Now it's being reinvented. AI agents don't just run pipelines. They write code, trigger builds, interpret failures, and propose fixes. The interfaces that developers use to understand and trust that work don't exist yet. We're building them.&lt;/p&gt;
+&lt;p&gt;At CircleCI, our guiding principles aren't posters on a wall. We learn fast: we run experiments, accept failure, and scale what works. We think like the customer: every decision connects back to the developer sitting in front of a failing build at 2 am. We own the outcome: not just our slice of it, but the whole thing. If that's how you already work, you'll fit here.&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;Team-Agnostic Placement&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;We don't hire for a team. We hire for CircleCI. Where you land depends on where your strengths create the most leverage, and we figure that out together. You might own the CI pipeline experience, deploy and release tooling, notification infrastructure, monetization flows, AI agent surfaces, or the foundational web platform. The through line across all of it is the same: full-stack ownership, a high bar for craft, and work that directly shapes how tens of thousands of developers experience CircleCI every day.&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;What You'll Do&lt;/strong&gt;&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Build AI-natively.&lt;/strong&gt; AI is how we work. It’s not a productivity layer on top of engineering, but the default starting point for how problems get approached and solved.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Invent new interfaces&lt;/strong&gt;. Software delivery is being reinvented. Pipelines run autonomously, generate fixes, and surface results that need human judgment. The tools developers use to understand, trust, and act on that work don't exist yet. You'll define what they look like.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Own the full stack.&lt;/strong&gt; Build features end-to-end in Go, React, and TypeScript. You don't hand off at a layer boundary. You own the outcome.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Obsess over craft.&lt;/strong&gt; Reliability and responsiveness are design concerns, not afterthoughts. Care about how the interface holds up when stakes are high.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Champion observability.&lt;/strong&gt; Use Honeycomb, Datadog, and Rollbar to understand and improve your systems. Operational data drives stability, not just incident response.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Pick up slack.&lt;/strong&gt; You'll notice gaps and close them — not because you were asked, but because that's the standard we hold ourselves to.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;strong&gt;What You'll Bring&lt;/strong&gt;&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;AI-native engineering practices.&lt;/strong&gt; You use AI tools daily and can speak to what you've built, where they changed your approach, and where they fall short.&amp;nbsp;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A track record of shipping.&lt;/strong&gt; You've built something real and put it in front of users. 3+ years of production full-stack experience.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Full-stack depth.&lt;/strong&gt; Strong React and TypeScript. Comfortable owning backend services in Go: API design, data modeling, service integration.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;System design.&lt;/strong&gt; You think about architecture, not just features. You make conscious tradeoffs and document your reasoning.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Production mindset.&lt;/strong&gt; Latency, responsiveness, and reliability are design concerns. You're comfortable operating services in a distributed environment.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;strong&gt;Sound like you?&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;You've stopped waiting for AI to mature and are already building with it, not as a productivity trick, but as a core part of how you think about problems. You care about the product as much as the code. You're drawn to work where the patterns don't exist yet and the best answer requires you to invent it. If that's how you already operate, we want to talk.&lt;/p&gt;&lt;div class="content-pay-transparency"&gt;&lt;div class="pay-input"&gt;&lt;div class="title"&gt;Canada Base Pay Range&lt;/div&gt;&lt;div class="pay-range"&gt;&lt;span&gt;$127,000&lt;/span&gt;&lt;span class="divider"&gt;—&lt;/span&gt;&lt;span&gt;$159,000 CAD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="content-conclusion"&gt;&lt;p&gt;&lt;/p&gt;
+&lt;p&gt;We will ensure that individuals with disabilities are provided reasonable&amp;nbsp;accommodation to participate in the job application or interview process, to perform&amp;nbsp;essential job functions, and to receive other benefits and privileges of employment.&amp;nbsp;Please contact us to request accommodation.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;About CircleCI&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;CircleCI is the world’s largest continuous integration/continuous delivery (CI/CD)&amp;nbsp;platform, and the hub where code moves from idea to delivery. As one of the most-used&amp;nbsp;DevOps tools - processing more than 3 million jobs a day - CircleCI has unique access to&amp;nbsp;data on how the most effective engineering teams work, and the tools to help software&amp;nbsp;companies successfully leverage the power of AI into their commercial applications.&amp;nbsp;Companies like Hinge, HuggingFace, and Samsung use us to improve engineering team&amp;nbsp;productivity, release better products, and get to market faster.&lt;/p&gt;
+&lt;p&gt;&lt;br&gt;Founded in 2011 and headquartered in downtown San Francisco with a global, remote&amp;nbsp;workforce, CircleCI is venture-backed by Base10, Greenspring Associates, Eleven Prime,&amp;nbsp;IVP, Sapphire Ventures, Top Tier Capital Partners, Baseline Ventures, Threshold&lt;br&gt;Ventures, Scale Venture Partners, Owl Rock Capital, Next Equity Partners, Heavybit, and&amp;nbsp;Harrison Metal Capital.&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;CircleCI is an Equal Opportunity and Affirmative Action employer. We do not discriminate based upon race, religion, color, national origin, sexual orientation, gender,&amp;nbsp;gender identity, gender expression, transgender status, sexual stereotypes, age, status&amp;nbsp;as a protected veteran, status as an individual with a disability, or other applicable&amp;nbsp;legally protected characteristics. We also consider qualified applicants with criminal&amp;nbsp;histories, consistent with applicable federal, state and local law.&lt;/p&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/circleci-software-engineer"&gt;https://weworkremotely.com/remote-jobs/circleci-software-engineer&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Sat, 19 Sep 2026 07:31:10 +0000</pubDate>
+      <expires_at>Mon, 19 Oct 2026 07:31:10 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/circleci-software-engineer</guid>
+      <link>https://weworkremotely.com/remote-jobs/circleci-software-engineer</link>
+    </item>
+    <item>
+      <title>Expel: Managed SIEM Detection Engineer</title>
+      <region>Anywhere in the World</region>
+      <country></country>
+      <state></state>
+      <skills></skills>
+      <category>Full-Stack Programming</category>
+      <type>Full-Time</type>
+      <description>
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; Remote
+&lt;/p&gt;
+
+&lt;p class="artifact-docx-preview_heading2"&gt;Are you a detection engineer who wants to bring real depth of expertise into a new and growing function and use it to deliver security excellence to customers? Expel's professional services practice is just getting started, and we're looking for the technical expert who'll deliver the work that gets customers ready to thrive under our co-managed SIEM model. You'll bring hands-on skill to a team that's finding its stride, help it grow, and have a real runway to grow into a lead yourself.&lt;/p&gt;
+&lt;p class="artifact-docx-preview_heading2"&gt;&lt;span&gt;&lt;/span&gt;Here's the work. Customers come to us with SIEMs that should be surfacing threats but are instead consuming their teams: ingestion costs climbing year over year, engineers buried in alert noise and broken pipelines, and detection blind spots leaving real gaps. You're the engineer who turns that around: authoring and tuning detection content that satisfies real security use cases, closing coverage gaps, migrating detection logic off legacy platforms, and helping optimize what customers ingest and pay for, so their SIEM becomes a force multiplier again, not a management burden.&lt;/p&gt;
+&lt;p class="artifact-docx-preview_heading2"&gt;&lt;span&gt;&lt;/span&gt;And because this function evolves right alongside our customers and the market, the work won't stand still. Expect it to grow into deeper integrations, automated and AI-assisted tooling, and security strategies our customers need next.&lt;/p&gt;
+&lt;h2&gt;What Expel can do for you&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-2-0"&gt;Give you a ground-floor seat in a new professional services function, where your expertise directly shapes the quality of what we deliver to customers&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-2-0"&gt;&lt;span&gt;&lt;/span&gt;Provide real runway for professional development as the function grows&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-2-0"&gt;&lt;span&gt;&lt;/span&gt;Put you on complex, high-stakes detection and SIEM problems across a wide range of customer environments&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-2-0"&gt;&lt;span&gt;&lt;/span&gt;Let you work across leading SIEM platforms, including Splunk, Microsoft Sentinel, and CrowdStrike NG SIEM, plus emerging AI-assisted tooling&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-2-0"&gt;&lt;span&gt;&lt;/span&gt;Give you visibility and partnership across the organization, including Sales, Detection Engineering, our SOC, and Customer Success&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-2-0"&gt;&lt;span&gt;&lt;/span&gt;Accelerate your career by letting you own meaningful outcomes end to end&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;What you can do for Expel&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;Deliver end-to-end professional services engagements, including detection strategy, MITRE ATT&amp;amp;CK assessment, SIEM optimization and integrations, SOAR playbook development, and custom log parsing&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Develop and validate detection content that satisfies defined security use cases, at onboarding and as environments evolve, with strong coverage and clean fidelity&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Optimize SIEM performance and cost by tuning detections for fidelity, reducing alert noise, and improving ingestion efficiency&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Contribute to Expel's professional services proprietary detection library, continuously improving our detection strategy and capability&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Translate detection logic between SIEM platforms and write custom parsers for standard and non-standard log sources, using AI-assisted tools where they help and validating the outputs&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Partner with Detection Engineering and the SOC to hand off environments ready for ongoing co-managed operations, and work with SOC analysts to sharpen the fidelity and actionability of rules and alerts&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Track the evolving threat landscape and turn it into new detection development&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-4-0"&gt;&lt;span&gt;&lt;/span&gt;Help the function grow by contributing repeatable processes, templates, and tooling that raise the quality and consistency of what we deliver&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;What you should bring to Expel&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;Hands-on SIEM expertise across Splunk, Microsoft Sentinel, and/or CrowdStrike NG SIEM, including architecture, data ingestion, and detection rule development&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;3+ years with detection and response tooling, particularly SIEM, SOAR, and EDR&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;3+ years writing, deploying, and tuning custom detections from research or investigative work against common datasets (Windows Event Logs, auditd, CloudTrail, and similar)&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;SIEM migration experience translating detection logic between platforms and re-pointing log sources&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;Working knowledge of attacker tactics and techniques and the MITRE ATT&amp;amp;CK framework&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;Solid fundamentals across Windows, macOS, and Linux, networking basics (TCP/IP, OSI), and working knowledge of cloud IAM models and platforms&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;Basic proficiency with Python, Go, or similar, and comfort using Git/GitHub for version control of detection content, scripts, and templates&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;Curiosity, strong ownership, and the appetite for growth&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-1-0"&gt;&lt;span&gt;&lt;/span&gt;A willingness to travel up to 20%&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Bonus points for&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-3-0"&gt;One or more SIEM or vendor certifications (e.g., Splunk Core Certified Power User or Enterprise Security Certified Admin, Microsoft SC-200, CrowdStrike CCFA/CCFR)&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-3-0"&gt;&lt;span&gt;&lt;/span&gt;Experience authoring platform-agnostic detections with Sigma and converting rules across SIEM backends&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-3-0"&gt;&lt;span&gt;&lt;/span&gt;Familiarity with detection-as-code practices, including version-controlled rules, testing, and CI/CD for detection content&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-3-0"&gt;&lt;span&gt;&lt;/span&gt;Industry security certifications such as GIAC (e.g., GCDA, GCIA), Security+, or similar&lt;/li&gt;
+&lt;li class="artifact-docx-preview_heading2 artifact-docx-preview-num-3-0"&gt;&lt;span&gt;&lt;/span&gt;A bachelor's degree in Computer Science or Information Security&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;strong&gt;Additional notes&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;This role is remote within the United States.&lt;/p&gt;
+&lt;p&gt;The base salary range for this role is between $111,900 USD and $162,300 USD + bonus eligibility and equity. While the full salary band reflects our long-term compensation framework, we're primarily targeting candidates between $120,000 and $140,000 based on experience, skills, and market data.&lt;/p&gt;
+&lt;p&gt;We believe in paying transparently and equitably. Your salary will ultimately be based on factors such as your experience, skills, team equity, and market data. You'll also be eligible for unlimited PTO (which we model and encourage), work location flexibility, up to 24 weeks of parental leave, and really excellent health benefits.&lt;/p&gt;
+&lt;p&gt;We're only hiring those authorized to work in the United States. We do not currently sponsor immigration visas.&lt;/p&gt;
+&lt;p&gt;We're an Equal Opportunity Employer: You'll receive consideration for employment without regard to race, sex, color, religion, sexual orientation, gender identity, national origin, protected veteran status, or on the basis of disability.&lt;/p&gt;
+&lt;p&gt;We'll ensure that individuals with disabilities are provided reasonable accommodation to participate in the job application or interview process, to perform essential job functions, and to receive other benefits and privileges of employment. Please let us know if you need accommodation of any kind.&lt;/p&gt;
+&lt;p&gt;#LI-Remote&lt;/p&gt;&lt;div class="content-pay-transparency"&gt;&lt;div class="pay-input"&gt;&lt;div class="title"&gt;Salary Range&lt;/div&gt;&lt;div class="pay-range"&gt;&lt;span&gt;$111,900&lt;/span&gt;&lt;span class="divider"&gt;—&lt;/span&gt;&lt;span&gt;$162,300 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/expel-managed-siem-detection-engineer"&gt;https://weworkremotely.com/remote-jobs/expel-managed-siem-detection-engineer&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Tue, 01 Sep 2026 07:30:49 +0000</pubDate>
+      <expires_at>Thu, 01 Oct 2026 07:30:49 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/expel-managed-siem-detection-engineer</guid>
+      <link>https://weworkremotely.com/remote-jobs/expel-managed-siem-detection-engineer</link>
+    </item>
+    <item>
+      <title>Toptal: Power Platform Solutions Architect</title>
+      <region>North America Only</region>
+      <country></country>
+      <state></state>
+      <skills></skills>
+      <category>Full-Stack Programming</category>
+      <type>Full-Time</type>
+      <description>
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; 
+&lt;/p&gt;
+
+&lt;p&gt;We are looking for a Power Platform Solutions Architect for a global company. Their goal is to assess and modernize an existing Power Platform solution, define the target architecture, and lead the technical design of a scalable and secure implementation.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Required Skills:&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Deep hands-on experience with Microsoft Power Platform, including Power Apps (canvas and model-driven), Power Automate, Dataverse, Power Pages, and Power BI&lt;/li&gt;&lt;li&gt;Strong experience designing Dataverse schemas and security roles&lt;/li&gt;&lt;li&gt;Azure architecture experience with API Management, Azure Functions, Key Vault, Entra ID/SSO, and Azure Monitor/Application Insights&lt;/li&gt;&lt;li&gt;Experience designing enterprise integration architectures, including integrations where counterpart APIs or contracts are uncertain, changing, or being migrated&lt;/li&gt;&lt;li&gt;Experience integrating enterprise applications with ERP systems&lt;/li&gt;&lt;li&gt;Experience designing identity and access models for licensed and unlicensed user audiences&lt;/li&gt;&lt;li&gt;Strong understanding of Microsoft Power Platform licensing models, including per-user Dataverse licensing and capacity/session-based Power Pages licensing&lt;/li&gt;&lt;li&gt;Experience evaluating existing solutions and defining modernization, remediation, or rebuild strategies&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;strong&gt;Optional Skills (not mandatory):&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;SAP integration experience&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;strong&gt;Deliverables&lt;/strong&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Lead the technical assessment of the existing Power Apps application, Power Automate flows, data layer, Power BI reporting, and four integration touchpoints&lt;/li&gt;&lt;li&gt;Support the Regulatory data-profiling spike and incorporate findings into the target solution architecture&lt;/li&gt;&lt;li&gt;Define and evaluate costed patch and rebuild options and support the final technical recommendation&lt;/li&gt;&lt;li&gt;Produce a detailed and staffed Phase 2 implementation plan&lt;/li&gt;&lt;li&gt;Design the consolidated Dataverse entity model and define workflow and business-logic architecture&lt;/li&gt;&lt;li&gt;Define the target integration architecture across the four integration touchpoints&lt;/li&gt;&lt;li&gt;Configure the Entra ID access model for licensed and unlicensed audiences&lt;/li&gt;&lt;li&gt;Configure the shared Azure API Management, Key Vault, and monitoring architecture supporting the integrations&lt;/li&gt;&lt;li&gt;Produce the technical handover documentation for the implemented solution&lt;/li&gt;&lt;li&gt;Engagement Highlights&lt;/li&gt;&lt;li&gt;Join a team of Toptalers already working for the client.&lt;/li&gt;&lt;li&gt;Lead the technical direction of a Power Platform modernization initiative from assessment through solution design&lt;/li&gt;&lt;li&gt;Own architecture decisions across Power Platform, Azure, identity, data, and enterprise integrations&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;strong&gt;General Information&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Location: USA or Canada only.&lt;/p&gt;&lt;p&gt;Overlap: 6hs with the East Coast time zone, USATT&lt;/p&gt;&lt;p&gt;Commitment: Approximately 30 hours per week during Phase 1 and 10 hours per week during Phase 2.&lt;/p&gt;&lt;p&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/toptal-power-platform-solutions-architect"&gt;https://weworkremotely.com/remote-jobs/toptal-power-platform-solutions-architect&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Thu, 10 Sep 2026 21:30:33 +0000</pubDate>
+      <expires_at>Sat, 10 Oct 2026 21:30:33 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/toptal-power-platform-solutions-architect</guid>
+      <link>https://weworkremotely.com/remote-jobs/toptal-power-platform-solutions-architect</link>
+    </item>
+    <item>
+      <title>Datadog: Developer Advocate - Service Management</title>
+      <region>Anywhere in the World</region>
+      <country>🇺🇸 United States of America</country>
+      <state></state>
+      <skills></skills>
+      <category>DevOps and Sysadmin</category>
+      <type>Full-Time</type>
+      <description>
+
+&lt;p&gt;
+  &lt;strong&gt;Headquarters:&lt;/strong&gt; California, USA, Remote; New York, USA, Remote
+&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;We are a team of engineers that translate our real-world experience to help our user communities solve problems. With a focus on service management, helping teams respond to incidents, run on-call, and automate their operations, you will work with practitioners and leaders across the industry and broaden your impact to the SRE, Engineer, DevOps, and Operations community at large. This is a unique opportunity to use both your engineering and creative storytelling skills to shape the landscape in cloud observability, incident response and service management.&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What You'll Do:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Act as a subject matter expert for service management (incident response, on-call, IDP, Work Management, Workflow Automation, Agent Builder, and operational automation) for Datadog's advocacy and engineering teams&lt;/li&gt;
+&lt;li&gt;Create content in one or more mediums to build Datadog's reputation as a leader in DevOps, Monitoring, Observability and Security e.g. building demos, public speaking, blogging, documentation, webinars, open source, research reports and more&lt;/li&gt;
+&lt;li&gt;Partner with product engineering teams to build compelling demos, and coach internal engineering teams on effective communication and presentation&lt;/li&gt;
+&lt;li&gt;Interface with open source communities to drive key messaging in the market and develop new integrations for Datadog&lt;/li&gt;
+&lt;li&gt;Contribute to the product through feedback (bugs or product enhancements suggestions), documentation, or code&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Who You Are:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Approximately 5+ years of experience as a Platform Engineer, Site Reliability Engineer, DevOps Engineer or Software Developer with hands-on experience as an on-call/incident responder and running production systems in complex IT environments&amp;nbsp;&lt;/li&gt;
+&lt;li&gt;You have a strong understanding of core service-management practices (incident response, on-call, post incident reviews, and SLOs), using tools like Datadog, PagerDuty, Opsgenie, incident.io, Rootly, Jira Cloud Platform, Cortex, or similar and know how to navigate operational challenges of different sized organizations&lt;/li&gt;
+&lt;li&gt;You’re passionate about helping teams fix organizational challenges, not just technical ones and where they intersect, and have shared your knowledge broadly.&lt;/li&gt;
+&lt;li&gt;Approximately 2+ years of experience in storytelling and creating compelling content e.g. written content, speaking at conferences like SREcon, DevOpsDays or SREday, leading workshops, live streaming or recording videos, contributing to open source and participating in community events.&lt;/li&gt;
+&lt;li&gt;You have publicly available writing samples, blog posts, demos, or recordings of presentations on technical topics&lt;/li&gt;
+&lt;li&gt;You are comfortable with at least one scripting and programming languages (eg Node.js, Python, Go, bash) and are familiar with working with APIs and modern infrastructure such as IaaS cloud services and containers&lt;/li&gt;
+&lt;li&gt;You enjoy self driven exploration and education on new technologies and languages&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Bonus points:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;You have hands-on ITSM platform experience (ServiceNow, Jira Service Management)&lt;/li&gt;
+&lt;li&gt;You are already an active member of SRE, DevOps, or incident-response communities&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Datadog values people from all walks of life. We understand not everyone will meet all the above qualifications on day one. That's okay. If you’re passionate about technology and want to grow your skills, we encourage you to apply.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;div&gt;
+&lt;p&gt;&lt;strong&gt;Benefits and Growth:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Generous and competitive benefits package&lt;/li&gt;
+&lt;li&gt;New hire stock equity (RSUs) and employee stock purchase plan (ESPP)&lt;/li&gt;
+&lt;li&gt;Continuous career development opportunities&amp;nbsp;&lt;/li&gt;
+&lt;li&gt;Product training to develop understanding of our product and space&lt;/li&gt;
+&lt;li&gt;Best in breed onboarding&lt;/li&gt;
+&lt;li&gt;Internal mentor and buddy program cross-departmentally&lt;/li&gt;
+&lt;li&gt;Friendly and inclusive workplace culture&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Benefits and Growth listed above may vary based on the country of your employment and the nature of your employment with Datadog.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="job__pay-ranges"&gt;
+&lt;div class="pay-range"&gt;
+&lt;div class="description"&gt;
+&lt;div class="body"&gt;
+&lt;p&gt;Datadog offers a competitive salary and equity package, and may include variable compensation. Actual compensation is based on factors such as the candidate's skills, qualifications, and experience. In addition, Datadog offers a wide range of best in class, comprehensive and inclusive employee benefits for this role including healthcare, dental, parental planning, and mental health benefits, a 401(k) plan and match, paid time off, fitness reimbursements, and a discounted employee stock purchase plan.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;div class="content-pay-transparency"&gt;&lt;div class="pay-input"&gt;&lt;div class="description"&gt;&lt;p&gt;Datadog offers a competitive salary and equity package, and may include variable compensation. Actual compensation is based on factors such as the candidate's skills, qualifications, and experience. In addition, Datadog offers a wide range of best in class, comprehensive and inclusive employee benefits for this role including healthcare, dental, parental planning, and mental health benefits, a 401(k) plan and match, paid time off, fitness reimbursements, and a discounted employee stock purchase plan.&lt;/p&gt;&lt;/div&gt;&lt;div class="title"&gt;The reasonably estimated yearly salary for this role at Datadog is:&lt;/div&gt;&lt;div class="pay-range"&gt;&lt;span&gt;$136,000&lt;/span&gt;&lt;span class="divider"&gt;—&lt;/span&gt;&lt;span&gt;$170,000 USD&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class="content-conclusion"&gt;&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;About Datadog:&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Datadog is the leading observability and security platform for the AI era, providing businesses with unified visibility across the technology stack to manage complexity at scale. It brings applications, infrastructure, data, models, and security into one place, using AI to detect and resolve issues before they impact customers. Trusted globally by Fortune 500 companies and high-growth AI leaders, Datadog enables businesses to move faster with clarity and confidence. Learn more about #DatadogLife on &lt;a href="https://www.instagram.com/datadoghq/?hl=en"&gt;Instagram&lt;/a&gt;, &lt;a href="https://www.linkedin.com/company/datadog"&gt;LinkedIn,&lt;/a&gt; and &lt;a href="https://learn.datadoghq.com/"&gt;Datadog Learning Center. &lt;/a&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;Equal Opportunity at Datadog:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Datadog is proud to offer &lt;a href="https://www.eeoc.gov/sites/default/files/2023-06/22-088_EEOC_KnowYourRights6.12ScreenRdr.pdf"&gt;equal employment opportunity&lt;/a&gt; to everyone regardless of race, color, ancestry, religion, sex, national origin, sexual orientation, age, citizenship, marital status, disability, gender identity, veteran status, and other characteristics protected by law. We also consider qualified applicants regardless of criminal histories, consistent with legal requirements. Here are our &lt;a href="https://www.datadoghq.com/legal/candidate-legal-notices/"&gt;Candidate Legal Notices&lt;/a&gt; for your reference.&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;Datadog endeavors to make our Careers Page accessible to all users. If you would like to contact us regarding the accessibility of our website or need assistance completing the application process, please complete &lt;a href="https://docs.google.com/forms/d/e/1FAIpQLSeoJeduEZ2NdZF_65uZmWUrCM-zee7yADXX1s6Xr9zAGq8iKA/viewform"&gt;this form&lt;/a&gt;. This form is for accommodation requests only and cannot be used to inquire about the status of applications.&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Privacy and AI Guidelines:&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Any information you submit to Datadog as part of your application will be processed in accordance with Datadog’s&amp;nbsp;&lt;a class="c-link" href="https://www.datadoghq.com/legal/applicant-candidate-privacy/"&gt;Applicant and Candidate Privacy Notice&lt;/a&gt;. For information on our AI policy, please visit &lt;a href="https://www.datadoghq.com/legal/interviewing-at-datadog-ai-guidelines/"&gt;Interviewing at Datadog AI Guidelines&lt;/a&gt;.&lt;/p&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;To apply:&lt;/strong&gt; &lt;a href="https://weworkremotely.com/remote-jobs/datadog-developer-advocate-service-management"&gt;https://weworkremotely.com/remote-jobs/datadog-developer-advocate-service-management&lt;/a&gt;&lt;/p&gt;
+</description>
+      <pubDate>Mon, 14 Sep 2026 07:31:07 +0000</pubDate>
+      <expires_at>Wed, 14 Oct 2026 07:31:07 +0000</expires_at>
+      <guid>https://weworkremotely.com/remote-jobs/datadog-developer-advocate-service-management</guid>
+      <link>https://weworkremotely.com/remote-jobs/datadog-developer-advocate-service-management</link>
+    </item>
+  </channel>
+</rss>

@@ -78,7 +78,8 @@ def screen_payload(**over: Any) -> dict[str, Any]:
         "fit_band": "strong",
         "fit_reasons": ["asks for Python and FastAPI"],
         "strengths": ["Python", "FastAPI"],
-        "gaps": ["AWS"],
+        "must_have_gaps": ["AWS"],
+        "nice_to_have_gaps": [],
         "seniority": "senior",
         "tech_stack": ["Python", "FastAPI", "AWS"],
         "sponsorship_required": "unstated",
@@ -197,6 +198,53 @@ def test_profile_brief_states_the_sponsorship_position(profile: Profile) -> None
     assert "REQUIRES visa sponsorship" in profile_brief(profile)
 
 
+def test_profile_brief_tags_evidence_by_depth() -> None:
+    """The point of `evidence`: "used an LLM API in a side project" and "built
+    LLM infrastructure in production" both put `llm` in `skills`, and only the
+    depth tag lets the model tell a production-experience JD they differ."""
+    profile = Profile(
+        skills={"ai": {"rag": 3, "qdrant": 2, "pytorch": 2}},
+        evidence=[
+            {"area": "RAG", "depth": "production", "proof": "Text-to-SQL with rag"},
+            {"area": "Vector search", "depth": "project", "proof": "qdrant side project"},
+        ],
+        unproven=["LLM fine-tuning"],
+    )
+    brief = profile_brief(profile)
+    assert "[P] RAG: Text-to-SQL with rag" in brief
+    assert "[S] Vector search: qdrant side project" in brief
+    assert "LLM fine-tuning" in brief
+    # Named in the evidence already, so not billed a second time in the list.
+    skill_lines = [line for line in brief.splitlines() if "skills" in line or "experience:" in line]
+    assert not any("qdrant" in line or "rag" in line.split(":", 1)[1] for line in skill_lines)
+    assert any("pytorch" in line for line in skill_lines)
+
+
+def test_evidence_changes_the_profile_version() -> None:
+    """Evidence is what the LLM reads, so a verdict read against the old
+    evidence must not be shown as current."""
+    base = {"skills": {"ai": {"rag": 3}}}
+    before = Profile(**base)
+    after = Profile(**base, evidence=[{"area": "RAG", "proof": "shipped"}])
+    assert before.version != after.version
+
+
+def test_the_band_is_generated_after_the_evidence_it_summarizes() -> None:
+    """Strict structured output generates properties in order. The band last
+    means it is decided from strengths and gaps already written, not asserted
+    first and rationalized after."""
+    order = SCREEN_SCHEMA["required"]
+    assert order[-1] == "fit_band"
+    assert order.index("must_have_gaps") < order.index("fit_band")
+    assert list(SCREEN_SCHEMA["properties"]) == order
+
+
+def test_gaps_are_split_into_must_have_and_nice_to_have() -> None:
+    screen = JobScreen(**screen_payload(must_have_gaps=["AWS"], nice_to_have_gaps=["Go"]))
+    assert screen.fit_half()["must_have_gaps"] == ["AWS"]
+    assert screen.fit_half()["nice_to_have_gaps"] == ["Go"]
+
+
 # --------------------------------------------------------------------------
 # Token estimate
 # --------------------------------------------------------------------------
@@ -225,7 +273,7 @@ async def test_a_successful_screen_is_parsed() -> None:
             profile_text="CANDIDATE PROFILE",
         )
     assert screen.fit_band == "strong"
-    assert screen.gaps == ["AWS"]
+    assert screen.must_have_gaps == ["AWS"]
     assert screener.tokens_spent == 1600
     assert screener.requests_made == 1
 

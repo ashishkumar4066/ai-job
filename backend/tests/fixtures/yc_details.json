@@ -1,0 +1,275 @@
+{
+ "97376": {
+  "component": "WaasShowJobPage",
+  "props": {
+   "company": {
+    "id": 24367,
+    "slug": "scispot-io",
+    "name": "Scispot",
+    "batch_name": "S21",
+    "website": "https://scispot.io",
+    "location": "Kitchener, Canada",
+    "country": "CA",
+    "team_size": 16,
+    "one_liner": "The Best Data Infrastructure for Biotechs"
+   },
+   "job": {
+    "id": 97376,
+    "title": "Senior Backend & Infrastructure Engineer",
+    "url": "/companies/scispot-io/jobs/QX1c0xf-senior-backend-infrastructure-engineer",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D97376&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=24367",
+    "location": "US / ES / DE / GB / PL / IN / CA / Remote (US; ES; DE; GB; PL; IN; CA)",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "$100K - $175K",
+    "equityRange": "0.10%",
+    "minExperience": "6+ years",
+    "minSchoolYear": null,
+    "visa": "US citizen/visa only",
+    "skills": [
+     "Amazon Web Services (AWS)",
+     "Microsoft Azure",
+     "Kubernetes",
+     "PostgreSQL",
+     "Python",
+     "RabbitMQ",
+     "Elasticsearch",
+     "Jenkins",
+     "Software Security",
+     "Microservices",
+     "Terraform",
+     "LLMs",
+     "AI Agents"
+    ],
+    "isIncomplete": false,
+    "companyUrl": "/companies/scispot-io",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/996a065b9b830e170e3a68e207d6245f28dc54b8.png",
+    "companyName": "Scispot",
+    "companyBatchName": "S21",
+    "companyOneLiner": "The Best Data Infrastructure for Biotechs",
+    "hiringManager": {
+     "id": 697526,
+     "first_name": "Satya",
+     "last_name": "Singh",
+     "avatar_thumb": "https://bookface-images.s3.amazonaws.com/avatars/58a4c2ba1257bb185570c8ac32d53d7e9043e6e5.jpg",
+     "avatar_medium": "https://bookface-images.s3.us-west-2.amazonaws.com/avatars/54c41b2090956e2d15de557be0184d5e5072852b.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQC4NIECAOBTFUCN6%2F20260919%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260919T070635Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIHUtd5Z9QaJqSOdEROTIutyumPGXM0nXjJTyNVckU32PAiASiBcXQRV9S530AYO7%2F9ih9TSY9Fp9UW7RJcd0W%2FaCLCrlAwhYEAAaDDAwNjIwMTgxMTA3MiIM1dSD5MNmfydbzBSWKsIDTESixE%2Bfiso9wJxjdbJgYDw9izlgc0Oh8pd8D2CHj4urQmQpNU4iVK%2B3tK0PnSHKWYJA%2Bzb0xbcFv7A%2F7M8U80V6dVtGfvjooNTcC6yBWd%2FVrhR4eQBvcR4lakfRfOpG0W187TYqqjf02nDkksR0eVLCFkMLoQjNjusT%2Fc1MovYPJKRmFwVHP%2BH9nQEt5HaJXaij8LMaYb%2FwujzG3tjDuBirMfvmlpY0138IaSMw6RQ6FtyqaKw2XZ%2BOOLbFQqbqp35BdmB4oJ%2F8Xy10yTEsnPnZKfIcYK4ckppOGh5%2FED9Ua3paJNIg%2F%2FHKv7cHSEmy7TOnsE23vnb6%2Fgik73sQe5yQzqCbv5wKZ70Qod5qERDqZYM%2B%2FrzXBSxjT9HTLg5LUJF0UzReEloilQGJSTgWQBX%2FDYqsfRH%2FndkBGdi799%2F%2F%2FtUMKseTT0bRcXYeFlNPWgmPMS%2F%2BnjuwZ7fsSYPGz1hR8gY7AqOavcYz0zUlV0xiuHIfXza4q5Y9spYxBxSeTl37Xq9xlYzPVs3O6Pvq9cz%2BoMSa6T3rGTc9hCxi9w3HcNoFlzXh0zgVLWPEB7X5XW8HNdKW9M1x61Cjyp7yMafoMLXXuNUGOqYB5vwtPTVRzZ0QjWGVnWvqDG6yOPRA5QB7jhn22R0xAbMq2h15%2B9kRGT9idCwB3hX0Ulf9DaUpXGY%2B2mmPRoLDiIrilGnOThEmu94FyzWEJamG8mLnlXPDlx5kBIUrH1hREt7Ycl%2Fsu8d5SxX6Yeam3qDlf%2FXtS1vvcwvq9O%2BNlJ%2Bl6ND70AWnwGVEJMdIPyYgdyP4hGVYiyasJOJIRKwUe%2FfG9J2HLg%3D%3D&X-Amz-SignedHeaders=host&X-Amz-Signature=42b8490fabf2eefa686ee4e0b1c5b949d2670829bf66a9f8ef660b25b87eacd0"
+    },
+    "createdAt": "3 months",
+    "lastActive": "5 days",
+    "description": "**Build the technical backbone for labs that run themselves.**\n\nThis is a hands-on backend and infrastructure role. You will write production code, make architecture choices, and own systems from design through deployment, monitoring, and incident response.\n\n**Why Scispot**\n\n* Scispot began after my brother Guru and I (Satya) watched someone they loved run out of time while slow, manual lab processes delayed a promising treatment. We are building Scispot so life-saving science can move at software speed.\n* Biotech &amp; Lifescience teams should not have to choose between moving fast and keeping their data clean, connected, traceable, and ready for AI.\n* We are building the digital backbone for scientific discovery. Scispot connects lab operations, instrument data, scientific workflows, and AI-driven insights in one platform. This becomes the memory layer for lifescience teams for their agents.\n* Your code will not optimize clicks for another consumer app. It will help scientists run experiments faster, trace samples accurately, automate repetitive work, and move treatments closer to patients.\n* This is a rare chance to build infrastructure at the intersection of software, AI, data, and biology.\n\nToday, Scispot supports more than 100 labs, 250+ instrument types, over 1,000 experiments each month, and millions of samples. After raising an $8M Series A, we are expanding the engineering team to build the reliable platform beneath the next generation of lab automation and AI\n\n**The role**\n\nWe are looking for a senior backend and infrastructure engineer who treats production as a product.\n\nYou will own the systems beneath Scispot: backend services, messaging, databases, cloud infrastructure, CI/CD, observability, security, and reliability.\n\nThis is not an ops-only role.\n\nA normal week may include:\n\n* Tracing a RabbitMQ bottleneck.\n* Building a FastAPI or Spring Boot service.\n* Tuning PostgreSQL or ElasticSearch.\n* Improving an EKS rollout.\n* Designing a safer AWS and Azure boundary.\n* Reducing cloud cost without weakening reliability.\n* Debugging a production issue across code, queues, caches, and infrastructure.\n* Optimising the workload for AI pipelines\n\nYou will work closely with the founders and product engineers.\n\nYou will get broad goals, real customer stakes, and room to decide how to solve the problem. We want someone who acts like an owner, not someone who waits for a perfect ticket.\n\n**What you’ll own**\n\n* Design, build, and operate cloud infrastructure across AWS and Azure for scale, reliability, security, and cost efficiency.\n* Build and evolve backend services in Python and FastAPI, Java and Spring Boot, or closely related frameworks.\n* Own backend reliability and performance across services, dependencies, queues, caches, databases, and external integrations.\n* Build and improve CI/CD pipelines so the team can deploy quickly, safely, and with clear rollback paths.\n* Run production end to end. This includes deployments, monitoring, alerting, debugging, incident response, post-incident follow-up, and capacity planning.\n* Design event-driven and asynchronous workflows using RabbitMQ or similar messaging systems.\n* Use Redis and other caching patterns to improve latency, throughput, and resilience.\n* Operate relational data stores in RDS, graph workloads in Cosmos DB, and NoSQL or vector workloads in MongoDB Atlas.\n* Build useful observability with logs, metrics, traces, dashboards, and alerts using tools such as Datadog and ELK.\n* Improve network and application security. This includes VPC design, secrets management, access control, encryption, and auditability.\n* Turn repeated operational work into code, tools, runbooks, and guardrails that raise developer velocity.\n* Make clear trade-offs among speed, reliability, maintainability, compliance, and cloud cost.\n\n**Problems you may work on**\n\n* How do we absorb bursts of instrument and workflow data without losing work, creating duplicates, or slowing customer-facing services?\n* How do we preserve sample lineage, permissions, and audit history as data moves across services and cloud systems?\n* How do we make graph and vector retrieval dependable enough to support AI features used in real lab workflows?\n* How do we let engineers ship many services quickly while keeping deployments observable, reversible, and safe?\n* How do we scale across AWS and Azure without building fragile one-off infrastructure or wasting cloud spend?\n* How do we find production risks before customers do, then remove the root cause instead of only treating the symptom?\n\n**What success looks like in your first 90 days**\n\n**First 30 days**\n\n* Map the architecture, critical customer flows, deployment path, data stores, and main production risks.\n* Ship at least one useful production improvement in a backend service, deployment workflow, observability path, or reliability issue.\n* Join incident response and learn the current operating model.\n* Establish a baseline for the system health metrics that matter most.\n* Understand all AI traces leveraging langfuse and suggesting the feedback pipeline for AI workloads\n\n**By 60 days**\n\n* Become the clear owner of at least one service or infrastructure domain.\n* Remove a meaningful bottleneck or source of operational risk in messaging, caching, databases, deployments, or cloud infrastructure.\n* Improve CI/CD, dashboards, alerts, runbooks, or automated recovery so the team can move faster with less production risk.\n\n**By 90 days**\n\n* Lead and launch a major backend or infrastructure initiative from design through production rollout.\n* Show a measurable gain in reliability, developer speed, performance, cloud cost, or incident reduction.\n* Present a practical roadmap for the next two quarters, including the highest-leverage technical risks, trade-offs, and milestones.\n\n**What we’re looking for**\n\n* Roughly 3+ years of experience building and operating backend, platform, DevOps, SRE, or infrastructure systems. Strong evidence matters more than a precise year count.\n* Strong production backend experience with Python and FastAPI, Java and Spring Boot, or a comparable stack.\n* A solid grasp of distributed systems, asynchronous processing, failure modes, retries, idempotency, and message-driven architecture.\n* Hands-on experience with AWS and Azure. You have made practical decisions about networking, compute, storage, identity, security, and cost.\n* Solid understanding of AI pipelines, prompt looping, langfuse tracing, and context engineering.\n* Experience with Docker and Kubernetes. Production EKS experience is especially useful.\n* Strong database fundamentals across relational systems such as MySQL or PostgreSQL.\n* Exposure to graph, NoSQL, or vector data systems.\n* Experience designing and consuming REST APIs.\n* Experience operating services that other teams or customers depend on.\n* Proven ownership of systems from architecture and implementation through deployment, monitoring, debugging, and optimization.\n* Strong production debugging and performance-tuning skills.\n* The ability to move from a symptom to the root cause across application code and infrastructure.\n* Good security instincts around secrets, access control, network boundaries, data protection, and regulated environments.\n* Clear written and verbal communication. You explain trade-offs, surface risks early, and leave systems easier for others to operate.\n\n**Strong pluses**\n\n* Infrastructure as code with Terraform or a similar tool.\n* Datadog, ELK, OpenTelemetry, or another observability stack.\n* Microservices and event-driven systems at meaningful production scale.\n* Vector search, AI infrastructure, or LLM-powered applications.\n* Security, compliance, audit trails, or regulated software environments.\n* Experience in an early-stage startup where you operated beyond a narrow job boundary.\n* Life-science, lab, healthcare, manufacturing, or other data-heavy workflow experience.\n* Building short term or long term memory layer using databases that work well with agents.\n\n**Our stack**\n\nPython, FastAPI, Java, Spring Boot, REST APIs, RabbitMQ, Redis, MySQL, PostgreSQL, AWS RDS, Cosmos DB, MongoDB Atlas, Docker, Kubernetes, EKS, AWS, Azure, Terraform, Datadog, and ELK.\n\nYou do not need every exact vendor on day one.\n\nYou do need strong backend and systems fundamentals, recent hands-on production work, and the ability to learn the missing pieces quickly.\n\n**What high agency means here**\n\n* You do not wait for a detailed ticket when the system, customer impact, and goal are clear.\n* When production breaks, you help diagnose it, mitigate it, communicate clearly, and prevent a repeat.\n* You can choose a practical first version without creating a dead end.\n* You challenge weak assumptions with data and propose a better path.\n* You care about the outcome after launch, not only whether the code merged.\n* You make the engineers around you faster through tools, documentation, feedback, and sound technical judgment.\n\n**This role is probably not for you if**\n\n* You want to work only in application code or only in cloud configuration. This role spans both.\n* You need requirements to be complete before you can start making progress.\n* You prefer handing production issues to another team once your code is deployed.\n* You avoid on-call work, incident response, or the operational side of software.\n* You optimize for elegant abstractions before proving that they solve the real problem.\n* You want the narrow boundaries and long approval chains of a large company.\n\n**Why join Scispot**\n\n* Build systems that sit between physical lab work and AI-driven action. Reliability here has a direct effect on how fast scientists can work.\n* Own important production systems early. Your decisions will shape the platform rather than disappear into a large org chart.\n* Work directly with founders and a small team that values speed, precision, clear thinking, and honest feedback.\n* Solve hard problems across backend engineering, cloud infrastructure, distributed data, security, and developer experience.\n* Join at a stage with real customer usage and fresh capital, while the technical foundation is still open to meaningful change.\n\n**How to apply**\n\nAlong with your resume or YC profile, tell us about one production system you personally owned.\n\nIn a few bullets, explain:\n\n* What the system did and what was at stake.\n* What was unclear or broken when you took ownership.\n* The key technical choices you made.\n* The trade-offs you considered.\n* A production failure or hard constraint you had to work through.\n* The result for users, reliability, speed, cost, or the engineering team.\n\nLinks to code, technical writing, architecture notes, open-source work, or a product you shipped are welcome.\n\nWe care more about clear evidence of ownership than employer prestige or polished interview language.\n\nJoin Scispot if you want to build like a founder, remain close to users, and apply software and AI to problems that matter beyond software. You will have high autonomy, direct feedback, hard technical problems, and a visible link between what you ship and how quickly scientists can do their work.",
+    "interview_process": "Screening call followed by live interview"
+   }
+  },
+  "json_ld": {
+   "@context": "https://schema.org/",
+   "@type": "JobPosting",
+   "title": "Senior Backend & Infrastructure Engineer",
+   "url": "https://www.ycombinator.com/companies/scispot-io/jobs/QX1c0xf-senior-backend-infrastructure-engineer",
+   "description": "<p><strong>Build the technical backbone for labs that run themselves.</strong></p>\n<p>This is a hands-on backend and infrastructure role. You will write production code, make architecture choices, and own systems from design through deployment, monitoring, and incident response.</p>\n<p><strong>Why Scispot</strong></p>\n<ul>\n<li>Scispot began after my brother Guru and I (Satya) watched someone they loved run out of time while slow, manual lab processes delayed a promising treatment. We are building Scispot so life-saving science can move at software speed.</li>\n<li>Biotech &amp; Lifescience teams should not have to choose between moving fast and keeping their data clean, connected, traceable, and ready for AI.</li>\n<li>We are building the digital backbone for scientific discovery. Scispot connects lab operations, instrument data, scientific workflows, and AI-driven insights in one platform. This becomes the memory layer for lifescience teams for their agents.</li>\n<li>Your code will not optimize clicks for another consumer app. It will help scientists run experiments faster, trace samples accurately, automate repetitive work, and move treatments closer to patients.</li>\n<li>This is a rare chance to build infrastructure at the intersection of software, AI, data, and biology.</li>\n</ul>\n<p>Today, Scispot supports more than 100 labs, 250+ instrument types, over 1,000 experiments each month, and millions of samples. After raising an $8M Series A, we are expanding the engineering team to build the reliable platform beneath the next generation of lab automation and AI</p>\n<p><strong>The role</strong></p>\n<p>We are looking for a senior backend and infrastructure engineer who treats production as a product.</p>\n<p>You will own the systems beneath Scispot: backend services, messaging, databases, cloud infrastructure, CI/CD, observability, security, and reliability.</p>\n<p>This is not an ops-only role.</p>\n<p>A normal week may include:</p>\n<ul>\n<li>Tracing a RabbitMQ bottleneck.</li>\n<li>Building a FastAPI or Spring Boot service.</li>\n<li>Tuning PostgreSQL or ElasticSearch.</li>\n<li>Improving an EKS rollout.</li>\n<li>Designing a safer AWS and Azure boundary.</li>\n<li>Reducing cloud cost without weakening reliability.</li>\n<li>Debugging a production issue across code, queues, caches, and infrastructure.</li>\n<li>Optimising the workload for AI pipelines</li>\n</ul>\n<p>You will work closely with the founders and product engineers.</p>\n<p>You will get broad goals, real customer stakes, and room to decide how to solve the problem. We want someone who acts like an owner, not someone who waits for a perfect ticket.</p>\n<p><strong>What you’ll own</strong></p>\n<ul>\n<li>Design, build, and operate cloud infrastructure across AWS and Azure for scale, reliability, security, and cost efficiency.</li>\n<li>Build and evolve backend services in Python and FastAPI, Java and Spring Boot, or closely related frameworks.</li>\n<li>Own backend reliability and performance across services, dependencies, queues, caches, databases, and external integrations.</li>\n<li>Build and improve CI/CD pipelines so the team can deploy quickly, safely, and with clear rollback paths.</li>\n<li>Run production end to end. This includes deployments, monitoring, alerting, debugging, incident response, post-incident follow-up, and capacity planning.</li>\n<li>Design event-driven and asynchronous workflows using RabbitMQ or similar messaging systems.</li>\n<li>Use Redis and other caching patterns to improve latency, throughput, and resilience.</li>\n<li>Operate relational data stores in RDS, graph workloads in Cosmos DB, and NoSQL or vector workloads in MongoDB Atlas.</li>\n<li>Build useful observability with logs, metrics, traces, dashboards, and alerts using tools such as Datadog and ELK.</li>\n<li>Improve network and application security. This includes VPC design, secrets management, access control, encryption, and auditability.</li>\n<li>Turn repeated operational work into code, tools, runbooks, and guardrails that raise developer velocity.</li>\n<li>Make clear trade-offs among speed, reliability, maintainability, compliance, and cloud cost.</li>\n</ul>\n<p><strong>Problems you may work on</strong></p>\n<ul>\n<li>How do we absorb bursts of instrument and workflow data without losing work, creating duplicates, or slowing customer-facing services?</li>\n<li>How do we preserve sample lineage, permissions, and audit history as data moves across services and cloud systems?</li>\n<li>How do we make graph and vector retrieval dependable enough to support AI features used in real lab workflows?</li>\n<li>How do we let engineers ship many services quickly while keeping deployments observable, reversible, and safe?</li>\n<li>How do we scale across AWS and Azure without building fragile one-off infrastructure or wasting cloud spend?</li>\n<li>How do we find production risks before customers do, then remove the root cause instead of only treating the symptom?</li>\n</ul>\n<p><strong>What success looks like in your first 90 days</strong></p>\n<p><strong>First 30 days</strong></p>\n<ul>\n<li>Map the architecture, critical customer flows, deployment path, data stores, and main production risks.</li>\n<li>Ship at least one useful production improvement in a backend service, deployment workflow, observability path, or reliability issue.</li>\n<li>Join incident response and learn the current operating model.</li>\n<li>Establish a baseline for the system health metrics that matter most.</li>\n<li>Understand all AI traces leveraging langfuse and suggesting the feedback pipeline for AI workloads</li>\n</ul>\n<p><strong>By 60 days</strong></p>\n<ul>\n<li>Become the clear owner of at least one service or infrastructure domain.</li>\n<li>Remove a meaningful bottleneck or source of operational risk in messaging, caching, databases, deployments, or cloud infrastructure.</li>\n<li>Improve CI/CD, dashboards, alerts, runbooks, or automated recovery so the team can move faster with less production risk.</li>\n</ul>\n<p><strong>By 90 days</strong></p>\n<ul>\n<li>Lead and launch a major backend or infrastructure initiative from design through production rollout.</li>\n<li>Show a measurable gain in reliability, developer speed, performance, cloud cost, or incident reduction.</li>\n<li>Present a practical roadmap for the next two quarters, including the highest-leverage technical risks, trade-offs, and milestones.</li>\n</ul>\n<p><strong>What we’re looking for</strong></p>\n<ul>\n<li>Roughly 3+ years of experience building and operating backend, platform, DevOps, SRE, or infrastructure systems. Strong evidence matters more than a precise year count.</li>\n<li>Strong production backend experience with Python and FastAPI, Java and Spring Boot, or a comparable stack.</li>\n<li>A solid grasp of distributed systems, asynchronous processing, failure modes, retries, idempotency, and message-driven architecture.</li>\n<li>Hands-on experience with AWS and Azure. You have made practical decisions about networking, compute, storage, identity, security, and cost.</li>\n<li>Solid understanding of AI pipelines, prompt looping, langfuse tracing, and context engineering.</li>\n<li>Experience with Docker and Kubernetes. Production EKS experience is especially useful.</li>\n<li>Strong database fundamentals across relational systems such as MySQL or PostgreSQL.</li>\n<li>Exposure to graph, NoSQL, or vector data systems.</li>\n<li>Experience designing and consuming REST APIs.</li>\n<li>Experience operating services that other teams or customers depend on.</li>\n<li>Proven ownership of systems from architecture and implementation through deployment, monitoring, debugging, and optimization.</li>\n<li>Strong production debugging and performance-tuning skills.</li>\n<li>The ability to move from a symptom to the root cause across application code and infrastructure.</li>\n<li>Good security instincts around secrets, access control, network boundaries, data protection, and regulated environments.</li>\n<li>Clear written and verbal communication. You explain trade-offs, surface risks early, and leave systems easier for others to operate.</li>\n</ul>\n<p><strong>Strong pluses</strong></p>\n<ul>\n<li>Infrastructure as code with Terraform or a similar tool.</li>\n<li>Datadog, ELK, OpenTelemetry, or another observability stack.</li>\n<li>Microservices and event-driven systems at meaningful production scale.</li>\n<li>Vector search, AI infrastructure, or LLM-powered applications.</li>\n<li>Security, compliance, audit trails, or regulated software environments.</li>\n<li>Experience in an early-stage startup where you operated beyond a narrow job boundary.</li>\n<li>Life-science, lab, healthcare, manufacturing, or other data-heavy workflow experience.</li>\n<li>Building short term or long term memory layer using databases that work well with agents.</li>\n</ul>\n<p><strong>Our stack</strong></p>\n<p>Python, FastAPI, Java, Spring Boot, REST APIs, RabbitMQ, Redis, MySQL, PostgreSQL, AWS RDS, Cosmos DB, MongoDB Atlas, Docker, Kubernetes, EKS, AWS, Azure, Terraform, Datadog, and ELK.</p>\n<p>You do not need every exact vendor on day one.</p>\n<p>You do need strong backend and systems fundamentals, recent hands-on production work, and the ability to learn the missing pieces quickly.</p>\n<p><strong>What high agency means here</strong></p>\n<ul>\n<li>You do not wait for a detailed ticket when the system, customer impact, and goal are clear.</li>\n<li>When production breaks, you help diagnose it, mitigate it, communicate clearly, and prevent a repeat.</li>\n<li>You can choose a practical first version without creating a dead end.</li>\n<li>You challenge weak assumptions with data and propose a better path.</li>\n<li>You care about the outcome after launch, not only whether the code merged.</li>\n<li>You make the engineers around you faster through tools, documentation, feedback, and sound technical judgment.</li>\n</ul>\n<p><strong>This role is probably not for you if</strong></p>\n<ul>\n<li>You want to work only in application code or only in cloud configuration. This role spans both.</li>\n<li>You need requirements to be complete before you can start making progress.</li>\n<li>You prefer handing production issues to another team once your code is deployed.</li>\n<li>You avoid on-call work, incident response, or the operational side of software.</li>\n<li>You optimize for elegant abstractions before proving that they solve the real problem.</li>\n<li>You want the narrow boundaries and long approval chains of a large company.</li>\n</ul>\n<p><strong>Why join Scispot</strong></p>\n<ul>\n<li>Build systems that sit between physical lab work and AI-driven action. Reliability here has a direct effect on how fast scientists can work.</li>\n<li>Own important production systems early. Your decisions will shape the platform rather than disappear into a large org chart.</li>\n<li>Work directly with founders and a small team that values speed, precision, clear thinking, and honest feedback.</li>\n<li>Solve hard problems across backend engineering, cloud infrastructure, distributed data, security, and developer experience.</li>\n<li>Join at a stage with real customer usage and fresh capital, while the technical foundation is still open to meaningful change.</li>\n</ul>\n<p><strong>How to apply</strong></p>\n<p>Along with your resume or YC profile, tell us about one production system you personally owned.</p>\n<p>In a few bullets, explain:</p>\n<ul>\n<li>What the system did and what was at stake.</li>\n<li>What was unclear or broken when you took ownership.</li>\n<li>The key technical choices you made.</li>\n<li>The trade-offs you considered.</li>\n<li>A production failure or hard constraint you had to work through.</li>\n<li>The result for users, reliability, speed, cost, or the engineering team.</li>\n</ul>\n<p>Links to code, technical writing, architecture notes, open-source work, or a product you shipped are welcome.</p>\n<p>We care more about clear evidence of ownership than employer prestige or polished interview language.</p>\n<p>Join Scispot if you want to build like a founder, remain close to users, and apply software and AI to problems that matter beyond software. You will have high autonomy, direct feedback, hard technical problems, and a visible link between what you ship and how quickly scientists can do their work.</p>\n",
+   "datePosted": "2026-06-23T20:23:34Z",
+   "employmentType": "FULL_TIME",
+   "hiringOrganization": {
+    "@type": "Organization",
+    "name": "Scispot",
+    "sameAs": "https://scispot.io",
+    "logo": "https://bookface-images.s3.amazonaws.com/small_logos/996a065b9b830e170e3a68e207d6245f28dc54b8.png"
+   },
+   "baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": {
+     "@type": "QuantitativeValue",
+     "unitText": "YEAR",
+     "minValue": 100000,
+     "maxValue": 175000
+    }
+   },
+   "interview_process": "<p>Screening call followed by live interview</p>\n",
+   "jobLocationType": "TELECOMMUTE",
+   "applicantLocationRequirements": {
+    "@type": "Country",
+    "name": "CA"
+   }
+  }
+ },
+ "78821": {
+  "component": "WaasShowJobPage",
+  "props": {
+   "company": {
+    "id": 30400,
+    "slug": "plexe",
+    "name": "Plexe",
+    "batch_name": "P25",
+    "website": "https://plexe.ai",
+    "location": "London, United Kingdom",
+    "country": "GB",
+    "team_size": 2,
+    "one_liner": "Open-source agents to build predictive ML models from a prompt"
+   },
+   "job": {
+    "id": 78821,
+    "title": "Forward Deployed Engineer",
+    "url": "/companies/plexe/jobs/eocGfXv-forward-deployed-engineer",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D78821&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=30400",
+    "location": "IN / Remote (IN)",
+    "askUs": false,
+    "type": "Full-time",
+    "role": "eng",
+    "roleSpecificType": "Full stack",
+    "prettyRole": "Engineering",
+    "salaryRange": "₹1.5M - ₹3M INR",
+    "equityRange": "0.01% - 0.03%",
+    "minExperience": "3+ years",
+    "minSchoolYear": null,
+    "visa": "US citizenship/visa not required",
+    "skills": [],
+    "isIncomplete": false,
+    "companyUrl": "/companies/plexe",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/4911874a37ff01bfa27bb33e5f83f49e6970068e.png",
+    "companyName": "Plexe",
+    "companyBatchName": "P25",
+    "companyOneLiner": "Open-source agents to build predictive ML models from a prompt",
+    "hiringManager": {
+     "id": 2260416,
+     "first_name": "Vaibhav",
+     "last_name": "Dubey",
+     "avatar_thumb": "https://bookface-images.s3.amazonaws.com/avatars/3ef2a9cbf97215a02c0cd71bfe9793e95f7182c3.jpg",
+     "avatar_medium": "https://bookface-images.s3.us-west-2.amazonaws.com/avatars/7b1195bc6a6cc5913158f1aa4d19b10de67a3718.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQC4NIECAOBTFUCN6%2F20260919%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260919T070636Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIHUtd5Z9QaJqSOdEROTIutyumPGXM0nXjJTyNVckU32PAiASiBcXQRV9S530AYO7%2F9ih9TSY9Fp9UW7RJcd0W%2FaCLCrlAwhYEAAaDDAwNjIwMTgxMTA3MiIM1dSD5MNmfydbzBSWKsIDTESixE%2Bfiso9wJxjdbJgYDw9izlgc0Oh8pd8D2CHj4urQmQpNU4iVK%2B3tK0PnSHKWYJA%2Bzb0xbcFv7A%2F7M8U80V6dVtGfvjooNTcC6yBWd%2FVrhR4eQBvcR4lakfRfOpG0W187TYqqjf02nDkksR0eVLCFkMLoQjNjusT%2Fc1MovYPJKRmFwVHP%2BH9nQEt5HaJXaij8LMaYb%2FwujzG3tjDuBirMfvmlpY0138IaSMw6RQ6FtyqaKw2XZ%2BOOLbFQqbqp35BdmB4oJ%2F8Xy10yTEsnPnZKfIcYK4ckppOGh5%2FED9Ua3paJNIg%2F%2FHKv7cHSEmy7TOnsE23vnb6%2Fgik73sQe5yQzqCbv5wKZ70Qod5qERDqZYM%2B%2FrzXBSxjT9HTLg5LUJF0UzReEloilQGJSTgWQBX%2FDYqsfRH%2FndkBGdi799%2F%2F%2FtUMKseTT0bRcXYeFlNPWgmPMS%2F%2BnjuwZ7fsSYPGz1hR8gY7AqOavcYz0zUlV0xiuHIfXza4q5Y9spYxBxSeTl37Xq9xlYzPVs3O6Pvq9cz%2BoMSa6T3rGTc9hCxi9w3HcNoFlzXh0zgVLWPEB7X5XW8HNdKW9M1x61Cjyp7yMafoMLXXuNUGOqYB5vwtPTVRzZ0QjWGVnWvqDG6yOPRA5QB7jhn22R0xAbMq2h15%2B9kRGT9idCwB3hX0Ulf9DaUpXGY%2B2mmPRoLDiIrilGnOThEmu94FyzWEJamG8mLnlXPDlx5kBIUrH1hREt7Ycl%2Fsu8d5SxX6Yeam3qDlf%2FXtS1vvcwvq9O%2BNlJ%2Bl6ND70AWnwGVEJMdIPyYgdyP4hGVYiyasJOJIRKwUe%2FfG9J2HLg%3D%3D&X-Amz-SignedHeaders=host&X-Amz-Signature=3f7c15c7b24e9f0e28e77d44783c3ca25baf89c7bafb977bd9f1bb885fc313cb"
+    },
+    "createdAt": "about 1 year",
+    "lastActive": "8 days",
+    "description": "## The Role\r\n\r\nWe're seeking a Forward Deployed Engineer to work directly with customers, helping them integrate Plexe and build complete ML pipelines using our platform. You'll be part technical consultant, part solutions architect, and part implementation partner—traveling to customer sites, understanding their unique challenges, and ensuring they achieve success with our ML Engineering platform. If you love solving complex problems in real-world environments and thrive on customer interaction, this role is for you.\r\n\r\n## What You'll Do\r\n\r\n* **Customer Engagement:** Visit customer sites to understand their ML workflows, pain points, and business objectives. You'll be the technical face of Plexe, building relationships and trust with engineering teams.\r\n* **Integration & Implementation:** Help customers integrate Plexe into their existing infrastructure and build end-to-end ML pipelines using our multi-agent platform. You'll work hands-on with their data, models, and systems.\r\n* **Solution Architecture:** Design custom ML pipeline solutions that leverage Plexe's capabilities while fitting seamlessly into customer environments. Each implementation will be unique to their specific needs.\r\n* **Technical Support & Training:** Provide ongoing technical support, conduct training sessions, and create documentation to ensure customers can effectively use and maintain their Plexe implementations.\r\n* **Product Feedback Loop:** Capture customer requirements, pain points, and feature requests to inform our product roadmap. You'll be the voice of the customer within our engineering team.\r\n\r\n## What We Need\r\n\r\nWe're looking for someone who combines strong technical skills with excellent customer-facing abilities:\r\n\r\n* **3+ years** building and deploying ML systems in production environments\r\n* **Strong Python** and experience with ML frameworks (PyTorch, TensorFlow, scikit-learn)\r\n* Experience with **LLM deployment** and agentic systems\r\n* **Customer-facing experience** with ability to present technical concepts to diverse audiences\r\n* **Problem-solving mindset** with ability to debug and troubleshoot in unfamiliar environments\r\n\r\n**Nice-to-Have:**\r\n\r\n* Background in **consulting** or customer success roles\r\n* Experience with **data engineering** and pipeline orchestration tools\r\n* Understanding of **enterprise security** and compliance requirements\r\n\r\n## Why This Role?\r\n\r\nThis isn't your typical engineering position - you'll have direct impact on customer success while working with cutting-edge AI technology. You'll see firsthand how your work transforms businesses, build deep relationships with customers, and help shape the future of ML pipeline development.\r\n\r\n**Travel:** This role involves 30-50% travel to customer sites, with opportunities to work with companies across various industries and scales.\r\n\r\nReady to be the bridge between innovative AI technology and real-world customer success? Let's talk.",
+    "interview_process": "* Intro call\r\n* Technical round (Take-home assignment + Follow-up)\r\n* Case study"
+   }
+  },
+  "json_ld": {
+   "@context": "https://schema.org/",
+   "@type": "JobPosting",
+   "title": "Forward Deployed Engineer",
+   "url": "https://www.ycombinator.com/companies/plexe/jobs/eocGfXv-forward-deployed-engineer",
+   "description": "<h2>The Role</h2>\n<p>We're seeking a Forward Deployed Engineer to work directly with customers, helping them integrate Plexe and build complete ML pipelines using our platform. You'll be part technical consultant, part solutions architect, and part implementation partner—traveling to customer sites, understanding their unique challenges, and ensuring they achieve success with our ML Engineering platform. If you love solving complex problems in real-world environments and thrive on customer interaction, this role is for you.</p>\n<h2>What You'll Do</h2>\n<ul>\n<li>\n<strong>Customer Engagement:</strong> Visit customer sites to understand their ML workflows, pain points, and business objectives. You'll be the technical face of Plexe, building relationships and trust with engineering teams.</li>\n<li>\n<strong>Integration &amp; Implementation:</strong> Help customers integrate Plexe into their existing infrastructure and build end-to-end ML pipelines using our multi-agent platform. You'll work hands-on with their data, models, and systems.</li>\n<li>\n<strong>Solution Architecture:</strong> Design custom ML pipeline solutions that leverage Plexe's capabilities while fitting seamlessly into customer environments. Each implementation will be unique to their specific needs.</li>\n<li>\n<strong>Technical Support &amp; Training:</strong> Provide ongoing technical support, conduct training sessions, and create documentation to ensure customers can effectively use and maintain their Plexe implementations.</li>\n<li>\n<strong>Product Feedback Loop:</strong> Capture customer requirements, pain points, and feature requests to inform our product roadmap. You'll be the voice of the customer within our engineering team.</li>\n</ul>\n<h2>What We Need</h2>\n<p>We're looking for someone who combines strong technical skills with excellent customer-facing abilities:</p>\n<ul>\n<li>\n<strong>3+ years</strong> building and deploying ML systems in production environments</li>\n<li>\n<strong>Strong Python</strong> and experience with ML frameworks (PyTorch, TensorFlow, scikit-learn)</li>\n<li>Experience with <strong>LLM deployment</strong> and agentic systems</li>\n<li>\n<strong>Customer-facing experience</strong> with ability to present technical concepts to diverse audiences</li>\n<li>\n<strong>Problem-solving mindset</strong> with ability to debug and troubleshoot in unfamiliar environments</li>\n</ul>\n<p><strong>Nice-to-Have:</strong></p>\n<ul>\n<li>Background in <strong>consulting</strong> or customer success roles</li>\n<li>Experience with <strong>data engineering</strong> and pipeline orchestration tools</li>\n<li>Understanding of <strong>enterprise security</strong> and compliance requirements</li>\n</ul>\n<h2>Why This Role?</h2>\n<p>This isn't your typical engineering position - you'll have direct impact on customer success while working with cutting-edge AI technology. You'll see firsthand how your work transforms businesses, build deep relationships with customers, and help shape the future of ML pipeline development.</p>\n<p><strong>Travel:</strong> This role involves 30-50% travel to customer sites, with opportunities to work with companies across various industries and scales.</p>\n<p>Ready to be the bridge between innovative AI technology and real-world customer success? Let's talk.</p>\n",
+   "datePosted": "2025-07-17T09:48:48Z",
+   "employmentType": "FULL_TIME",
+   "hiringOrganization": {
+    "@type": "Organization",
+    "name": "Plexe",
+    "sameAs": "https://plexe.ai",
+    "logo": "https://bookface-images.s3.amazonaws.com/small_logos/4911874a37ff01bfa27bb33e5f83f49e6970068e.png"
+   },
+   "baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": {
+     "@type": "QuantitativeValue",
+     "unitText": "YEAR",
+     "minValue": 1500000,
+     "maxValue": 3000000
+    }
+   },
+   "interview_process": "<ul>\n<li>Intro call</li>\n<li>Technical round (Take-home assignment + Follow-up)</li>\n<li>Case study</li>\n</ul>\n",
+   "jobLocationType": "TELECOMMUTE",
+   "applicantLocationRequirements": {
+    "@type": "Country",
+    "name": "GB"
+   }
+  }
+ },
+ "110698": {
+  "component": "WaasShowJobPage",
+  "props": {
+   "company": {
+    "id": 29968,
+    "slug": "patched",
+    "name": "Patched",
+    "batch_name": "S24",
+    "website": "https://patched.codes",
+    "location": "San Francisco",
+    "country": "US",
+    "team_size": 4,
+    "one_liner": "Reliable AI for Regulated Ops"
+   },
+   "job": {
+    "id": 110698,
+    "title": "AI Reliability Intern",
+    "url": "/companies/patched/jobs/hPsUPP4-ai-reliability-intern",
+    "applyUrl": "https://account.ycombinator.com/authenticate?continue=https%3A%2F%2Fwww.workatastartup.com%2Fapplication%3Fsignup_job_id%3D110698&defaults%5BsignUpActive%5D=true&defaults%5Bwaas_company%5D=29968",
+    "location": "IN / Remote (IN)",
+    "askUs": false,
+    "type": "Internship",
+    "role": "eng",
+    "roleSpecificType": "Machine learning",
+    "prettyRole": "Engineering",
+    "salaryRange": "₹25K - ₹75K INR / monthly",
+    "equityRange": "",
+    "minExperience": null,
+    "minSchoolYear": "Any",
+    "visa": "US citizenship/visa not required",
+    "skills": [
+     "Python"
+    ],
+    "isIncomplete": false,
+    "companyUrl": "/companies/patched",
+    "companyLogoUrl": "https://bookface-images.s3.amazonaws.com/small_logos/fb149bb2976430923620abcb50a97acc06ab22c0.png",
+    "companyName": "Patched",
+    "companyBatchName": "S24",
+    "companyOneLiner": "Reliable AI for Regulated Ops",
+    "hiringManager": {
+     "id": 730289,
+     "first_name": "Rohan",
+     "last_name": "Sood",
+     "avatar_thumb": "https://bookface-images.s3.amazonaws.com/avatars/0a19e37efd4a2620cd2a0049e474715129f694b6.jpg",
+     "avatar_medium": "https://bookface-images.s3.us-west-2.amazonaws.com/avatars/49afc209c31eb955c8c550444baf8b43b394d571.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQC4NIECAKA76T5WQ%2F20260919%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260919T070641Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJHMEUCIQCLfTio7SL9Lvw8Fex1UKxIvAPPKBI95gMPZnap6CoWiQIgMyWJxlyab3Iw%2B59Lwz6Hby3hqnoJsEAvDeqLC5V3FEwq5QMIVxAAGgwwMDYyMDE4MTEwNzIiDMBCSFrnHoq%2BkKPPtirCA1z7UIbi%2FknXDKY%2F0KxoRGfAgskMApiijbezAjMxKvhOCQjjuYI9v9b4AQUktfOPHCl%2FrqdyXOS3mNhak8EniZrxqRDWx2hiWM0dl4K5hDBmJkKH9xWFc07gcVtFYt9oIB32YQThKOXTQGCGAY%2BgLd4SYfzoWNTvnXWRVpXTgF6%2BATriM1oMVaXgXKqHXF316mhaPTFHWHRrKnM0bCKsaVNZV%2BrWTJKS%2FwcLVmsF8Asf3LD8L944d1R1QLPUAVA1Iw%2BEIvGMSD4sS1jHr%2BxTO28LGz75m95NRTedmbrtZyali%2FlTErJ78KI%2BEXFagR2MZWoLvNOAxJftBwImQAB30VdjNMDltdp9mPNAucx1bhZu8rhQ47ZZ1S04FTowJCwH9vrFz4rGeCPLTvJIcQrtndk9bVzP1Ocr8eSqEpcr%2FerL5PI0M5CsaCn%2FCc7XYAxMkQleNcwkCJLtXpBNAVIgFa%2BDhO7OOX478ncIbK4D%2FcxDpAB0I6AHs1SBIKVb3TYRDA7vXn%2BQlKnhhRlCRccM7ewJqN0GzyPDWCV17BG04SypsgqmglwobhB4%2FtXTa5vvdbI%2F5bDWtSzunKGY6BhBeijuYDCyz7jVBjqlAR8S6xKtiHutOc8qoPJFlYAL77SQRyGy%2B0Y8AKJUcsT6fqA76e3QKLSldbyM5W8Gb%2FcadyXvjXVYNt9bOy7XppP%2FtgOtxtoMYHqUSWz2mWiq8VFh5GN6lHbiQyLBYa5xt6GbTmGw5v97LRHi9Paude6KFVm1qkC4vuwgo64DQOFu1toZqMb1KFg77QDbcG3grtIl4rDkGbKoccjLOIG02oizE7HGTQ%3D%3D&X-Amz-SignedHeaders=host&X-Amz-Signature=fb3a6f9c6c9315051be9e77c6466b42f0b45620f078c87ed731cc186a42a7296"
+    },
+    "createdAt": "1 day",
+    "lastActive": null,
+    "description": "We’re looking for an AI Reliability Intern to help us understand where our customer’s AI agent workflows go wrong. The work requires critical thinking and pattern matching beyond technical skills. We’re not trying to find where our agent workflows aren’t working as intended, we’re going beyond that to help our customers define better workflow agents so that they can be succesful.\\\n\\\nYou’ll:\\\n\\\n• Review agent workflow traces and flag anomalies, bugs, and missing cases.\\\n• Write simple Python scripts to spot patterns and automate checks.\\\n• Reproduce issues and clearly document what happened.\\\n• Work with the engineering team to verify fixes.\\\n\\\nYou should be curious, detail-oriented, comfortable with basic Python and data analysis, and interested in LLMs or AI agents. Prior professional experience isn’t required - projects and coursework count.\\\n\\\nThis internship is open to candidates working remotely or onsite in India, with flexible hours. Please note this is a full-time role.\\\n\\\n**About Us**\n\nWe’re a closely-knit team that believes the only thing that matters in the age of AI is making our customers succesful. We’re all hands-on engineers who are excited by making AI work for everyone, not just those at the frontier.",
+    "interview_process": "We try to keep things simple and efficient. 45 minute interview, followed by offer with 2-week probationary period."
+   }
+  },
+  "json_ld": {
+   "@context": "https://schema.org/",
+   "@type": "JobPosting",
+   "title": "AI Reliability Intern",
+   "url": "https://www.ycombinator.com/companies/patched/jobs/hPsUPP4-ai-reliability-intern",
+   "description": "<p>We’re looking for an AI Reliability Intern to help us understand where our customer’s AI agent workflows go wrong. The work requires critical thinking and pattern matching beyond technical skills. We’re not trying to find where our agent workflows aren’t working as intended, we’re going beyond that to help our customers define better workflow agents so that they can be succesful.<br>\n<br>\nYou’ll:<br>\n<br>\n• Review agent workflow traces and flag anomalies, bugs, and missing cases.<br>\n• Write simple Python scripts to spot patterns and automate checks.<br>\n• Reproduce issues and clearly document what happened.<br>\n• Work with the engineering team to verify fixes.<br>\n<br>\nYou should be curious, detail-oriented, comfortable with basic Python and data analysis, and interested in LLMs or AI agents. Prior professional experience isn’t required - projects and coursework count.<br>\n<br>\nThis internship is open to candidates working remotely or onsite in India, with flexible hours. Please note this is a full-time role.<br>\n<br>\n<strong>About Us</strong></p>\n<p>We’re a closely-knit team that believes the only thing that matters in the age of AI is making our customers succesful. We’re all hands-on engineers who are excited by making AI work for everyone, not just those at the frontier.</p>\n",
+   "datePosted": "2026-09-18T04:58:58Z",
+   "employmentType": "INTERN",
+   "hiringOrganization": {
+    "@type": "Organization",
+    "name": "Patched",
+    "sameAs": "https://patched.codes",
+    "logo": "https://bookface-images.s3.amazonaws.com/small_logos/fb149bb2976430923620abcb50a97acc06ab22c0.png"
+   },
+   "baseSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": {
+     "@type": "QuantitativeValue",
+     "unitText": "YEAR",
+     "minValue": 25000,
+     "maxValue": 75000
+    }
+   },
+   "interview_process": "<p>We try to keep things simple and efficient. 45 minute interview, followed by offer with 2-week probationary period.</p>\n",
+   "jobLocation": [
+    {
+     "@type": "Place",
+     "address": {
+      "@type": "PostalAddress",
+      "addressLocality": null,
+      "addressRegion": null,
+      "addressCountry": "IN"
+     }
+    }
+   ],
+   "jobLocationType": "TELECOMMUTE",
+   "applicantLocationRequirements": {
+    "@type": "Country",
+    "name": "US"
+   }
+  }
+ }
+}

@@ -239,6 +239,20 @@ def country_code(name: str) -> str | None:
     return None
 
 
+def is_country_code(value: str) -> bool:
+    """True for a known ISO alpha-2 code, read as a COUNTRY.
+
+    `country_code` resolves "CA" and "IN" as US states on purpose. Boards that
+    write locations as ISO codes throughout (YC's `"CA / Remote (CA)"` is
+    Canada) need the other reading, and this is it.
+    """
+    return len(value.strip()) == 2 and value.strip().upper() in _KNOWN_CODES
+
+
+def is_us_state(value: str) -> bool:
+    return value.strip().lower() in _US_STATES
+
+
 def region_members(name: str) -> frozenset[str] | None:
     return REGION_MEMBERS.get(_clean_token(name).casefold())
 
@@ -328,3 +342,64 @@ def format_utc_offset(offset: float) -> str:
         hours += 1
         minutes = 0
     return f"UTC{sign}{hours:02d}:{minutes:02d}"
+
+
+# --------------------------------------------------------------------------
+# Prose that narrows a "worldwide" claim
+# --------------------------------------------------------------------------
+# Several boards call a role worldwide when the employer simply stated nothing:
+# Wellfound renders it "Everywhere", We Work Remotely files 97% of its rows
+# under "Anywhere in the World", Remote OK leaves `location` blank. The JD text
+# is then the only place a restriction shows up. Ordered: first match wins.
+RESTRICTION_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\b(?:with)?in\s+the\s+(United States|USA|US)\b", re.I), "United States"),
+    (re.compile(r"\bUS[- ]based\b|\bU\.S\.[- ]based\b", re.I), "United States"),
+    (re.compile(r"\b(?:must|required to)\s+(?:be\s+)?(?:located|reside|live)\s+in\s+the\s+([A-Z][A-Za-z .]+)", re.I), ""),
+    (re.compile(r"\b(?:must|required to)\s+(?:be\s+)?(?:located|reside|live)\s+in\s+([A-Z][A-Za-z .]+)", re.I), ""),
+    (re.compile(r"\bauthoriz(?:ed|ation) to work in the\s+([A-Z][A-Za-z .]+)", re.I), ""),
+    (re.compile(r"\bonly\s+(?:accepting|considering)\s+.{0,40}?\bin\s+([A-Z][A-Za-z .]+)", re.I), ""),
+]
+
+# A pay sentence names a country without restricting anyone: Reddit's "we share
+# base salary ranges for all US-based job postings", Canonical's "compensation
+# for US based candidates". This is the false positive that kept the check off
+# Jobicy.
+_PAY_SENTENCE = re.compile(
+    r"salar|compensat|\bpay\b|base\s+range|\$\s?\d|benefits?\s+(?:vary|outside)", re.I
+)
+# Same splitter as `app/blockers.py`: a full stop ends a sentence only after a
+# lowercase word, so "U.S." does not.
+_SENTENCE_SPLIT = re.compile(r"(?<=[a-z]{2}[.!?])\s+|\n+|•")
+
+
+def _match_restriction(text: str) -> str | None:
+    for pattern, fixed in RESTRICTION_PATTERNS:
+        match = pattern.search(text)
+        if not match:
+            continue
+        name = fixed or (match.group(1) if match.groups() else "")
+        name = name.strip().rstrip(".,;")
+        if name and country_code(name):
+            return name
+    return None
+
+
+def restriction_from_prose(text: str | None, *, skip_pay_sentences: bool = False) -> str | None:
+    """Find a country restriction stated in free text, or None.
+
+    Deliberately conservative: it only reports a restriction it can name, so an
+    unparsed sentence leaves eligibility as-is rather than inventing a limit.
+
+    `skip_pay_sentences` reads sentence by sentence and ignores pay sentences.
+    Wellfound predates it and reads the whole text at once.
+    """
+    if not text:
+        return None
+    if not skip_pay_sentences:
+        return _match_restriction(text)
+    for sentence in _SENTENCE_SPLIT.split(text):
+        if sentence and not _PAY_SENTENCE.search(sentence):
+            found = _match_restriction(sentence)
+            if found:
+                return found
+    return None

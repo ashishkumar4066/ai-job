@@ -1,0 +1,88 @@
+{
+ "page": "/remote-jobs/[urlSearchQuery]",
+ "query": {
+  "countries": "IN",
+  "urlSearchQuery": "python"
+ },
+ "buildId": "ZjB5YOjGnUm1WxOt3jXyE",
+ "props": {
+  "pageProps": {
+   "arcJobs": [
+    {
+     "randomKey": "pkvft6v137",
+     "title": "AI Trading Developer",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "applied": null,
+     "timeZone": "no-preference",
+     "timeZoneOffset": null,
+     "clientTimeZoneRestriction": null,
+     "requiredCountries": [],
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "overlapHours": null,
+     "experienceLevel": "mid",
+     "urlString": "ai-trading-developer",
+     "postedAt": 1789658467,
+     "maxHourlyRate": 45,
+     "minHourlyRate": 30,
+     "company": {
+      "randomKey": null
+     },
+     "categories": [
+      {
+       "name": "Pandas",
+       "urlString": "pandas"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "SQL",
+       "urlString": "sql"
+      }
+     ]
+    },
+    {
+     "randomKey": "p85gjg24ve",
+     "title": "Quantitative Strategy Developer",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "applied": null,
+     "timeZone": "no-preference",
+     "timeZoneOffset": null,
+     "clientTimeZoneRestriction": null,
+     "requiredCountries": [],
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "overlapHours": null,
+     "experienceLevel": "senior",
+     "urlString": "quantitative-strategy-developer",
+     "postedAt": 1785277461,
+     "maxHourlyRate": 100,
+     "minHourlyRate": 20,
+     "company": {
+      "randomKey": null
+     },
+     "categories": [
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "C#",
+       "urlString": "c_sharp"
+      },
+      {
+       "name": "NinjaScript",
+       "urlString": "ninjascript"
+      }
+     ]
+    }
+   ],
+   "externalJobs": [],
+   "totalExternalJobCount": 3099
+  }
+ }
+}

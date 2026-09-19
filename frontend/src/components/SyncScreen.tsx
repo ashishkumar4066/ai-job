@@ -7,6 +7,7 @@ import {
   RadarIcon,
   XCircle,
 } from "lucide-react";
+import { sourceLabel } from "@/lib/format";
 import type { IngestStatus, SourceState } from "@/lib/types";
 import { cx } from "./primitives";
 
@@ -49,7 +50,7 @@ function SourceRow({
       />
       <span className="min-w-0 flex-1 truncate text-ink">
         {company}
-        <span className="ml-1.5 text-[11px] text-subtle capitalize">{ats}</span>
+        <span className="ml-1.5 text-[11px] text-subtle">{sourceLabel(ats)}</span>
       </span>
       <span className={cx("shrink-0 text-[12px] tabular-nums", tone)} title={error ?? undefined}>
         {state === "done" ? `${fetched.toLocaleString()} jobs` : label}
@@ -95,7 +96,9 @@ export function SyncScreen({
         <div className="relative flex flex-col items-center text-center">
           <span
             className={cx(
-              "relative grid size-14 place-items-center overflow-hidden rounded-2xl text-white",
+              // No overflow-hidden: it would clip the pulse ring, which is drawn on a
+              // pseudo-element outside the box. The gloss below is rounded instead.
+              "relative grid size-14 place-items-center rounded-2xl text-white",
               error
                 ? "bg-gradient-to-br from-danger to-danger/70"
                 : "bg-gradient-to-br from-accent to-accent-strong",
@@ -105,7 +108,7 @@ export function SyncScreen({
           >
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-2xl bg-gradient-to-b from-white/25 to-transparent"
             />
             {error ? (
               <AlertTriangle size={24} className="relative" />

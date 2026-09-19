@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2, PlugZap, Send } from "lucide-react";
 import { api, ApiError, filtersToFilterSet, transferToMatches } from "@/lib/api";
-import { useDebounced, useHotkeys, useLastVisit, useTheme } from "@/lib/hooks";
+import { useDebounced, useHotkeys, useLastVisit, usePrefetchJob, useTheme } from "@/lib/hooks";
 import { useDailyRefresh } from "@/lib/useDailyRefresh";
 import { useFilters } from "@/lib/useFilters";
 import type { Job } from "@/lib/types";
@@ -18,6 +18,14 @@ import { TopBar } from "@/components/TopBar";
 import { EmptyState, Kbd } from "@/components/primitives";
 
 const PAGE_SIZE = 100;
+
+// The page re-renders on every keystroke in the search box (the draft query
+// lives here) and on every poll of a running sweep. These panels depend on
+// neither, so with stable props they skip those renders entirely.
+const MemoSideNav = memo(SideNav);
+const MemoStatsStrip = memo(StatsStrip);
+const MemoFilterBar = memo(FilterBar);
+const MemoJobTable = memo(JobTable);
 
 export default function App() {
   const queryClient = useQueryClient();
@@ -150,6 +158,31 @@ export default function App() {
     patch({ newOnly: true, sort: "first_seen_at", order: "desc" });
   }, [setView, patch]);
 
+  // With the drawer open, warm the jobs either side so j/k lands on a JD that
+  // is already loaded.
+  const prefetchJob = usePrefetchJob();
+  useEffect(() => {
+    if (selectedIndex < 0) return;
+    for (const neighbour of [jobs[selectedIndex + 1], jobs[selectedIndex - 1]]) {
+      if (neighbour) prefetchJob(neighbour.id);
+    }
+  }, [selectedIndex, jobs, prefetchJob]);
+
+  // `cancelRefetch: false` joins a page request already in flight. The default
+  // cancels and restarts it, and the table asks on every scroll frame until the
+  // fetch state catches up, so one fast scroll requested the same page ~9 times.
+  const { fetchNextPage } = jobsQuery;
+  const loadMore = useCallback(() => void fetchNextPage({ cancelRefetch: false }), [fetchNextPage]);
+
+  const resetAll = useCallback(() => {
+    setDraftQuery("");
+    reset();
+  }, [reset]);
+  const toggleNewOnly = useCallback(
+    () => patch({ newOnly: !filters.newOnly }),
+    [patch, filters.newOnly],
+  );
+
   const selectedJob = selectedIndex >= 0 ? jobs[selectedIndex] : undefined;
   const connectionError =
     jobsQuery.error instanceof ApiError && jobsQuery.error.status === 0
@@ -167,7 +200,7 @@ export default function App() {
         <div className="grain" />
       </div>
 
-      <SideNav
+      <MemoSideNav
         view={view}
         onViewChange={setView}
         open={navOpen}
@@ -230,25 +263,22 @@ export default function App() {
           </div>
         ) : (
           <>
-            <StatsStrip
+            <MemoStatsStrip
               facets={facetsQuery.data}
               matching={total}
               loading={jobsQuery.isLoading || facetsQuery.isLoading}
               hasLastVisit={Boolean(lastVisit)}
               newOnlyActive={filters.newOnly}
-              onToggleNewOnly={() => patch({ newOnly: !filters.newOnly })}
+              onToggleNewOnly={toggleNewOnly}
             />
 
-            <FilterBar
+            <MemoFilterBar
               filters={filters}
               facets={facetsQuery.data}
               activeCount={activeCount}
               onPatch={patch}
               onToggle={toggleInList}
-              onReset={() => {
-                setDraftQuery("");
-                reset();
-              }}
+              onReset={resetAll}
               hasLastVisit={Boolean(lastVisit)}
             />
 
@@ -293,20 +323,17 @@ export default function App() {
               </div>
             )}
 
-            <JobTable
+            <MemoJobTable
               jobs={jobs}
               total={total}
               loading={jobsQuery.isLoading}
               loadingMore={jobsQuery.isFetchingNextPage}
               hasMore={Boolean(jobsQuery.hasNextPage)}
-              onLoadMore={jobsQuery.fetchNextPage}
+              onLoadMore={loadMore}
               selectedId={selectedJobId}
               onSelect={selectJob}
               lastVisit={lastVisit}
-              onReset={() => {
-                setDraftQuery("");
-                reset();
-              }}
+              onReset={resetAll}
             />
 
             <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-subtle">

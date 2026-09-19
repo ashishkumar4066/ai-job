@@ -473,6 +473,7 @@ export function PrefsPanel({
           onFinished={onRunFinished}
           onRunningChange={onRunningChange}
           onNeedsConfirm={onOpen}
+          onDeepReadDone={onClose}
         />
       </div>
     </Modal>

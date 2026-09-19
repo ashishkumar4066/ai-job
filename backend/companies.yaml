@@ -118,6 +118,196 @@ companies:
       - { role: frontend-engineer, location: india }
       - { role: machine-learning-engineer, location: india }
 
+  # Jobicy — free JSON feed of remote jobs, each tagged with the region it
+  # hires from (`jobGeo`). Verified live 2026-09-17.
+  #
+  # ONE query on purpose. The terms say poll "a few times per day" and "must
+  # not exceed once per hour", and `geo=apac` already contains every
+  # `geo=anywhere` row (72 vs 47, all 47 included), so a second query would
+  # only spend a call. There is no `india` geo; an unknown slug answers 200
+  # with an `error` and the adapter fails the source loudly.
+  - company: Jobicy
+    ats: jobicy
+    careers_url: https://jobicy.com/jobs
+    min_fetch_interval_minutes: 60
+    queries:
+      - { count: 200, industry: engineering, geo: apac }
+
+  # The Muse — free JSON API, mostly large employers. Verified live 2026-09-17.
+  #
+  # Every `location` spelling below was checked against returned rows, because
+  # an unknown one fails OPEN: `Bengaluru, India` and `India` silently return
+  # the remote set instead of nothing. Pune, Noida and New Delhi also failed to
+  # match a single row. Remote rows come back with any location, so
+  # "Flexible / Remote" is not listed.
+  #
+  # Expect a truncated fetch: this totals ~3,370 rows and the API stops at page
+  # 99 (2,000 rows), in no date order. The closure sweep is skipped for it.
+  # Measured yield from those 2,000: 127 eligible and posted <=30d, of which
+  # 10 offer remote work — the rest are India-office roles.
+  - company: The Muse
+    ats: themuse
+    careers_url: https://www.themuse.com/search/
+    # Up to 100 calls a sweep (unkeyed limit 500/hour, keyed 12,000/hour).
+    min_fetch_interval_minutes: 60
+    queries:
+      - category: Software Engineering
+        level: [Mid Level, Senior Level]
+        # Quoted: unquoted, YAML splits "Bangalore, India" at the comma.
+        location:
+          - "Bangalore, India"
+          - "Hyderabad, India"
+          - "Chennai, India"
+          - "Mumbai, India"
+          - "Gurgaon, India"
+
+  # YC jobs — the public ycombinator.com/jobs pages (Work at a Startup itself
+  # needs a login). Plain HTTP; the page embeds its data. Verified 2026-09-19.
+  #
+  # `role` and `location` are URL slugs, and an unknown one FAILS OPEN: YC
+  # answers 200 with the default list. The adapter refuses such a page, so a
+  # typo fails the source loudly. Valid roles: software-engineer, designer,
+  # product-manager, recruiting-hr, sales-manager, marketing, support,
+  # operations, science. Valid locations include remote, india,
+  # san-francisco, new-york. There is no pagination: remote is ~29 jobs and
+  # india ~27, the whole set each.
+  #
+  # `mode: companies` gets past those caps: hiring companies come from YC's
+  # public directory index (its Algolia key is read off /companies each run,
+  # never stored), then every open role from each company's /jobs page. 251
+  # companies matched India / Fully Remote on 2026-09-19; `YC_COMPANY_BUDGET`
+  # caps the pages read per run, so polled at most every 12h.
+  - company: Y Combinator
+    ats: yc
+    careers_url: https://www.ycombinator.com/jobs
+    min_fetch_interval_minutes: 720
+    queries:
+      - { role: software-engineer, location: remote }
+      - { role: software-engineer, location: india }
+      - { mode: companies, regions: [India, Fully Remote] }
+
+  # Arc.dev — remote jobs with a per-job `requiredCountries`. Plain HTTP; the
+  # page embeds its data. Verified 2026-09-19.
+  #
+  # Each entry is ONE listing page: `category` is a path segment
+  # (/remote-jobs/python), the rest are query params. Pages cannot be walked
+  # (`?page=` is ignored), so each filter adds only its first 30 Arc jobs + 30
+  # external re-posts. These seven gave 35 distinct India/worldwide candidates.
+  # Polled at most every 6h out of politeness (robots.txt gives named crawlers
+  # a 10s delay). Every sweep is truncated by design, so closure never runs
+  # here; the validity pass's "missed last sweep" check covers staleness.
+  - company: Arc.dev
+    ats: arc
+    careers_url: https://arc.dev/remote-jobs
+    min_fetch_interval_minutes: 360
+    queries:
+      - { countries: IN, jobRoles: engineering }
+      - { countries: IN, jobRoles: engineering, jobTypes: permanent }
+      - { category: python, countries: IN }
+      - { category: ai, countries: IN }
+      - { category: reactjs, countries: IN }
+      - { category: nodejs, countries: IN }
+      - { category: typescript, countries: IN }
+
+  # Cutshort — India tech-hiring board, read through the JSON its own listing
+  # pages use (/backend-api/webpage/jobs/{hub}). Verified 2026-09-19.
+  #
+  # `hub` is a listing slug. `remote-jobs` holds ~5,600 jobs, newest first, 50
+  # a page; a sweep stops at CUTSHORT_MAX_AGE_DAYS (30d is ~4 pages), so every
+  # sweep is truncated and closure never runs. Engineering-only hubs exist
+  # (e.g. backend-developer-jobs) but mix in on-site roles.
+  - company: Cutshort
+    ats: cutshort
+    careers_url: https://cutshort.io/jobs/remote-jobs
+    min_fetch_interval_minutes: 360
+    queries:
+      - { hub: remote-jobs }
+
+  # Hirist — India-only tech board, read through its site's API
+  # (gladiator.hirist.tech). Verified 2026-09-19.
+  #
+  # Paced at 10s a request (its robots.txt `Crawl-delay: 10`), so a sweep is
+  # several minutes: 4 categories x up to 3 pages, plus up to 20 JD fetches for
+  # remote rows with a wanted title. Polled at most every 12h. Categories:
+  # 1 backend, 16 software dev / full stack, 14 AI/ML, 2 frontend; also 8
+  # DevOps and 15 data. `{ query: "..." }` runs a free-text search instead.
+  - company: Hirist
+    ats: hirist
+    careers_url: https://www.hirist.tech/
+    min_fetch_interval_minutes: 720
+    queries:
+      - { categoryId: 1 }
+      - { categoryId: 16 }
+      - { categoryId: 14 }
+      - { categoryId: 2 }
+
+  # Built In — US-centric board whose `country=IND` filter lists roles open to
+  # India. HTML only; cards parsed, JD from each detail page's JSON-LD.
+  # Verified 2026-09-19: ~113 India jobs under remote/dev-engineering.
+  #
+  # `path` is a category path under /jobs. robots.txt disallows `?search=` and
+  # facet paths like `/jobs/*mid-level`, so the adapter refuses a `search`
+  # query. Deep pages never run dry, so every sweep is truncated.
+  - company: Built In
+    ats: builtin
+    careers_url: https://builtin.com/jobs/remote/dev-engineering
+    min_fetch_interval_minutes: 720
+    queries:
+      - { path: remote/dev-engineering, country: IND }
+
+  # Remote OK — free JSON feed (remoteok.com/api). Verified 2026-09-19.
+  #
+  # Terms: link back to the Remote OK URL (followed, no nofollow) and name
+  # Remote OK as the source; `apply_url` is its URL and the UI credits it.
+  # Each `tag` returns its newest ~100 rows with no paging, so every sweep is
+  # truncated and closure never runs. An unknown tag returns nothing. A blank
+  # `location` is read as a worldwide claim, narrowed by the JD prose.
+  - company: Remote OK
+    ats: remoteok
+    careers_url: https://remoteok.com/remote-dev-jobs
+    min_fetch_interval_minutes: 360
+    queries:
+      - { tag: dev }
+      - { tag: engineer }
+      - { tag: backend }
+
+  # We Work Remotely — public per-category RSS feeds. Verified 2026-09-19.
+  #
+  # `category` is the feed slug in /categories/{slug}.rss. The category feeds
+  # are uncapped, so closure runs. An unknown slug answers 301 with no body
+  # and fails the source. Its "Anywhere in the World" region is on 97% of
+  # rows, US-only ones included, so it is narrowed by the posting's
+  # headquarters line and prose.
+  - company: We Work Remotely
+    ats: weworkremotely
+    careers_url: https://weworkremotely.com/categories/remote-programming-jobs
+    min_fetch_interval_minutes: 360
+    queries:
+      - { category: remote-full-stack-programming-jobs }
+      - { category: remote-back-end-programming-jobs }
+      - { category: remote-front-end-programming-jobs }
+      - { category: remote-devops-sysadmin-jobs }
+      - { category: remote-programming-jobs }
+
+  # RemoteYeah — HTML listing pages per role and country. Verified 2026-09-19.
+  #
+  # `path` is a RemoteYeah listing slug; `remote-{role}-jobs-in-india` lists
+  # roles open to India, worldwide ones included. An unknown slug redirects to
+  # the all-roles page, which the adapter detects and fails on. A sweep stops
+  # at REMOTEYEAH_MAX_AGE_DAYS, so it is always truncated. Role slugs are in
+  # the "jobs in India" footer of remoteyeah.com/remote-jobs-in-india.
+  - company: RemoteYeah
+    ats: remoteyeah
+    careers_url: https://remoteyeah.com/remote-jobs-in-india
+    min_fetch_interval_minutes: 720
+    queries:
+      - { path: remote-software-engineer-jobs-in-india }
+      - { path: remote-backend-engineer-jobs-in-india }
+      - { path: remote-full-stack-engineer-jobs-in-india }
+      - { path: remote-artificial-intelligence-engineer-jobs-in-india }
+      - { path: remote-machine-learning-engineer-jobs-in-india }
+      - { path: remote-platform-engineer-jobs-in-india }
+
   # --- Curated ATS: India-friendly, USD-paying, remote-first ---------------
   - company: GitLab
     ats: greenhouse

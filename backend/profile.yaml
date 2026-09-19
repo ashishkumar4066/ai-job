@@ -5,8 +5,8 @@
 # backing up, and the résumé PDF beside it is not machine-readable.
 #
 # Extracted from data/Ashish_AI_FullStack_v2.pdf on 2026-09-13 (v1 on
-# 2026-09-08). REVIEW IT. Every fit score inherits whatever is wrong here, so a
-# mis-read year count or a missing skill silently biases all 741 rows.
+# 2026-09-08); `evidence` / `unproven` added 2026-09-19. REVIEW IT. Every
+# fit score inherits whatever is wrong here, so a mis-read year count or a missing skill silently biases all 741 rows.
 #
 # Editing this file changes `profile_version` (a hash of the normalized
 # content), which invalidates cached match scores. That is deliberate — a score
@@ -108,6 +108,8 @@ skills:
     vision llm: 2
     document extraction: 2
     text-to-sql: 2
+    human-in-the-loop: 2
+    reranking: 1
     gemini: 2
     mistral: 1
     groq: 1
@@ -142,6 +144,7 @@ skills:
     redux: 1
     tailwind: 1
     material ui: 1
+    streamlit: 1
   data:
     postgres: 2
     mongodb: 2
@@ -196,6 +199,68 @@ gaps:
   salesforce: 2
   sap: 2
   kafka: 1
+
+# ---------------------------------------------------------------------------
+# What the LLM reads. `skills` above only says a word appears on the résumé;
+# this says what was actually built with it, and how deep.
+#
+#   depth: production  = shipped at work, used by real users
+#   depth: project     = side project only
+#
+# Keep each `proof` to one dense line with the numbers: every word here is
+# billed on every job the LLM reads. Only facts from the résumé belong here;
+# Stage 3 document generation may re-word them, never add to them.
+# ---------------------------------------------------------------------------
+evidence:
+  - area: LLM infrastructure & cost optimization
+    depth: production
+    proof: Built a token-metering and LLM observability platform from scratch, replacing Langfuse; request-level tracing, audit trails, five-tier request pricing; prompt caching cut LLM token cost ~90%.
+  - area: Agentic AI workflows
+    depth: production
+    proof: LangChain/LangGraph + Gemini agent with human-in-the-loop review, automating inspection creation; research effort -30%.
+  - area: RAG, Text-to-SQL, AI guardrails
+    depth: production
+    proof: Text-to-SQL engine from scratch with schema-grounded RAG and guardrails against destructive SQL and cross-tenant leakage; 75% accuracy across 200+ schemas.
+  - area: Multimodal / vision-LLM document extraction
+    depth: production
+    proof: Architected a Gemini vision-LLM extraction pipeline, 90% field-level accuracy; page images via GCS to a React UI.
+  - area: Model training & deployment (computer vision)
+    depth: production
+    proof: Trained a custom YOLOv11 document-layout model in PyTorch (2,500+ annotated images, 80% mAP@0.5) and deployed it on Google Cloud Run.
+  - area: Event-driven, real-time backend
+    depth: production
+    proof: Notification service on PostgreSQL WAL-based CDC; a Mistral LLM classifies and prioritizes events; alerts to 1,000+ users within 20s over WebSockets.
+  - area: Architecture, multi-tenant SaaS, auth
+    depth: production
+    proof: Re-architected a legacy monolith into a multi-tenant SaaS (Node.js, MongoDB), 10 isolated enterprise tenants; Java/React SSO (enterprise IdP + OTP); +20% throughput, 40% faster login.
+  - area: Full-stack web
+    depth: production
+    proof: React UIs for all of the above; earlier shipped a MERN real-time messaging platform (WebSockets, JWT) for 1,000+ users and a Jest-tested React rich-text editor reused across 7 products.
+  - area: Technical leadership
+    depth: production
+    proof: Lead engineer for the team's AI systems; owns architecture and end-to-end delivery, drives build-vs-buy decisions via RFCs, mentors 5 engineers.
+  - area: Cloud & delivery
+    depth: production
+    proof: GCP (Cloud Run, GCS), Docker, CI/CD, Git. No AWS, Azure or Kubernetes in production.
+  - area: Vector search & embeddings
+    depth: project
+    proof: CryptoLens - RAG agent over 2,000+ YouTube transcripts; BGE-M3 embeddings in Qdrant, hybrid search with temporal reranking, contradiction detection, citation-grounded answers (Groq Llama 3.3 70B + Gemini).
+
+# Capabilities the résumé does NOT show. Listed so the LLM names them as gaps
+# instead of guessing either way. Delete any line you can actually prove —
+# then add the proof to `evidence`.
+unproven:
+  - LLM fine-tuning (LoRA, RLHF, SFT)
+  - formal LLM evaluation pipelines / eval harnesses
+  - AWS, Azure, Kubernetes, Terraform
+  - high-traffic consumer scale (largest stated scale is 1,000+ users, 10 tenants)
+  - mobile apps
+  - people management (leads and mentors, no direct reports stated)
+
+domains:
+  - enterprise B2B SaaS
+  - document intelligence
+  - LLM platform / AI infrastructure
 
 experience:
   - company: AsInt

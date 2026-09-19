@@ -1,0 +1,56 @@
+{
+ "1670230": {
+  "data": {
+   "id": 1670230,
+   "title": "Freecharge Payment Technologies - Lead Software Development Engineer - Node.js Framework ",
+   "introText": "<p><b>Freecharge Business and Technology Services Limited</b><br/><br/><b>Build the Future of FinTech With Us : </b><br/><br/><b>Who We Are : </b><br/><br/>FreeChargeBiz, a subsidiary of Axis Bank Limited, is a FinTech organization building the future of digital financial products through technology and innovation. Backed by the strength of a leading financial institution, we combine the agility and pace of a startup with the stability and scale of a mature organization.<br/><br/>With a pan-India presence and 2,500+ team members, including 750+ technology professionals, our cross-functional teams build products at scale that impact millions of users every day.<br/><br/><b>How will you make an impact in this role ?</b><br/><br/>We are looking for a Lead Software Development Engineer (Node.js) who is passionate about building scalable, high-performance backend systems and driving technical excellence. In this role, you will lead the design and development of distributed applications, define system architecture, mentor engineers, and collaborate with cross-functional teams to build reliable, secure, and scalable products.<br/><br/>You will play a key role in architectural decisions, engineering best practices, and delivering high-quality software that powers mission-critical financial products.<br/><br/><b>Title : Lead Software Development Engineer (Node.js)</b><br/><br/><b>Location : Remote</b><br/><br/><b>Experience : 4 - 7 Yrs.</b><br/><br/><b>Education : Bachelor's / Master's in Software Engineering</b><br/><br/><b>What You'll Be Doing : </b><br/><br/>- You will lead the design, architecture, development, and deployment of scalable, high-performance enterprise applications that solve complex business problems.<br/><br/>- You will drive end-to-end system design, architecture discussions, and technical decision-making for backend platforms and distributed systems.<br/><br/>- You will design scalable, resilient, and secure microservices-based applications using Node.js, JavaScript/TypeScript, and modern backend technologies.<br/><br/>- You will define High-Level Design (HLD) and Low-Level Design (LLD), ensuring solutions are scalable, maintainable, and aligned with engineering best practices.<br/><br/>- You will build and optimize RESTful APIs, serverless applications, and event-driven architectures to support high-volume transactions.<br/><br/>- You will collaborate closely with Product Managers, Technical Program Managers, Architects, QA, DevOps, and Engin",
+   "jobJdContent": null,
+   "min": 4,
+   "max": 7,
+   "workFromHome": 1,
+   "createdTimeMs": 1789013985245,
+   "locations": [
+    {
+     "id": 37,
+     "name": "Gurgaon/Gurugram"
+    }
+   ],
+   "hasExpired": false,
+   "active": 1,
+   "jobDetailUrl": "https://www.hirist.tech/j/freecharge-payment-technologies-lead-software-development-engineer-node-js-framework-1670230"
+  }
+ },
+ "1670236": {
+  "data": {
+   "id": 1670236,
+   "title": "Wingify - Lead Backend Engineer - Java ",
+   "introText": "<p><b>About the Role : </b><br/><br/>We are looking for a Lead Software Development Engineer - Backend / Data Platform to provide technical leadership for backend and data-intensive systems powering analytics, reporting, experimentation, and behavioural insights across Wingify &lt;&gt; AB Tasty.<br/><br/>This is a hands-on technical leadership role, not an engineering management position.<br/><br/>You will continue to design systems and write production code, while also owning architecture and technical direction for significant workstreams.<br/><br/>You will work across Java, ClickHouse, BigQuery, Bigtable, Redis, Kafka, and GCP, solving problems spanning event ingestion, distributed processing, query engines, analytical storage, low-latency serving, and reporting.<br/><br/>A key part of the role is helping us evolve two mature analytics platforms toward a more unified data foundation without compromising the reliability of systems already serving production customers.<br/><br/><b>The Engineering Landscape : </b><br/><br/>Our production data platform includes : <br/><br/>- ClickHouse - self-hosted and ClickHouse Cloud for high-volume analytics and SaaS reporting<br/><br/>- BigQuery - large-scale analytics and data processing<br/><br/>- Bigtable - low-latency NoSQL serving<br/><br/>- Redis - caching, queues, and distributed coordination<br/><br/>- Kafka - high-volume real-time event streaming<br/><br/>- GCP - GCS, Pub/Sub, Dataflow, IAM, Secret Manager, GKE and VMs<br/><br/>- Java - Spring Boot and JVM-based backend services<br/><br/>- Apache Beam / Dataflow - distributed event and batch processing<br/><br/>- Go - adjacent SQL and reporting services<br/><br/>Alongside the existing platform, we are building capabilities around : <br/><br/>- Warehouse-native experiment computation in customer Snowflake/BigQuery environments<br/><br/>- Cross-platform visitor profiles and identity<br/><br/>- First-party cohorts and saved audiences<br/><br/>- Unified metrics across internal and customer warehouses<br/><br/>- Converging Wingify and AB Tasty analytics onto a common data foundation<br/><br/><b>What You'll Do : </b><br/><br/><b>Architecture & System Design : </b><br/><br/>- Own the technical architecture and design of significant backend/data-platform workstreams.<br/><br/>- Design distributed systems for high-volume event ingestion, analytical querying, data processing, and low-latency serving.<br/><br/>- Make architectural decisions around data modelling, storage",
+   "jobJdContent": null,
+   "min": 6,
+   "max": 8,
+   "workFromHome": 1,
+   "createdTimeMs": 1789014242102,
+   "locations": [
+    {
+     "id": 88,
+     "name": "Anywhere in India/Multiple Locations"
+    },
+    {
+     "id": 1,
+     "name": "Delhi NCR"
+    },
+    {
+     "id": 37,
+     "name": "Gurgaon/Gurugram"
+    },
+    {
+     "id": 3,
+     "name": "Bangalore"
+    }
+   ],
+   "hasExpired": false,
+   "active": 1,
+   "jobDetailUrl": "https://www.hirist.tech/j/wingify-lead-backend-engineer-java-1670236"
+  }
+ }
+}

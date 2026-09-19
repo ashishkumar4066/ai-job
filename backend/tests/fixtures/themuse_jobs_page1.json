@@ -1,0 +1,96 @@
+{
+ "page": 1,
+ "page_count": 2,
+ "items_per_page": 20,
+ "took": 6,
+ "timed_out": false,
+ "total": 4,
+ "aggregations": {},
+ "results": [
+  {
+   "contents": "<p><b>Who We Are</b><br><br>At Kyndryl, we run and reimagine the mission-critical technology systems that drive advantage for the world's leading businesses.  We are at the heart of progress; with proven expertise and a continuous flow of AI-powered insight, enabling smarter decisions, faster innovation, and a lasting competitive edge. For our people-Kyndryls-that means doing purposeful work that powers human progress. Join us and experience a flexible, supportive environment where your well-being is prioritized and your potential can thrive.<br><br><b>The Role</b><br><br><b>The Role:</b><br>As a Senior Technical Consultant (Shift Lead) in the Shared Data/ODSP Factory, you will lead on‑shift technical delivery for tenant‑to‑tenant migrations of collaboration content across Microsoft 365, typically SharePoint Online, OneDrive for Business and associated Teams/M365 Group content structures. You will run a controlled, metrics‑driven migration factory, ensuring runbooks are executed consistently, migrations are scheduled and monitored, permissions/metadata fidelity is validated and defects are remediated efficiently. You will be accountable for shift throughput, quality gates, evidence",
+   "name": "Technical Consultant - Shift Lead (Shared Data/ODSP Tenant Migration)",
+   "type": "external",
+   "publication_date": "2026-08-12T18:45:41Z",
+   "short_name": "technical-consultant-shift-lead-shared-dataodsp-tenant-migration",
+   "model_type": "jobs",
+   "id": 22053936,
+   "locations": [
+    {
+     "name": "Bangalore, India"
+    },
+    {
+     "name": "Chennai, India"
+    },
+    {
+     "name": "Flexible / Remote"
+    },
+    {
+     "name": "Greater Noida, India"
+    },
+    {
+     "name": "Hyderabad, India"
+    }
+   ],
+   "categories": [
+    {
+     "name": "Software Engineering"
+    }
+   ],
+   "levels": [
+    {
+     "name": "Mid Level",
+     "short_name": "mid"
+    }
+   ],
+   "tags": [],
+   "refs": {
+    "landing_page": "https://www.themuse.com/jobs/kyndryl/technical-consultant-shift-lead-shared-dataodsp-tenant-migration"
+   },
+   "company": {
+    "id": 15000490,
+    "short_name": "kyndryl",
+    "name": "Kyndryl"
+   }
+  },
+  {
+   "contents": "<p>At Sunrun, we're on a mission to change the way the world interacts with energy, and we're building a company and brand that puts power at the center of life. To do it, we're designing a dynamic culture where employee development, well-being, and safety come first. It's why we've become the #1 home solar and battery company in America. We're unlike any other residential energy company. Our vertically integrated model gives us total control over every part of the energy lifecycle - from sale through installation and beyond - so you can find endless opportunities for growth. Come join a career you can grow in and a culture you can run with.<br><br>Who We Are <br><br>We're on a mission to make energy more reliable and affordable for more people. We provide an opportunity with storage and solar to help people access greater energy independence without the big upfront costs. Sunrun is the largest dedicated residential solar and storage company in the country and has a mission to bring stably priced resilient power to the masses.<br><br><b>Overview</b><br><br>The Technical Engineering Lead serves as SnapNrack's technical authority for structural engineering, engineering calculations, ",
+   "name": "Technical Engineering Lead",
+   "type": "external",
+   "publication_date": "2026-09-03T21:01:54Z",
+   "short_name": "technical-engineering-lead",
+   "model_type": "jobs",
+   "id": 22029789,
+   "locations": [
+    {
+     "name": "Flexible / Remote"
+    }
+   ],
+   "categories": [
+    {
+     "name": "Software Engineering"
+    }
+   ],
+   "levels": [
+    {
+     "name": "Senior Level",
+     "short_name": "senior"
+    }
+   ],
+   "tags": [
+    {
+     "name": "Fast Growing Companies",
+     "short_name": "fast-growing-companies"
+    }
+   ],
+   "refs": {
+    "landing_page": "https://www.themuse.com/jobs/sunrun/technical-engineering-lead"
+   },
+   "company": {
+    "id": 1484,
+    "short_name": "sunrun",
+    "name": "Sunrun"
+   }
+  }
+ ]
+}

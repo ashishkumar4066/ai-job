@@ -118,6 +118,12 @@ class Settings(BaseSettings):
     # particular answers HTTP 200 with `{"jobs": []}` for an unknown slug.
     guard_empty_fetches: bool = Field(default=True)
 
+    # --- The Muse -------------------------------------------------------------
+    # Required by the terms "for any use beyond testing", though the API still
+    # answers without one: https://www.themuse.com/developers/api/v2. Unkeyed is
+    # 500 calls/hour; the registered key measured 12,000. A sweep spends <=100.
+    themuse_api_key: str | None = None
+
     # --- Wellfound / Firecrawl ----------------------------------------------
     # Wellfound has no public API and blocks plain HTTP clients, so its adapter
     # renders pages through Firecrawl. Without a key the source is skipped, not
@@ -142,6 +148,46 @@ class Settings(BaseSettings):
     wellfound_verify_details: bool = Field(default=True)
     # Ceiling on stage-2 detail fetches per run — one Firecrawl credit each.
     wellfound_detail_budget: int = Field(default=60, ge=0)
+
+    # --- YC jobs / Arc.dev ----------------------------------------------------
+    # Both are read off public HTML pages with plain HTTP (no Firecrawl). The
+    # gaps below are self-imposed politeness, not documented limits: YC's
+    # robots.txt sets no crawl delay; Arc's sets none for `*` and 10s for
+    # named crawlers. Detail pages are fetched only for India/worldwide
+    # candidates, and each budget caps how many per run.
+    yc_request_interval_seconds: float = Field(default=1.0, ge=0)
+    yc_detail_budget: int = Field(default=40, ge=0)
+    arc_request_interval_seconds: float = Field(default=3.0, ge=0)
+    arc_detail_budget: int = Field(default=40, ge=0)
+    # YC `companies` queries read one page per hiring company (251 matched
+    # India/Fully Remote on 2026-09-19), so they are capped per run.
+    yc_company_budget: int = Field(default=80, ge=0)
+
+    # --- Cutshort / Hirist / Built In ---------------------------------------
+    # Cutshort and Hirist are JSON endpoints behind their own sites; Built In
+    # is HTML. All three list newest first, so a sweep stops at `*_max_age_days`
+    # instead of walking thousands of old rows. Hirist's 10s gap is the
+    # `Crawl-delay: 10` its site's robots.txt asks for, applied to its API too.
+    cutshort_request_interval_seconds: float = Field(default=1.0, ge=0)
+    cutshort_max_pages: int = Field(default=10, ge=1)
+    cutshort_max_age_days: int = Field(default=30, ge=1)
+    hirist_request_interval_seconds: float = Field(default=10.0, ge=0)
+    hirist_max_pages: int = Field(default=3, ge=1)
+    hirist_max_age_days: int = Field(default=30, ge=1)
+    hirist_detail_budget: int = Field(default=20, ge=0)
+    builtin_request_interval_seconds: float = Field(default=2.0, ge=0)
+    builtin_max_pages: int = Field(default=15, ge=1)
+    builtin_detail_budget: int = Field(default=40, ge=0)
+
+    # --- RemoteYeah -----------------------------------------------------------
+    # HTML listing pages, newest first; a sweep stops at `max_age_days`. Its
+    # robots.txt sets no delay, so the gap is self-imposed politeness. Detail
+    # pages are read only for India/worldwide rows with a wanted title; 60 ran
+    # out on the first live sweep (203 rows, 132 eligible), hence 120.
+    remoteyeah_request_interval_seconds: float = Field(default=2.0, ge=0)
+    remoteyeah_max_pages: int = Field(default=10, ge=1)
+    remoteyeah_max_age_days: int = Field(default=30, ge=1)
+    remoteyeah_detail_budget: int = Field(default=120, ge=0)
 
     # --- LLM deep read -------------------------------------------------------
     # The deep-read pass. Without a key for the selected provider the pass is

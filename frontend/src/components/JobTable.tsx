@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUpRight, Globe2, Loader2, MapPin, SearchX } from "lucide-react";
-import { formatLocations, formatSalary, relativeTime } from "@/lib/format";
+import { formatLocations, formatSalary, relativeTime, sourceLabel } from "@/lib/format";
+import { usePrefetchJob } from "@/lib/hooks";
 import type { Job } from "@/lib/types";
 import { LlmBadge, VerifierBadge } from "./CheckBadges";
 import { Badge, CompanyAvatar, EmptyState, SkeletonRow, cx } from "./primitives";
@@ -38,6 +39,7 @@ export function JobTable({
   onReset: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prefetch = usePrefetchJob();
 
   const virtualizer = useVirtualizer({
     count: jobs.length,
@@ -134,7 +136,9 @@ export function JobTable({
                   <div
                     key={virtualRow.key}
                     data-index={virtualRow.index}
-                    className="absolute top-0 left-0 w-full"
+                    // Each row is its own layout/paint island: a hover or a
+                    // selection change never invalidates its neighbours.
+                    className="absolute top-0 left-0 w-full [contain:layout_paint_style]"
                     style={{
                       height: virtualRow.size,
                       transform: `translateY(${virtualRow.start}px)`,
@@ -145,6 +149,7 @@ export function JobTable({
                       isNew={isNew}
                       selected={job.id === selectedId}
                       onSelect={onSelect}
+                      onHover={prefetch}
                     />
                   </div>
                 );
@@ -176,22 +181,30 @@ export function JobTable({
   );
 }
 
-function JobRow({
+/**
+ * Memoized: the virtualizer re-renders the list on every scroll frame, and the
+ * page re-renders it on every keystroke in the search box. Only rows whose job,
+ * selection or "new" state actually changed should do any work.
+ */
+const JobRow = memo(function JobRow({
   job,
   isNew,
   selected,
   onSelect,
+  onHover,
 }: {
   job: Job;
   isNew: boolean;
   selected: boolean;
   onSelect: (id: number) => void;
+  onHover: (id: number) => void;
 }) {
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={() => onSelect(job.id)}
+      onPointerEnter={() => onHover(job.id)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -254,7 +267,7 @@ function JobRow({
           <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-subtle">
             <span className="font-medium text-muted">{job.company}</span>
             <span className="opacity-40">·</span>
-            <span className="capitalize">{job.ats}</span>
+            <span>{sourceLabel(job.ats)}</span>
             <span className="md:hidden">
               <span className="opacity-40"> · </span>
               {formatLocations(job.locations, job.remote)}
@@ -337,4 +350,4 @@ function JobRow({
       </div>
     </div>
   );
-}
+});

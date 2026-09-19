@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from itertools import chain
 from typing import Any
 
@@ -29,6 +31,30 @@ class AdapterError(RuntimeError):
         self.company = company
 
 
+class RequestPacer:
+    """Hold requests to one site at least `interval` seconds apart.
+
+    For the page-scraping sources (YC, Arc), which have no documented rate
+    limit to back off from, so politeness has to be deliberate. One instance
+    per adapter, and one adapter per source per run, so it spans the run.
+    """
+
+    def __init__(self, interval_seconds: float) -> None:
+        self._interval = interval_seconds
+        self._lock = asyncio.Lock()
+        self._last: float | None = None
+
+    async def wait(self) -> None:
+        if self._interval <= 0:
+            return
+        async with self._lock:
+            if self._last is not None:
+                remaining = self._interval - (time.monotonic() - self._last)
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+            self._last = time.monotonic()
+
+
 class BaseAdapter(ABC):
     """One adapter per ATS.
 
@@ -45,6 +71,10 @@ class BaseAdapter(ABC):
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self._client = client
         self._owns_client = client is None
+        # Set by `fetch` when the board had more results than it would serve
+        # (a hard page cap). A job missing from a truncated fetch is not a
+        # closed job, so ingest skips the closure sweep for that source.
+        self.fetch_truncated = False
 
     # -- HTTP ---------------------------------------------------------------
     async def _get_client(self) -> httpx.AsyncClient:
@@ -94,6 +124,48 @@ class BaseAdapter(ABC):
         Firecrawl's POST /scrape, and it needs this same retry and rate-limit
         handling rather than a private copy of it.
         """
+        return await self._request(
+            url,
+            decode=lambda response: response.json(),
+            params=params,
+            company=company,
+            method=method,
+            json_body=json_body,
+            headers=headers,
+        )
+
+    async def get_text(
+        self,
+        url: str,
+        *,
+        params: dict[str, Any] | None = None,
+        company: CompanyConfig | None = None,
+    ) -> str:
+        """GET an HTML page, with the same retry and rate-limit handling.
+
+        For the sources whose only public data is a page's embedded JSON
+        (YC's `data-page`, Arc's `__NEXT_DATA__`). The shared client asks for
+        JSON by default, so the Accept header is overridden per request.
+        """
+        return await self._request(
+            url,
+            decode=lambda response: response.text,
+            params=params,
+            company=company,
+            headers={"Accept": "text/html"},
+        )
+
+    async def _request(
+        self,
+        url: str,
+        *,
+        decode: Callable[[httpx.Response], Any],
+        params: dict[str, Any] | None = None,
+        company: CompanyConfig | None = None,
+        method: str = "GET",
+        json_body: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         settings = get_settings()
         client = await self._get_client()
         attempts = settings.http_max_retries + 1
@@ -140,7 +212,7 @@ class BaseAdapter(ABC):
                     continue
 
                 response.raise_for_status()
-                return response.json()
+                return decode(response)
             except httpx.HTTPStatusError as exc:
                 # Other 4xx is a config problem (bad token/slug) — do not retry.
                 raise AdapterError(

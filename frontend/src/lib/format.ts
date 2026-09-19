@@ -91,6 +91,21 @@ export function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/** Boards whose names do not survive title-casing their slug. */
+const SOURCE_LABELS: Record<string, string> = {
+  remoteok: "Remote OK",
+  weworkremotely: "We Work Remotely",
+  remoteyeah: "RemoteYeah",
+  themuse: "The Muse",
+  builtin: "Built In",
+  yc: "YC",
+};
+
+/** Display name for a job's source (`job.ats`). */
+export function sourceLabel(ats: string): string {
+  return SOURCE_LABELS[ats] ?? titleCase(ats);
+}
+
 /** Brand hue (see --brand-hue in index.css) and how far chips may stray from it. */
 const BRAND_HUE = 295;
 const HUE_SPREAD = 38;

@@ -1,0 +1,815 @@
+{
+ "success": true,
+ "data": {
+  "pageData": {
+   "jobs": [
+    {
+     "_id": "6aad02996640f8cb0b1723e3",
+     "publicUrl": "https://cutshort.io/job/-NET-Fullstack-Developer-Azure-GBIT-India-Pvt-Lyd-dCiHr3LX",
+     "headline": ".NET Fullstack Developer (Azure)",
+     "hiringForClient": false,
+     "allSkills": [
+      ".NET",
+      "C#",
+      "Microsoft Windows Azure",
+      "React.js",
+      "Design patterns",
+      "SOLID",
+      "SQL",
+      "Web API",
+      "Microservices"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 1000000,
+      "max": 2000000,
+      "userMin": 1000000,
+      "userMax": 2000000,
+      "userMinVanity": 2000000,
+      "userMaxVanity": 2500000,
+      "minVanity": 2000000,
+      "maxVanity": 2500000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "5891ccd69f6dc35808410e87",
+      "name": "GBIT India Pvt Lyd",
+      "logo": "https://cdn.cutshort.io/public/companies/5891ccd69f6dc35808410e87/optimised/logo_1627602996366",
+      "ogImage": "https://cdn.cutshort.io/public/linkedin-socialshare-ogimage/id5891ccd69f6dc35808410e87time1679008607844-og.jpg",
+      "founded": 2006,
+      "type": "Services",
+      "size": "100-1000",
+      "description": "Global Bridge Info Tech(GBIT) delivers NXT-GEN IT services across USA &amp; India.GBIT has Global experience in IT consulting, system integration and Remote Infrastructure Managed Services.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/companies/5891ccd69f6dc35808410e87/optimised/coverPictureURL_1627602996366",
+      "alias": "gbit-india-pvt-lyd-IZomr6jW",
+      "hiringForClient": false,
+      "followersCount": 73,
+      "sanitizedDescription": "Global Bridge Info Tech(GBIT) delivers NXT-GEN IT services across USA &amp; India.GBIT has Global experience in IT consulting, system integration and Remote Infrastructure Managed Services.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [
+       {
+        "userId": "5891cc549f6dc35808410e7f",
+        "name": "Shaik Mohammed",
+        "title": "Hiring at GBIT India Pvt Lyd",
+        "linkedIn": "https://www.linkedin.com/in/shaik-mohammed-47632b26",
+        "profilePicture": "https://cdn.cutshort.io/public/users/5891cc549f6dc35808410e7f",
+        "_id": "62e0d0d462bb212db472f8a1"
+       },
+       {
+        "userId": "5dee3ae1a3d9f30b7a54d4f6",
+        "name": "Pushpalatha Kotha",
+        "title": "Hiring at GBIT India Pvt Lyd",
+        "linkedIn": "https://www.linkedin.com/in/pushpalatha-kotha-10485459/",
+        "profilePicture": "https://cdn.cutshort.io/public/users/5dee3ae1a3d9f30b7a54d4f6",
+        "_id": "62e0d0d462bb212db472f8a0"
+       }
+      ],
+      "sectionsEnabled": {
+       "techStack": false,
+       "highlightTeamMembers": true,
+       "companyFAQs": false,
+       "photos": false,
+       "productShowcase": false,
+       "videoUrl": false
+      },
+      "productShowcase": [],
+      "newSize": "service_3",
+      "links": {
+       "website": "https://gbitinc.com",
+       "articles": [],
+       "about": "https://gbitinc.com/about-us",
+       "blog": "https://gbitinc.com/category/blog",
+       "linkedin": "https://linkedin.com/company/global-bridge-infotech-inc-"
+      }
+     },
+     "expRange": {
+      "min": 6,
+      "maxInternal": 10,
+      "max": 10,
+      "minVanity": 6,
+      "maxVanity": 10
+     },
+     "sanitizedComment": "<p><strong>Job Details:</strong></p><p>We are seeking an experienced <strong>Full Stack .NET Developer with Azure </strong>to join our dynamic team. The ideal candidate will have a robust background in full stack development with expertise in <strong>Azure, React, Node.js, C#, .NET, Python (FastAPI/Flask), Terraform, and CI/CD pipelines</strong>. You will play a key role in developing, optimizing, and deploying scalable applications on Azure, ensuring high performance, security, and reliability.</p><p>This role will involve collaboration across teams, working on both frontend and backend solutions, and utilizing cloud technologies to drive project success.</p><p><br /></p><p><strong>Key Responsibilities:</strong></p><ul><li>Design, develop, and maintain full stack applications using <strong>Azure, React, Node.js, C#, .NET, and Python (FastAPI/Flask APIs)</strong>.</li><li>Develop and integrate RESTful APIs using .NET and Python frameworks (FastAPI/Flask).</li><li>Build and manage CI/CD pipelines to streamline deployment and automate testing processes.</li><li>Develop infrastructure as code (IaC) with Terraform to manage and provision resources in the Azure environment.</li><li>Ensure application scalability, security, and performance across all layers of the stack.</li><li>Work closely with cross-functional teams to translate business requirements into technical specifications.</li><li>Troubleshoot, debug, and enhance existing applications to optimize performance.</li><li>Imp",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Reetha Lokhande",
+      "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/R.png"
+     },
+     "companyId": {
+      "alias": "gbit-india-pvt-lyd-IZomr6jW",
+      "name": "GBIT India Pvt Lyd",
+      "_id": "5891ccd69f6dc35808410e87"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aad02996640f8cb0b1723e3",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": ".NET Fullstack Developer (Azure)",
+      "companyName": "GBIT India Pvt Lyd",
+      "locations": "Remote only",
+      "remotePolicy": "Remote only",
+      "experience": "6 - 10 years",
+      "salary": "₹20L - ₹25L / yr",
+      "postedDate": "2026-09-18T09:21:29.450Z",
+      "postedDateLabel": "Posted 18 Sep 2026"
+     },
+     "salaryRangeText": "₹20L - ₹25L / yr",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6aacfe973416aa3fc5172eac",
+     "publicUrl": "https://cutshort.io/job/Dotnet-Azure-Developer-Remote-Opportunity-GBIT-India-Pvt-Lyd-ETcDBmeU",
+     "headline": "Dotnet Azure Developer - Remote Opportunity",
+     "hiringForClient": false,
+     "allSkills": [
+      "Dotnet",
+      "Azure"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 750000,
+      "max": 3000000,
+      "userMin": 750000,
+      "userMax": 3000000,
+      "userMinVanity": 1500000,
+      "userMaxVanity": 3000000,
+      "minVanity": 1500000,
+      "maxVanity": 3000000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "5891ccd69f6dc35808410e87",
+      "name": "GBIT India Pvt Lyd",
+      "logo": "https://cdn.cutshort.io/public/companies/5891ccd69f6dc35808410e87/optimised/logo_1627602996366",
+      "ogImage": "https://cdn.cutshort.io/public/linkedin-socialshare-ogimage/id5891ccd69f6dc35808410e87time1679008607844-og.jpg",
+      "founded": 2006,
+      "type": "Services",
+      "size": "100-1000",
+      "description": "Global Bridge Info Tech(GBIT) delivers NXT-GEN IT services across USA &amp; India.GBIT has Global experience in IT consulting, system integration and Remote Infrastructure Managed Services.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/companies/5891ccd69f6dc35808410e87/optimised/coverPictureURL_1627602996366",
+      "alias": "gbit-india-pvt-lyd-IZomr6jW",
+      "hiringForClient": false,
+      "followersCount": 73,
+      "sanitizedDescription": "Global Bridge Info Tech(GBIT) delivers NXT-GEN IT services across USA &amp; India.GBIT has Global experience in IT consulting, system integration and Remote Infrastructure Managed Services.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [
+       {
+        "userId": "5891cc549f6dc35808410e7f",
+        "name": "Shaik Mohammed",
+        "title": "Hiring at GBIT India Pvt Lyd",
+        "linkedIn": "https://www.linkedin.com/in/shaik-mohammed-47632b26",
+        "profilePicture": "https://cdn.cutshort.io/public/users/5891cc549f6dc35808410e7f",
+        "_id": "62e0d0d462bb212db472f8a1"
+       },
+       {
+        "userId": "5dee3ae1a3d9f30b7a54d4f6",
+        "name": "Pushpalatha Kotha",
+        "title": "Hiring at GBIT India Pvt Lyd",
+        "linkedIn": "https://www.linkedin.com/in/pushpalatha-kotha-10485459/",
+        "profilePicture": "https://cdn.cutshort.io/public/users/5dee3ae1a3d9f30b7a54d4f6",
+        "_id": "62e0d0d462bb212db472f8a0"
+       }
+      ],
+      "sectionsEnabled": {
+       "techStack": false,
+       "highlightTeamMembers": true,
+       "companyFAQs": false,
+       "photos": false,
+       "productShowcase": false,
+       "videoUrl": false
+      },
+      "productShowcase": [],
+      "newSize": "service_3",
+      "links": {
+       "website": "https://gbitinc.com",
+       "articles": [],
+       "about": "https://gbitinc.com/about-us",
+       "blog": "https://gbitinc.com/category/blog",
+       "linkedin": "https://linkedin.com/company/global-bridge-infotech-inc-"
+      }
+     },
+     "expRange": {
+      "min": 5,
+      "maxInternal": 12,
+      "max": 12,
+      "minVanity": 5,
+      "maxVanity": 12
+     },
+     "sanitizedComment": "<p><strong>Key Responsibilities: </strong></p><p> Design, develop, and maintain full stack applications using Azure, React, Node.js, C#, and .NET. Build and manage CI/CD pipelines to streamline deployment and automate testing processes. </p><p> Develop infrastructure as code (IaC) with Terraform to manage and provision resources in the Azure environment. Ensure application scalability, security, and performance across all layers of the stack. </p><p> Work closely with cross-functional teams to translate business requirements into technical specifications. </p><p> Troubleshoot, debug, and enhance existing applications to optimize performance. </p><p> Implement best practices for cloud security, data protection, and compliance within Azure services. </p><p> Conduct code reviews and provide technical mentorship to junior developers as needed.</p><p> </p><p><strong>Required Skills &amp; Qualifications: </strong></p><p> Experience: 5+ years of full stack development experience, with a strong focus on Azure cloud. </p><p> Frontend: Proficient with React.js, building and optimizing web interfaces. </p><p> Backend: Solid knowledge of Node.js, C#, and .NET for building robust backend applications. </p><p> Cloud Infrastructure: Experience with Azure services, deployment, and scaling applications on Azure. </p><p> Infrastructure as Code (IaC): Hands-on experience with Terraform for Azure resource management. </p><p> CI/CD: Proficient in setting up and maintaining CI/CD pipelines using A",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Santhosh Kolli",
+      "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/S.png"
+     },
+     "companyId": {
+      "alias": "gbit-india-pvt-lyd-IZomr6jW",
+      "name": "GBIT India Pvt Lyd",
+      "_id": "5891ccd69f6dc35808410e87"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aacfe973416aa3fc5172eac",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Dotnet Azure Developer - Remote Opportunity",
+      "companyName": "GBIT India Pvt Lyd",
+      "locations": "Remote only",
+      "remotePolicy": "Remote only",
+      "experience": "5 - 12 years",
+      "salary": "₹15L - ₹30L / yr",
+      "postedDate": "2026-09-18T09:04:23.258Z",
+      "postedDateLabel": "Posted 18 Sep 2026"
+     },
+     "salaryRangeText": "₹15L - ₹30L / yr",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6aace0bd6640f8cb0b9fa328",
+     "publicUrl": "https://cutshort.io/job/Tines-SOAR-Engineer-pramaai-tbCnn08A",
+     "headline": "Tines SOAR Engineer",
+     "hiringForClient": false,
+     "allSkills": [
+      "Tines ",
+      "SOAR"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 750000,
+      "max": 3000000,
+      "userMin": 750000,
+      "userMax": 3000000,
+      "userMinVanity": 1500000,
+      "userMaxVanity": 3000000,
+      "minVanity": 1500000,
+      "maxVanity": 3000000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "6aacdfc99ba800dc2760d246",
+      "name": "pramaai",
+      "logo": "https://cdn.cutshort.io/public/images/default_company_picture.jpg",
+      "ogImage": "https://cutshort-data.s3.ap-southeast-1.amazonaws.com/cloudfront/public/images/LinkedInShareFallBack.jpg",
+      "description": "Prama.ai drives business growth with AI/ML, cloud infrastructure, data engineering and API management solutions for enterprises worldwide.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "jobs-at-pramaai-91-q3XnYj7G",
+      "hiringForClient": false,
+      "followersCount": 0,
+      "sanitizedDescription": "Prama.ai drives business growth with AI/ML, cloud infrastructure, data engineering and API management solutions for enterprises worldwide.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "links": {
+       "articles": [],
+       "website": "https://prama.ai",
+       "about": "https://prama.ai/about-us",
+       "facebook": "https://facebook.com/share/1grdgzbltw",
+       "instagram": "https://instagram.com/prama_ai",
+       "linkedin": "https://linkedin.com/company/prama-services"
+      }
+     },
+     "expRange": {
+      "min": 7,
+      "maxInternal": 15,
+      "max": 15,
+      "minVanity": 7,
+      "maxVanity": 15
+     },
+     "sanitizedComment": "<p><br /></p><p>Job Description – Tines SOAR Engineer</p><p><strong>Job Title:</strong> Tines SOAR Engineer</p><p> <strong>Experience:</strong> 6+ Years</p><p> <strong>Employment Type:</strong> Contract</p><p> <strong>Job Location:</strong> India – Hybrid/Remote</p><p> <strong>Company:</strong> Prama.ai</p><p>About the Role</p><p>Prama.ai is looking for an experienced <strong>Tines SOAR Engineer</strong> to design, develop, and maintain security automation workflows for enterprise SOC environments. The ideal candidate should have strong hands-on experience with <strong>Tines SOAR, security operations, incident response, API integrations, and automation</strong>.</p><p>Key Responsibilities</p><ul><li>Design, develop, and maintain automation workflows (<strong>Tines Stories</strong>).</li><li>Build and enhance security playbooks for <strong>incident response and alert handling</strong>.</li><li>Develop integrations between Tines and <strong>SIEM, EDR/XDR, IAM, ITSM</strong>, and other security tools.</li><li>Implement integrations using <strong>REST APIs, Webhooks, JSON, and OAuth</strong>.</li><li>Automate repetitive SOC and security operations to improve incident response efficiency.</li><li>Troubleshoot, monitor, and optimize Tines automation workflows.</li><li>Collaborate with SOC, Security, Infrastructure, and IT teams.</li><li>Support security automation use cases across enterprise environments.</li></ul><p>Required Skills</p><ul><li><strong>6+ years of IT/Security experi",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Kavita Bisht",
+      "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/K.png"
+     },
+     "companyId": {
+      "alias": "jobs-at-pramaai-91-q3XnYj7G",
+      "name": "pramaai",
+      "_id": "6aacdfc99ba800dc2760d246"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aace0bd6640f8cb0b9fa328",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Tines SOAR Engineer",
+      "companyName": "pramaai",
+      "locations": "Remote only",
+      "remotePolicy": "Remote only",
+      "experience": "7 - 15 years",
+      "salary": "₹15L - ₹30L / yr",
+      "postedDate": "2026-09-18T06:57:01.168Z",
+      "postedDateLabel": "Posted 18 Sep 2026"
+     },
+     "salaryRangeText": "₹15L - ₹30L / yr",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6aac3ad20ce631a0cb7e585d",
+     "publicUrl": "https://cutshort.io/job/Applied-AI-Data-Engineer-Morganstek-bxsaN0gs",
+     "headline": "Applied AI & Data Engineer",
+     "hiringForClient": false,
+     "allSkills": [
+      "Python",
+      "Javascript",
+      "TypeScript",
+      "Large Language Models (LLM) tuning"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 1200000,
+      "max": 3600000,
+      "userMin": 1200000,
+      "userMax": 3600000,
+      "userMinVanity": 2400000,
+      "userMaxVanity": 3600000,
+      "minVanity": 2400000,
+      "maxVanity": 3600000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "6aac38bdf0d2ab6f4910b5fc",
+      "name": "Morganstek",
+      "logo": "https://cdnv2.cutshort.io/company-static/6aac38bdf0d2ab6f4910b5fc/user_uploaded_data/logos/company_logo.png",
+      "ogImage": "https://cdn.cutshort.io/public/socialshare-ogimage/id6aac38c1f0d2ab6f4910b82ftime1789671617468-og.jpg",
+      "founded": 2023,
+      "type": "Product",
+      "size": "0-20",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "jobs-at-morgan'stek-21-3KFNnMtL",
+      "hiringForClient": false,
+      "followersCount": 5,
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "newSize": "prod_1",
+      "links": {
+       "articles": [],
+       "website": "https://morgansholding.com",
+       "about": "https://morgansholding.com/about-us-2",
+       "linkedin": "https://linkedin.com/company/moreatmorgans"
+      }
+     },
+     "expRange": {
+      "min": 6,
+      "maxInternal": 10,
+      "max": 10,
+      "minVanity": 6,
+      "maxVanity": 10
+     },
+     "sanitizedComment": "<p>The Role</p><p>We’re looking for a Senior Applied AI &amp; Data Engineer to become our first dedicated AI and data engineer.</p><p>You’ll build conversational AI experiences across web, mobile, and in-store channels while developing the data foundation behind them. You’ll make key technical decisions and own your work through to production.</p><p>What You’ll Do</p><p>• Build AI assistants using tool calling to work with real product, search, and order systems</p><p>• Design guardrails and evaluation sets to ensure AI responses are accurate and safe</p><p>• Build real-time and voice-enabled AI experiences</p><p>• Improve product data quality through AI-assisted enrichment and review workflows</p><p>• Build data pipelines, analytics, and personalisation systems</p><p>• Work closely with web and mobile developers and help guide technical implementation</p><p>What You’ll Need</p><p>• 6+ years of experience building and running production backend systems</p><p>• Strong Python skills, plus experience with JavaScript/TypeScript backends</p><p>• Experience shipping at least one LLM-powered feature to real users</p><p>• Experience with search and relevance</p><p>• Experience building data pipelines and analytics stores</p><p>• Comfortable deploying and monitoring services on a major cloud platform</p><p>• Strong communication skills and the ability to work independently</p><p>Nice to Have</p><p>• Experience with speech or voice AI</p><p>• E-commerce or retail technology experience<",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Aswathy Vimal",
+      "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/A.png"
+     },
+     "companyId": {
+      "alias": "jobs-at-morgan'stek-21-3KFNnMtL",
+      "name": "Morganstek",
+      "_id": "6aac38bdf0d2ab6f4910b5fc"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aac3ad20ce631a0cb7e585d",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Applied AI & Data Engineer",
+      "companyName": "Morganstek",
+      "locations": "Remote only",
+      "remotePolicy": "Remote only",
+      "experience": "6 - 10 years",
+      "salary": "₹24L - ₹36L / yr",
+      "postedDate": "2026-09-17T19:09:06.439Z",
+      "postedDateLabel": "Posted 17 Sep 2026"
+     },
+     "salaryRangeText": "₹24L - ₹36L / yr",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6aac3a20cc74049cef198035",
+     "publicUrl": "https://cutshort.io/job/Full-Stack-Web-Developer-JavaScript-React-Node-js-Radha-Krishna-Temple-Dallas-fNfNldjD",
+     "headline": "Full Stack Web Developer (JavaScript / React / Node.js)",
+     "hiringForClient": false,
+     "allSkills": [
+      "Javascript",
+      "TypeScript",
+      "React.js",
+      "NextJs (Next.js)",
+      "HTML/CSS",
+      "tailwindcss",
+      "Bootstrap",
+      "Responsive Design",
+      "Amazon Web Services (AWS)",
+      "NodeJS (Node.js)",
+      "RESTful APIs",
+      "GraphQL",
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Supabase",
+      "Railway",
+      "Vercel",
+      "Docker",
+      "GitHub",
+      "Nginx",
+      "Web API",
+      "Content Management System (CMS)"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 550000,
+      "max": 1800000,
+      "userMin": 550000,
+      "userMax": 1800000,
+      "userMinVanity": 1100000,
+      "userMaxVanity": 1800000,
+      "minVanity": 1100000,
+      "maxVanity": 1800000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "6aac3682cc74049ceffef81c",
+      "name": "Radha Krishna Temple Dallas",
+      "logo": "https://cdnv2.cutshort.io/company-static/6aac3682cc74049ceffef81c/user_uploaded_data/logos/company_logo.jpg",
+      "ogImage": "https://cdn.cutshort.io/public/socialshare-ogimage/id6aac3685cc74049ceffefae6time1789671046184-og.jpg",
+      "description": "Celebrate divine love and spirituality at Radha Krishna Temple in Dallas. Explore Hindu festivals, kirtans, and enriching spiritual programs.",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "jobs-at-radha-krishna-temple-dallas-23-18oekeuz",
+      "hiringForClient": false,
+      "followersCount": 123,
+      "sanitizedDescription": "Celebrate divine love and spirituality at Radha Krishna Temple in Dallas. Explore Hindu festivals, kirtans, and enriching spiritual programs.",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "links": {
+       "articles": [],
+       "website": "https://radhakrishnatemple.net",
+       "about": "https://radhakrishnatemple.net/about-swamiji",
+       "blog": "https://radhakrishnatemple.net/blog",
+       "facebook": "https://facebook.com",
+       "instagram": "https://instagram.com",
+       "linkedin": "https://linkedin.com/company/radhakrishnatempleofdallas",
+       "twitter": "https://twitter.com"
+      }
+     },
+     "expRange": {
+      "min": 3,
+      "maxInternal": 7,
+      "max": 7,
+      "minVanity": 3,
+      "maxVanity": 7
+     },
+     "sanitizedComment": "<p>* Design, develop, and maintain responsive websites and web applications.</p><p>* Build reusable frontend components using React.js.</p><p>* Develop scalable backend APIs and services using Node.js.</p><p>* Integrate third-party services and payment gateways such as Stripe.</p><p>* Build RESTful APIs and integrate with modern databases.</p><p>* Optimize applications for maximum speed, scalability, and SEO.</p><p>* Collaborate with designers to translate Figma/UI designs into pixel-perfect interfaces.</p><p>* Implement authentication, authorization, and security best practices.</p><p>* Debug production issues and improve application performance.</p><p>* Participate in code reviews and mentor junior developers.</p><p>* Work within Agile/Scrum development processes.</p>",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Rohan Karande",
+      "profilePicture": "https://cdn.cutshort.io/public/users/6aac364f2712769a26082406"
+     },
+     "companyId": {
+      "alias": "jobs-at-radha-krishna-temple-dallas-23-18oekeuz",
+      "name": "Radha Krishna Temple Dallas",
+      "_id": "6aac3682cc74049ceffef81c"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aac3a20cc74049cef198035",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Full Stack Web Developer (JavaScript / React / Node.js)",
+      "companyName": "Radha Krishna Temple Dallas",
+      "locations": "Remote only",
+      "remotePolicy": "Remote only",
+      "experience": "3 - 7 years",
+      "salary": "₹11L - ₹18L / yr",
+      "postedDate": "2026-09-17T19:06:08.963Z",
+      "postedDateLabel": "Posted 17 Sep 2026"
+     },
+     "salaryRangeText": "₹11L - ₹18L / yr",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6aa98f38888acbd0818121d3",
+     "publicUrl": "https://cutshort.io/job/Cybersecurity-Technical-Specialist-Vendor-Calls-EOR-SOFTWARE-LTD-WlasMtae",
+     "headline": "Cybersecurity Technical Specialist – Vendor Calls",
+     "hiringForClient": false,
+     "allSkills": [
+      "Cyber Security",
+      "Network Security",
+      "English Proficiency",
+      "Security Information and Event Management (SIEM)"
+     ],
+     "salaryRange": {
+      "currency": "USD",
+      "min": 95602,
+      "max": 334608,
+      "userMin": 1000,
+      "userMax": 3500,
+      "userMinVanity": 2000,
+      "userMaxVanity": 3500,
+      "minVanity": 191205,
+      "maxVanity": 334608
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "6aa7ec71fbb99c2314ea9a1a",
+      "name": "EOR SOFTWARE LTD",
+      "logo": "https://cdn.cutshort.io/public/images/default_company_picture.jpg",
+      "ogImage": "https://cutshort-data.s3.ap-southeast-1.amazonaws.com/cloudfront/public/images/LinkedInShareFallBack.jpg",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "jobs-at-eor-software-ltd-86-9ff6a01d",
+      "hiringForClient": false,
+      "followersCount": 2,
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "links": {
+       "articles": [],
+       "website": "https://omegatechsoftware.com"
+      }
+     },
+     "expRange": {
+      "min": 2,
+      "maxInternal": 5,
+      "max": 5,
+      "minVanity": 2,
+      "maxVanity": 5
+     },
+     "sanitizedComment": "<p>About the role</p><p><br /></p><p>EOR SOFTWARE LTD is a UK-registered software development company.</p><p><br /></p><p>We are looking for a Cybersecurity Technical Specialist based in India who can quickly study unfamiliar products, prepare for technical discussions, and participate in live calls with software vendors in English.</p><p><br /></p><p>Responsibilities</p><p>• Study vendors’ products and the prepared documentation before each call.</p><p>• Quickly understand the product’s purpose, architecture, deployment, integrations, licensing, and limitations.</p><p>• Collect missing information from the internal technical team using a short checklist.</p><p>• Participate in vendor calls in English and present the agreed use case.</p><p>• Ask clarifying questions and document requirements, limitations, and next steps.</p><p>• Never guess or invent technical information. If an answer has not been confirmed, explain that the information will be checked with the technical team and provided later.</p><p>• Prepare a short, structured summary after each call.</p><p><br /></p><p>Requirements</p><p>• Strong spoken English at a practical B2+ level or higher.</p><p>• 2–5 years of relevant professional experience.</p><p>• Knowledge of Windows and network fundamentals, endpoint security, AV/EDR, vulnerability management, penetration testing, and Red Team concepts.</p><p>• Ability to understand technical questions and clearly explain cybersecurity concepts without relying on a prepared",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Hadleigh Pye",
+      "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/H.png"
+     },
+     "companyId": {
+      "alias": "jobs-at-eor-software-ltd-86-9ff6a01d",
+      "name": "EOR SOFTWARE LTD",
+      "_id": "6aa7ec71fbb99c2314ea9a1a"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aa98f38888acbd0818121d3",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Cybersecurity Technical Specialist – Vendor Calls",
+      "companyName": "EOR SOFTWARE LTD",
+      "locations": "Remote only",
+      "remotePolicy": "Remote only",
+      "experience": "2 - 5 years",
+      "salary": "$2K - $3.5K / yr",
+      "postedDate": "2026-09-15T18:32:24.251Z",
+      "postedDateLabel": "Posted 15 Sep 2026"
+     },
+     "salaryRangeText": "$2K - $3.5K / yr",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6aaa9be1f4d6e5c6f3fba813",
+     "publicUrl": "https://cutshort.io/job/Software-Craftsperson-Node-React-Typescript-II-III-Incubyte-KjwY5XaM",
+     "headline": "Software Craftsperson/ Node/ React/ Typescript- II/ III",
+     "hiringForClient": false,
+     "allSkills": [
+      "NodeJS (Node.js)",
+      "React.js",
+      "Large Language Models (LLM)",
+      "TypeScript"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 0,
+      "max": 2900000,
+      "userMin": 0,
+      "userMax": 2900000,
+      "userMinVanity": 900000,
+      "userMaxVanity": 2900000,
+      "hideSalary": true,
+      "minVanity": 900000,
+      "maxVanity": 2900000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "5e997a054b01680c1071a96a",
+      "name": "Incubyte",
+      "logo": "https://cdnv2.cutshort.io/company-static/5e997a054b01680c1071a96a/user_uploaded_data/logos/company_logo_f6Ej5FTY.png",
+      "ogImage": "https://cdn.cutshort.io/public/linkedin-socialshare-ogimage/id5e997a054b01680c1071a96atime1679000392255-og.jpg",
+      "founded": 2020,
+      "type": "Services",
+      "size": "20-100",
+      "stage": "Bootstrapped",
+      "description": "<p><strong>About Us</strong></p><p>Incubyte is an AI-first software development agency built on the principles of software craftsmanship—where <em>how</em> we build is just as important as <em>what</em> we build. We partner with organizations across stages, from enterprises looking to scale and modernize to early-stage founders bringing new ideas to life.</p><p><br /></p><p>At Incubyte, AI is deeply integrated across the software development lifecycle to drive speed, efficiency, and smarter outcomes. Guided by Software Craftsmanship values and Extreme Programming practices, we combine high velocity with disciplined engineering to deliver reliable, high-impact solutions.</p><p>We don’t just build software—we incubate dedicated engineering teams. From designing systems to shaping team structures and organizational strategy, we enable our clients to launch and scale products that are relevant today and resilient for the future.</p><p><br /></p><p>Whether you’re scaling an existing product, building from scratch, or optimizing manual processes, we help you move faster with confidence:</p><ul><li>Scale and modernize your product</li><li>Launch quickly and iterate continuously</li><li>Automate processes for non-linear growth</li><li>Build systems that are stable, predictable, and measurable</li></ul><p><br /></p><p>Our approach is rooted in ownership. As a DevOps-driven organization, our engineers take responsibility for the entire lifecycle—from development to release—ensuring quality at every step.</p><p><br /></p><p>Founded by product professionals, we bring a strong product mindset into services. We’re driven by curiosity, continuous learning, and a passion for building great software the right way.</p><p><br /></p><p>We’re always looking for people who care deeply about code, craftsmanship, and growth. Join us if you’re excited to build, learn, and make an impact.</p>",
+      "coverPictureURL": "https://cdn.cutshort.io/public/companies/5e997a054b01680c1071a96a/optimised/coverPictureURL_1626979074642",
+      "alias": "incubyte-datatech-pvt-ltd-87-qmbjPP8b",
+      "hiringForClient": false,
+      "followersCount": 35260,
+      "sanitizedDescription": "<p><strong>About Us</strong></p><p>Incubyte is an AI-first software development agency built on the principles of software craftsmanship—where <em>how</em> we build is just as important as <em>what</em> we build. We partner with organizations across stages, from enterprises looking to scale and modernize to early-stage founders bringing new ideas to life.</p><p><br /></p><p>At Incubyte, AI is deeply integrated across the software development lifecycle to drive speed, efficiency, and smarter outcomes. Guided by Software Craftsmanship values and Extreme Programming practices, we combine high velocity with disciplined engineering to deliver reliable, high-impact solutions.</p><p>We don’t just build software—we incubate dedicated engineering teams. From designing systems to shaping team structures and organizational strategy, we enable our clients to launch and scale products that are relevant today and resilient for the future.</p><p><br /></p><p>Whether you’re scaling an existing product, building from scratch, or optimizing manual processes, we help you move faster with confidence:</p><ul><li>Scale and modernize your product</li><li>Launch quickly and iterate continuously</li><li>Automate processes for non-linear growth</li><li>Build systems that are stable, predictable, and measurable</li></ul><p><br /></p><p>Our approach is rooted in ownership. As a DevOps-driven organization, our engineers take responsibility for the entire lifecycle—from development to release—ensuring quality at every step.</p><p><br /></p><p>Founded by product professionals, we bring a strong product mindset into services. We’re driven by curiosity, continuous learning, and a passion for building great software the right way.</p><p><br /></p><p>We’re always looking for people who care deeply about code, craftsmanship, and growth. Join us if you’re excited to build, learn, and make an impact.</p>",
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [
+       {
+        "name": "Arohi Parikh",
+        "title": "Product Manager",
+        "linkedIn": "https://linkedin.com",
+        "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/A.png",
+        "userId": "5ec2128eb2ef870beb5713ec",
+        "_id": "62e0d1f162bb212db4731ec2"
+       },
+       {
+        "name": "Lifi Lawrance",
+        "title": "Hiring at Incubyte",
+        "linkedIn": "https://linkedin.com",
+        "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/L.png",
+        "userId": "5f9bb3aef3b2e30b71114628",
+        "_id": "62e0d1f162bb212db4731ec0"
+       },
+       {
+        "name": "Gouthami Vallabhaneni",
+        "title": "Hiring at Incubyte",
+        "linkedIn": "https://linkedin.com",
+        "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/G.png",
+        "userId": "61d6c4db06c75310619ba91f",
+        "_id": "62e0d1f162bb212db4731ebf"
+       },
+       {
+        "name": "Shilpi Gupta",
+        "title": "Talent acquisition specialist",
+        "linkedIn": "https://linkedin.com",
+        "profilePicture": "https://cdn.cutshort.io/public/users/60e6e586a855ff0baf071da7",
+        "userId": "60e6e586a855ff0baf071da7",
+        "_id": "62e0d1f162bb212db4731ebe"
+       }
+      ],
+      "sectionsEnabled": {
+       "techStack": false,
+       "highlightTeamMembers": true,
+       "companyFAQs": false,
+       "photos": false,
+       "productShowcase": false,
+       "videoUrl": false
+      },
+      "productShowcase": [],
+      "funding": "1",
+      "newSize": "service_2",
+      "links": {
+       "website": "https://incubyte.co",
+       "articles": [],
+       "linkedin": "https://linkedin.com/company/incubyte"
+      }
+     },
+     "expRange": {
+      "min": 4,
+      "maxInternal": 10,
+      "max": 10,
+      "minVanity": 4,
+      "maxVanity": 10
+     },
+     "sanitizedComment": "<p><strong>Job Description</strong></p><p>This is a remote position.</p><p><br /></p><p><strong>Experience Level</strong></p><p>This role is ideal for engineers with 4-9 years of hands-on software development experience, particularly in ReactJS, Node, and TypeScript.</p><p><br /></p><p><strong>Role Overview</strong></p><p>If you're a Software Craftsperson who takes pride in clean, test-driven code and believes in Extreme Programming principles, we'd love to meet you. At Incubyte, we're a DevOps organization where developers own the entire release cycle, meaning you'll get hands-on experience across programming, cloud infrastructure, client communication, and everything in between. Ready to level up your craft and join a team that's as quality-obsessed as you are? Read on!</p><p> </p><p><strong>What You'll Do</strong></p><ul><li><strong>Write Tests First:</strong> Start by writing tests to ensure code quality</li><li><strong>Clean Code:</strong> Produce self-explanatory, clean code with predictable results</li><li><strong>Frequent Releases:</strong> Make frequent, small releases</li><li><strong>Pair Programming:</strong> Work in pairs for better results</li><li><strong>Peer Reviews:</strong> Conduct peer code reviews for continuous improvement</li><li><strong>Product Team:</strong> Collaborate in a product team to build and rapidly roll out new features and fixes</li><li><strong>Full Stack Ownership:</strong> Handle everything from the front end to the back end, including infr",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Titiksha Singh",
+      "profilePicture": "https://cdn.cutshort.io/public/material-letter-icons/T.png"
+     },
+     "companyId": {
+      "alias": "incubyte-datatech-pvt-ltd-87-qmbjPP8b",
+      "name": "Incubyte",
+      "_id": "5e997a054b01680c1071a96a"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6aaa9be1f4d6e5c6f3fba813",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Software Craftsperson/ Node/ React/ Typescript- II/ III",
+      "companyName": "Incubyte",
+      "locations": "Remote only",
+      "companyStage": "Bootstrapped",
+      "remotePolicy": "Remote only",
+      "experience": "4 - 10 years",
+      "postedDate": "2026-09-16T13:38:41.784Z",
+      "postedDateLabel": "Posted 16 Sep 2026"
+     },
+     "salaryRangeText": "Best in industry",
+     "locationsText": "Remote only"
+    },
+    {
+     "_id": "6a313500d4db6a8e6164f3a6",
+     "publicUrl": "https://cutshort.io/job/Photoshop-Specialist-suntekai-HlbhEOmw",
+     "headline": "Photoshop Specialist",
+     "hiringForClient": false,
+     "allSkills": [
+      "Adobe Photoshop Lightroom",
+      "Image editing",
+      "Photo manipulation",
+      "Graphic Designing",
+      "Visual Designing",
+      "Design thinking",
+      "social media creatives",
+      "image masking",
+      "Illustration",
+      "Color correction",
+      "Adobe Creative Suite",
+      "3D computer graphics"
+     ],
+     "salaryRange": {
+      "currency": "INR",
+      "min": 0,
+      "max": 200000,
+      "userMin": 0,
+      "userMax": 200000,
+      "userMinVanity": 150000,
+      "userMaxVanity": 200000,
+      "minVanity": 150000,
+      "maxVanity": 200000
+     },
+     "locations": [],
+     "companyDetails": {
+      "_id": "67dab6be2b148900281b83b3",
+      "name": "suntekai",
+      "logo": "https://cdnv2.cutshort.io/company-static/67dab6be2b148900281b83b3/user_uploaded_data/logos/company_logo.png",
+      "ogImage": "https://cdn.cutshort.io/public/socialshare-ogimage/id67dab6bf2b148900281b83b6time1742386879773-og.jpg",
+      "founded": 2023,
+      "type": "Product",
+      "size": "20-100",
+      "stage": "Profitable",
+      "coverPictureURL": "https://cdn.cutshort.io/public/images/unauth_bgs/startups.jpg",
+      "alias": "suntekai-90-jhkgmh9M",
+      "hiringForClient": false,
+      "followersCount": 9557,
+      "companyFAQs": [],
+      "techStack": [],
+      "photos": [],
+      "highlightTeamMembers": [],
+      "sectionsEnabled": {},
+      "productShowcase": [],
+      "funding": "3",
+      "newSize": "prod_2",
+      "links": {
+       "website": "https://suntek.ai",
+       "linkedin": "https://linkedin.com/company/suntekai",
+       "articles": []
+      }
+     },
+     "expRange": {
+      "min": 0,
+      "maxInternal": 1,
+      "max": 1,
+      "minVanity": 0,
+      "maxVanity": 1
+     },
+     "sanitizedComment": "<p>Edit, retouch, and manipulate images for various internal and client projects.</p><p><br /></p><p>Create high-quality visual assets including banners, social media creatives, web graphics, and marketing material.</p><p><br /></p><p>Collaborate with designers, marketers, and project managers to meet design requirements and timelines.</p><p><br /></p><p>Ensure image consistency, color accuracy, and quality across all platforms.</p><p><br /></p><p>Follow brand guidelines and design standards while offering creative input for improvements.</p><p><br /></p><p>Maintain organized file structures and proper asset versioning.</p>",
+     "roleTypes": [
+      "full_time"
+     ],
+     "remoteType": "remote_only",
+     "createdBy": {
+      "name": "Rshmi Singh",
+      "profilePicture": "https://cdn.cutshort.io/public/users/6a312ed5ed373374dbea5ae5"
+     },
+     "companyId": {
+      "alias": "suntekai-90-jhkgmh9M",
+      "name": "suntekai",
+      "_id": "67dab6be2b148900281b83b3"
+     },
+     "authApplyUrl": "https://cutshort.io/profile/view/j/6a313500d4db6a8e6164f3a6",
+     "isJobSaved": false,
+     "jobFactSummary": {
+      "roleTitle": "Photoshop Specialist",
+      "companyName": "suntekai",
+      "locations": "Remote only",
+      "companyStage": "Profitable",
+      "remotePolicy": "Remote only",
+      "experience": "0 - 1 years",
+      "salary": "₹1.5L - ₹2L / yr",
+      "postedDate": "2026-09-18T12:53:15.006Z",
+      "postedDateLabel": "Posted 18 Sep 2026"
+     },
+     "salaryRangeText": "₹1.5L - ₹2L / yr",
+     "locationsText": "Remote only"
+    }
+   ],
+   "title": "5628+ Remote Jobs",
+   "liveJobCount": 5628
+  }
+ }
+}

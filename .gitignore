@@ -6,6 +6,8 @@
 # Local database
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.db.bak-*
 *.sqlite
 *.sqlite3

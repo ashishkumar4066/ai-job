@@ -1,0 +1,780 @@
+{
+ "page": "/remote-jobs",
+ "query": {
+  "countries": "IN",
+  "jobRoles": "engineering"
+ },
+ "buildId": "ZjB5YOjGnUm1WxOt3jXyE",
+ "props": {
+  "pageProps": {
+   "arcJobs": [
+    {
+     "randomKey": "pkmiiyi85w",
+     "title": "Senior Full-Stack Developer",
+     "jobType": "permanent",
+     "jobRole": "engineering",
+     "applied": null,
+     "timeZone": "Pacific Time (US & Canada)",
+     "timeZoneOffset": "-07:00",
+     "clientTimeZoneRestriction": "overlap",
+     "requiredCountries": [],
+     "minAnnualSalary": 80000,
+     "maxAnnualSalary": 120000,
+     "overlapHours": null,
+     "experienceLevel": "senior",
+     "urlString": "senior-full-stack-developer",
+     "postedAt": 1789573095,
+     "maxHourlyRate": null,
+     "minHourlyRate": null,
+     "company": {
+      "randomKey": null
+     },
+     "categories": [
+      {
+       "name": "Laravel",
+       "urlString": "laravel"
+      },
+      {
+       "name": "React",
+       "urlString": "reactjs"
+      },
+      {
+       "name": "Ai & llm integration",
+       "urlString": "ai-llm-integration"
+      },
+      {
+       "name": "AWS",
+       "urlString": "aws"
+      },
+      {
+       "name": "Next.js",
+       "urlString": "nextjs"
+      },
+      {
+       "name": "Ai/llm apis",
+       "urlString": "ai-llm-apis"
+      },
+      {
+       "name": "PHP",
+       "urlString": "php"
+      },
+      {
+       "name": "MySQL",
+       "urlString": "mysql"
+      },
+      {
+       "name": "Node.js",
+       "urlString": "nodejs"
+      },
+      {
+       "name": "DevOps",
+       "urlString": "devops"
+      }
+     ]
+    },
+    {
+     "randomKey": "pkvft6v137",
+     "title": "AI Trading Developer",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "applied": null,
+     "timeZone": "no-preference",
+     "timeZoneOffset": null,
+     "clientTimeZoneRestriction": null,
+     "requiredCountries": [],
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "overlapHours": null,
+     "experienceLevel": "mid",
+     "urlString": "ai-trading-developer",
+     "postedAt": 1789658467,
+     "maxHourlyRate": 45,
+     "minHourlyRate": 30,
+     "company": {
+      "randomKey": null
+     },
+     "categories": [
+      {
+       "name": "Pandas",
+       "urlString": "pandas"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "SQL",
+       "urlString": "sql"
+      }
+     ]
+    },
+    {
+     "randomKey": "pkvlubg26y",
+     "title": "Computer Vision / Hand-Tracking Engineer - PT - US-based",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "applied": null,
+     "timeZone": null,
+     "timeZoneOffset": null,
+     "clientTimeZoneRestriction": null,
+     "requiredCountries": [
+      "US"
+     ],
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "overlapHours": null,
+     "experienceLevel": "senior",
+     "urlString": "computer-vision-hand-tracking-engineer-pt-us-based",
+     "postedAt": 1789660070,
+     "maxHourlyRate": 120,
+     "minHourlyRate": 70,
+     "company": {
+      "randomKey": null
+     },
+     "categories": [
+      {
+       "name": "Computer Vision",
+       "urlString": "computer-vision"
+      }
+     ]
+    },
+    {
+     "randomKey": "pki5t0za8p",
+     "title": "Staff/Senior Full-Stack Rescue Engineer",
+     "jobType": "contract",
+     "jobRole": "engineering",
+     "applied": null,
+     "timeZone": "Eastern Time (US & Canada)",
+     "timeZoneOffset": "-04:00",
+     "clientTimeZoneRestriction": null,
+     "requiredCountries": [
+      "GT",
+      "RU",
+      "PE",
+      "DK",
+      "PY",
+      "SV",
+      "US",
+      "SI",
+      "CZ",
+      "VE",
+      "KZ",
+      "BS",
+      "UY",
+      "HN",
+      "CL",
+      "NL",
+      "GE",
+      "EE",
+      "AT",
+      "LI",
+      "ME",
+      "AR",
+      "NI",
+      "BR",
+      "PL",
+      "BZ",
+      "BL",
+      "MT",
+      "MC",
+      "MQ",
+      "BY",
+      "SE",
+      "CH",
+      "MF",
+      "SM",
+      "DE",
+      "LU",
+      "BO",
+      "TT",
+      "CA",
+      "SK",
+      "LT",
+      "PR",
+      "JM",
+      "FR",
+      "LV",
+      "CY",
+      "BB",
+      "MX",
+      "RO",
+      "HU",
+      "AG",
+      "FI",
+      "RS",
+      "EC",
+      "IE",
+      "AM",
+      "PA",
+      "MD",
+      "HT",
+      "UA",
+      "AD",
+      "PT",
+      "DO",
+      "ES",
+      "UM",
+      "NO",
+      "BA",
+      "IT",
+      "GB",
+      "BG",
+      "TR",
+      "IS",
+      "GP",
+      "CU",
+      "CR",
+      "AL",
+      "HR",
+      "MK",
+      "GR",
+      "CO",
+      "BE",
+      "AN",
+      "VA",
+      "GF",
+      "AZ"
+     ],
+     "minAnnualSalary": null,
+     "maxAnnualSalary": null,
+     "overlapHours": null,
+     "experienceLevel": "senior",
+     "urlString": "staff-senior-full-stack-rescue-engineer",
+     "postedAt": 1789531452,
+     "maxHourlyRate": 75,
+     "minHourlyRate": 45,
+     "company": {
+      "randomKey": null
+     },
+     "categories": [
+      {
+       "name": "Node.js",
+       "urlString": "nodejs"
+      },
+      {
+       "name": "Next.js",
+       "urlString": "nextjs"
+      },
+      {
+       "name": "Stripe",
+       "urlString": "stripe"
+      },
+      {
+       "name": "GitHub",
+       "urlString": "github"
+      },
+      {
+       "name": "PostgreSQL",
+       "urlString": "postgresql"
+      }
+     ]
+    }
+   ],
+   "externalJobs": [
+    {
+     "randomKey": "pl4nlujaxp",
+     "title": "Agentic AI Engineer",
+     "jobType": "permanent",
+     "requiredCountries": [
+      "IN"
+     ],
+     "positionType": "engineering",
+     "experienceLevels": [],
+     "urlString": "jobgether-agentic-ai-engineer",
+     "postedAt": 1789703742,
+     "company": {
+      "randomKey": "kp4xf5qy6a",
+      "urlString": "jobgether",
+      "name": "Jobgether",
+      "logo": "https://lever-client-logos.s3.us-west-2.amazonaws.com/b9babb10-6786-42c6-a3c5-9eebd25117d5-1762181104361.png"
+     },
+     "categories": [
+      {
+       "name": "AI",
+       "urlString": "ai"
+      },
+      {
+       "name": "Wireframing/prototyping",
+       "urlString": "wireframing-prototyping"
+      },
+      {
+       "name": "Database",
+       "urlString": "database"
+      },
+      {
+       "name": "Microservices",
+       "urlString": "microservices"
+      },
+      {
+       "name": "Azure",
+       "urlString": "azure"
+      },
+      {
+       "name": "Machine Learning",
+       "urlString": "machine-learning"
+      },
+      {
+       "name": "Data",
+       "urlString": "data"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "Infrastructure",
+       "urlString": "infrastructure"
+      },
+      {
+       "name": "Amazon",
+       "urlString": "amazon"
+      },
+      {
+       "name": "Docker",
+       "urlString": "docker"
+      },
+      {
+       "name": "Web Development",
+       "urlString": "web-development"
+      },
+      {
+       "name": "TensorFlow",
+       "urlString": "tensorflow"
+      },
+      {
+       "name": "Kubernetes",
+       "urlString": "kubernetes"
+      },
+      {
+       "name": "NLP",
+       "urlString": "nlp"
+      },
+      {
+       "name": "Data Science",
+       "urlString": "data-science"
+      },
+      {
+       "name": "Cloud",
+       "urlString": "cloud"
+      },
+      {
+       "name": "GDPR",
+       "urlString": "gdpr"
+      },
+      {
+       "name": "Mobile App Development",
+       "urlString": "mobile-app-development"
+      },
+      {
+       "name": "PyTorch",
+       "urlString": "pytorch"
+      },
+      {
+       "name": "Communications",
+       "urlString": "communications"
+      },
+      {
+       "name": "Mathematics",
+       "urlString": "mathematics"
+      },
+      {
+       "name": "Statistics",
+       "urlString": "statistics"
+      },
+      {
+       "name": "Team collaboration",
+       "urlString": "team-collaboration"
+      },
+      {
+       "name": "Compliance",
+       "urlString": "compliance"
+      },
+      {
+       "name": "Support",
+       "urlString": "support"
+      },
+      {
+       "name": "Generative AI",
+       "urlString": "generative-ai"
+      },
+      {
+       "name": "LLM",
+       "urlString": "llm"
+      },
+      {
+       "name": "Workflows",
+       "urlString": "workflows"
+      },
+      {
+       "name": "R",
+       "urlString": "r"
+      },
+      {
+       "name": "Vectorization",
+       "urlString": "vectorization"
+      },
+      {
+       "name": "Cloud Native",
+       "urlString": "cloud-native"
+      },
+      {
+       "name": "Langchain",
+       "urlString": "langchain"
+      },
+      {
+       "name": "Scikit-learn",
+       "urlString": "scikit-learn"
+      },
+      {
+       "name": "MLOps",
+       "urlString": "mlops"
+      },
+      {
+       "name": "AWS",
+       "urlString": "aws"
+      },
+      {
+       "name": "Google Cloud Platform",
+       "urlString": "google-cloud-platform"
+      }
+     ]
+    },
+    {
+     "randomKey": "pl4ntso8c4",
+     "title": "Sr. Intelligence Software Engineer (Remote, DEU)",
+     "jobType": "permanent",
+     "requiredCountries": [],
+     "positionType": "engineering",
+     "experienceLevels": [
+      "senior"
+     ],
+     "urlString": "crowdstrike-sr-intelligence-software-engineer-remote-deu",
+     "postedAt": 1789703502,
+     "company": {
+      "randomKey": "alufxqsdiu",
+      "urlString": "crowdstrike",
+      "name": "CrowdStrike",
+      "logo": null
+     },
+     "categories": [
+      {
+       "name": "Software Development",
+       "urlString": "software-development"
+      },
+      {
+       "name": "Cloud",
+       "urlString": "cloud"
+      },
+      {
+       "name": "Database",
+       "urlString": "database"
+      },
+      {
+       "name": "Wireframing/prototyping",
+       "urlString": "wireframing-prototyping"
+      },
+      {
+       "name": "Amazon",
+       "urlString": "amazon"
+      },
+      {
+       "name": "Linux",
+       "urlString": "linux"
+      },
+      {
+       "name": "SQL",
+       "urlString": "sql"
+      },
+      {
+       "name": "Amazon EC2",
+       "urlString": "amazon-ec2"
+      },
+      {
+       "name": "Amazon S3",
+       "urlString": "amazon-s3"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "Automation",
+       "urlString": "automation"
+      },
+      {
+       "name": "Security software",
+       "urlString": "security-software"
+      },
+      {
+       "name": "Project management",
+       "urlString": "project-management"
+      },
+      {
+       "name": "NoSQL",
+       "urlString": "nosql"
+      },
+      {
+       "name": "Support",
+       "urlString": "support"
+      },
+      {
+       "name": "Containers",
+       "urlString": "containers"
+      },
+      {
+       "name": "Web Development",
+       "urlString": "web-development"
+      },
+      {
+       "name": "SPA",
+       "urlString": "spa"
+      },
+      {
+       "name": "Team Building",
+       "urlString": "team-building"
+      },
+      {
+       "name": "Analysis",
+       "urlString": "analysis"
+      },
+      {
+       "name": "Data",
+       "urlString": "data"
+      },
+      {
+       "name": "Data Integration",
+       "urlString": "data-integration"
+      },
+      {
+       "name": "System security",
+       "urlString": "system-security"
+      },
+      {
+       "name": "AI",
+       "urlString": "ai"
+      },
+      {
+       "name": "Operations",
+       "urlString": "operations"
+      },
+      {
+       "name": "Project documentation",
+       "urlString": "project-documentation"
+      },
+      {
+       "name": "Network",
+       "urlString": "network"
+      },
+      {
+       "name": "Communications",
+       "urlString": "communications"
+      },
+      {
+       "name": "Scalability",
+       "urlString": "scalability"
+      },
+      {
+       "name": "Content management",
+       "urlString": "content-management"
+      },
+      {
+       "name": "Golang",
+       "urlString": "golang"
+      },
+      {
+       "name": "Cloud computing",
+       "urlString": "cloud-computing"
+      },
+      {
+       "name": "AWS",
+       "urlString": "aws"
+      },
+      {
+       "name": "Google Cloud Platform",
+       "urlString": "google-cloud-platform"
+      },
+      {
+       "name": "Web UI design",
+       "urlString": "web-ui-design"
+      },
+      {
+       "name": "Single-Page Applications",
+       "urlString": "single-page-applications"
+      },
+      {
+       "name": "HTTP",
+       "urlString": "http"
+      },
+      {
+       "name": "Malware Analysis",
+       "urlString": "malware-analysis"
+      },
+      {
+       "name": "Reverse Engineering",
+       "urlString": "reverse-engineering"
+      },
+      {
+       "name": "Storage system",
+       "urlString": "storage-system"
+      }
+     ]
+    },
+    {
+     "randomKey": "pl4nnaomxr",
+     "title": "Data Scientist Team Lead",
+     "jobType": "permanent",
+     "requiredCountries": [
+      "US"
+     ],
+     "positionType": "engineering",
+     "experienceLevels": [
+      "lead"
+     ],
+     "urlString": "jobgether-data-scientist-team-lead",
+     "postedAt": 1789703742,
+     "company": {
+      "randomKey": "kp4xf5qy6a",
+      "urlString": "jobgether",
+      "name": "Jobgether",
+      "logo": "https://lever-client-logos.s3.us-west-2.amazonaws.com/b9babb10-6786-42c6-a3c5-9eebd25117d5-1762181104361.png"
+     },
+     "categories": [
+      {
+       "name": "Security software",
+       "urlString": "security-software"
+      },
+      {
+       "name": "Data",
+       "urlString": "data"
+      },
+      {
+       "name": "Machine Learning",
+       "urlString": "machine-learning"
+      },
+      {
+       "name": "Automation",
+       "urlString": "automation"
+      },
+      {
+       "name": "Cybersecurity",
+       "urlString": "cybersecurity"
+      },
+      {
+       "name": "Data Science",
+       "urlString": "data-science"
+      },
+      {
+       "name": "System security",
+       "urlString": "system-security"
+      },
+      {
+       "name": "Data analytics",
+       "urlString": "data-analytics"
+      },
+      {
+       "name": "Algorithm",
+       "urlString": "algorithm"
+      },
+      {
+       "name": "Operations",
+       "urlString": "operations"
+      },
+      {
+       "name": "Python",
+       "urlString": "python"
+      },
+      {
+       "name": "C++",
+       "urlString": "c_plus_plus"
+      },
+      {
+       "name": "Java",
+       "urlString": "java"
+      },
+      {
+       "name": "Software Development",
+       "urlString": "software-development"
+      },
+      {
+       "name": "Docker",
+       "urlString": "docker"
+      },
+      {
+       "name": "JSON",
+       "urlString": "json"
+      },
+      {
+       "name": "Support",
+       "urlString": "support"
+      },
+      {
+       "name": "Kubernetes",
+       "urlString": "kubernetes"
+      },
+      {
+       "name": "Scala",
+       "urlString": "scala"
+      },
+      {
+       "name": "Testing",
+       "urlString": "testing"
+      },
+      {
+       "name": "Data Visualization",
+       "urlString": "data-visualization"
+      },
+      {
+       "name": "Research",
+       "urlString": "research"
+      },
+      {
+       "name": "Analysis",
+       "urlString": "analysis"
+      },
+      {
+       "name": "Data Pipelines",
+       "urlString": "data-pipelines"
+      },
+      {
+       "name": "Statistics",
+       "urlString": "statistics"
+      },
+      {
+       "name": "Data Engineering",
+       "urlString": "data-engineering"
+      },
+      {
+       "name": "Communications",
+       "urlString": "communications"
+      },
+      {
+       "name": "GDPR",
+       "urlString": "gdpr"
+      },
+      {
+       "name": "AI",
+       "urlString": "ai"
+      },
+      {
+       "name": "R",
+       "urlString": "r"
+      },
+      {
+       "name": "Predictive Analytics",
+       "urlString": "predictive-analytics"
+      },
+      {
+       "name": "Data modeling",
+       "urlString": "data-modeling"
+      },
+      {
+       "name": "Workflows",
+       "urlString": "workflows"
+      }
+     ]
+    }
+   ],
+   "totalExternalJobCount": 5115
+  }
+ }
+}
