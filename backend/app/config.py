@@ -342,6 +342,14 @@ class Settings(BaseSettings):
     # JD characters sent. p90 of the routed rows is 7,070 chars, so this keeps
     # ~95% of them whole while bounding the 13k-char outliers.
     llm_max_jd_chars: int = Field(default=8000, ge=500, validation_alias=_alias("max_jd_chars"))
+    # Completion ceiling for Stage 3 résumé tailoring, which answers with up to
+    # 16 rewritten lines plus its notes. Measured: the screen's 4,096 default
+    # truncates it mid-answer ("completion truncated at max_completion_tokens").
+    # Cerebras books this figure against its limits up front, so it is a
+    # separate knob rather than a raised global.
+    llm_tailor_completion_tokens: int = Field(
+        default=10_000, ge=2000, validation_alias=_alias("tailor_completion_tokens")
+    )
     llm_timeout_seconds: float = Field(
         default=120.0, gt=0, validation_alias=_alias("timeout_seconds")
     )

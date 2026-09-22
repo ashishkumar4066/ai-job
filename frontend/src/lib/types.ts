@@ -550,3 +550,96 @@ export interface PipelineStatus {
   ranking: MatchRun | null;
   estimate: LlmEstimate | null;
 }
+
+// ---------------------------------------------------------------------------
+// Stage 3 — tailored documents
+// ---------------------------------------------------------------------------
+
+/** A claim in the generated text the profile does not support.
+ *  `blocking` means the rewrite was DISCARDED — it reports what did NOT
+ *  happen. `warning` means the text shipped and wants a human's eye. */
+export interface FactIssue {
+  region_id: string;
+  kind: "number" | "term";
+  token: string;
+  severity: "blocking" | "warning";
+  message: string;
+  text: string;
+}
+
+export interface TailoredDocument {
+  id: number;
+  job_id: number;
+  kind: string;
+  profile_version: string;
+  tex: string;
+  is_draft: boolean;
+  hand_edited: boolean;
+  llm_used: boolean;
+  llm_tokens: number;
+  created_at: string;
+  updated_at: string;
+  stale: boolean;
+  tailoring_notes: string[];
+  jd_keywords: string[];
+  issues: FactIssue[];
+  reworded: string[];
+  dropped: string[];
+}
+
+export interface CompileResult {
+  ok: boolean;
+  errors: string[];
+  log: string;
+  duration_s: number;
+  pdf_hash: string;
+  fact_warnings: string[];
+}
+
+export interface BaseResume {
+  tex: string;
+  regions: { id: string; kind: string; group: string; label: string; text: string }[];
+  available: boolean;
+  note: string;
+}
+
+// Résumé chat — `app/resume_chat.py`. A reply never edits the résumé; it
+// carries a fact-checked proposal the user applies or dismisses.
+
+export interface ChatChange {
+  region_id: string;
+  label: string;
+  kind: string;
+  action: "rewrite" | "drop";
+  before: string;
+  after: string;
+  reason: string;
+  /** `blocked` changes failed the fact check and can never be applied. */
+  status: "proposed" | "blocked";
+  blocked: string[];
+  warnings: string[];
+}
+
+export interface ChatProposal {
+  status: "none" | "pending" | "applied" | "dismissed";
+  changes: ChatChange[];
+  order: string[];
+  order_preview: { region_id: string; text: string }[];
+  applied: string[];
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  created_at: string;
+  tokens: number;
+  proposal: ChatProposal | null;
+}
+
+export interface ResumeChat {
+  document_id: number;
+  messages: ChatMessage[];
+  suggestions: string[];
+  tokens: number;
+}

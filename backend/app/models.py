@@ -258,6 +258,77 @@ class JobMatch(Base):
         return f"<JobMatch job={self.job_id} v={self.profile_version} score={self.score}>"
 
 
+class GeneratedDocument(Base):
+    """A tailored résumé for one job, as LaTeX, plus how it got that way.
+
+    Keyed on (`job_id`, `profile_version`, `kind`) exactly as CLAUDE.md's
+    Stage 3 schema specifies. `profile_version` is in the key for the same
+    reason it is in `job_matches`: a résumé tailored against last week's
+    profile is a different document, and showing it as current is the failure
+    the version hash exists to prevent.
+
+    Why the LaTeX and not the PDF
+    -----------------------------
+    `tex` is the source of truth and the thing the editor round-trips. The PDF
+    is a pure function of it (`app/latex.py`), reproducible in ~3.5s, and
+    storing megabytes of binary per job to save that is a bad trade. The one
+    PDF that matters is the one the user downloads, and it is compiled from
+    exactly the `tex` on screen.
+
+    `edits` and `tailoring` are kept apart on purpose. `tailoring` is what the
+    model said, verbatim, including rewrites the fact check then threw away.
+    `edits` is what was actually applied. Keeping only the second would make
+    "why is this bullet unchanged?" unanswerable.
+
+    `is_draft` never flips in this phase. CLAUDE.md: *generated documents are
+    always drafts for review; no send or submit path exists in this phase.*
+    """
+
+    __tablename__ = "generated_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("job_postings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    profile_version: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False, default="resume")
+
+    tex: Mapped[str] = mapped_column(Text, nullable=False)
+    # The JD this was tailored against, so a re-posted description shows as
+    # stale — the same cache key the deep read uses for its fit half.
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    # Which revision of the prompt produced it; see `TAILOR_PROMPT_VERSION`.
+    prompt_version: Mapped[str] = mapped_column(String(32), nullable=False, default="")
+
+    edits: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    tailoring: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # `factcheck.FactIssue` rows: rewrites rejected for an unsupported metric,
+    # and terms flagged for a human to look at.
+    issues: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    # The refinement conversation (`app/resume_chat.py`): messages, and on each
+    # assistant turn the proposal it made and whether it was applied. Reset on
+    # regenerate — its region ids describe the résumé it was written against.
+    chat: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+
+    llm_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    llm_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # True once the user has saved their own edits over the generated text.
+    hand_edited: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_draft: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "job_id", "profile_version", "kind", name="uq_generated_documents_job_profile_kind"
+        ),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return f"<GeneratedDocument job={self.job_id} kind={self.kind} v={self.profile_version}>"
+
+
 class IngestRun(Base):
     """One execution of the ingest pipeline — the audit trail for a run."""
 

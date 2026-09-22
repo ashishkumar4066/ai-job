@@ -8,6 +8,7 @@ import {
   Banknote,
   BrainCircuit,
   Clock,
+  FileText,
   Gauge,
   Loader2,
   Send,
@@ -30,6 +31,7 @@ import {
 import { Funnel } from "./Funnel";
 import { JobDrawer } from "./JobDrawer";
 import { PrefsPanel } from "./PrefsPanel";
+import { TailorModal } from "./TailorModal";
 import type { Match, MatchBandFilters, MatchSort } from "@/lib/types";
 import { CompanyAvatar, EmptyState, SkeletonRow, cx, useSpotlight } from "./primitives";
 
@@ -98,6 +100,9 @@ export function MatchesView({
   // left running after the dialog closes still shows on the header button.
   const [running, setRunning] = useState(false);
   const [showPrefMisses, setShowPrefMisses] = useState(false);
+  // The row whose résumé is being tailored. Holds the whole Match, not an id:
+  // the modal's header wants the title and company without another fetch.
+  const [tailoring, setTailoring] = useState<Match | null>(null);
 
   // A freshly sent scope does nothing until the free ranking pass re-gates
   // the rows, so arriving from "Send to Matches" opens the Run dialog.
@@ -389,6 +394,7 @@ export function MatchesView({
           onLoadMore={loadMore}
           selectedJobId={selectedJobId}
           onSelectJob={onSelectJob}
+          onTailor={setTailoring}
         />
       ) : (
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 md:px-3">
@@ -452,11 +458,24 @@ export function MatchesView({
       )}
     </div>
 
+      <TailorModal
+        jobId={tailoring?.job.id ?? null}
+        jobTitle={tailoring?.job.title ?? ""}
+        company={tailoring?.job.company ?? ""}
+        onClose={() => setTailoring(null)}
+      />
+
       {selectedJobId !== null && (
         <JobDrawer
           jobId={selectedJobId}
           summary={items[selectedIndex]?.job}
           match={items[selectedIndex]}
+          onTailor={() => {
+            // Hand over to the modal: the drawer sits above it (z-50), so
+            // leaving it open covers the editor it just opened.
+            setTailoring(items[selectedIndex] ?? null);
+            onSelectJob(null);
+          }}
           onClose={() => onSelectJob(null)}
           onPrev={() => stepTo(-1)}
           onNext={() => stepTo(1)}
@@ -482,6 +501,7 @@ function MatchList({
   onLoadMore,
   selectedJobId,
   onSelectJob,
+  onTailor,
 }: {
   items: Match[];
   total: number;
@@ -490,6 +510,7 @@ function MatchList({
   onLoadMore: () => void;
   selectedJobId: number | null;
   onSelectJob: (id: number | null) => void;
+  onTailor: (match: Match) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefetch = usePrefetchJob();
@@ -536,7 +557,7 @@ function MatchList({
               className="absolute top-0 left-0 w-full pb-1.5 [contain:layout_paint_style]"
               style={{ transform: `translateY(${row.start}px)` }}
             >
-              <MatchRow match={match} onSelect={select} onHover={prefetch} />
+              <MatchRow match={match} onSelect={select} onHover={prefetch} onTailor={onTailor} />
             </div>
           );
         })}
@@ -561,10 +582,12 @@ const MatchRow = memo(function MatchRow({
   match,
   onSelect: onSelectId,
   onHover,
+  onTailor,
 }: {
   match: Match;
   onSelect: (id: number) => void;
   onHover: (id: number) => void;
+  onTailor: (match: Match) => void;
 }) {
   const onSelect = () => onSelectId(match.job.id);
   const onPointerMove = useSpotlight<HTMLDivElement>();
@@ -789,7 +812,7 @@ const MatchRow = memo(function MatchRow({
 
         {/* Posted + checks + Apply. Falls back to first-seen when the board
             gave no posting date, same as the Jobs table. */}
-        <div className="flex w-[136px] shrink-0 flex-col items-end gap-1.5 pt-0.5">
+        <div className="flex w-[168px] shrink-0 flex-col items-end gap-1.5 pt-0.5">
           <span className="flex items-center gap-1">
             <VerifierBadge
               score={match.job.validity_score}
@@ -809,17 +832,34 @@ const MatchRow = memo(function MatchRow({
             <Clock size={11} className="text-subtle" />
             {relativeTime(match.job.posted_at ?? match.job.first_seen_at)}
           </span>
-          <a
-            href={match.job.apply_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-            className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2.5 py-1 text-[11.5px] font-semibold text-muted opacity-70 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text focus-visible:opacity-100"
-          >
-            Apply
-            <ArrowUpRight size={12} />
-          </a>
+          <span className="flex items-center gap-1">
+            {/* Tailor sits beside Apply because they are one action in two
+                steps: rewrite the resume for this JD, then go and submit it. */}
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onTailor(match);
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              title="Tailor your resume to this job description"
+              className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2 py-1 text-[11.5px] font-semibold text-muted opacity-70 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text focus-visible:opacity-100"
+            >
+              <FileText size={12} />
+              Tailor
+            </button>
+            <a
+              href={match.job.apply_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2.5 py-1 text-[11.5px] font-semibold text-muted opacity-70 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text focus-visible:opacity-100"
+            >
+              Apply
+              <ArrowUpRight size={12} />
+            </a>
+          </span>
         </div>
       </div>
     </div>

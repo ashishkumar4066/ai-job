@@ -70,7 +70,7 @@ import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, ClassVar, Final
+from typing import Any, ClassVar, Final, TypeVar
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -87,6 +87,10 @@ from app.ratelimit import (
 )
 
 log = logging.getLogger(__name__)
+
+# What one structured call parses its completion into — a `JobScreen` for the
+# deep read, a `ResumeTailoring` for Stage 3 documents.
+T = TypeVar("T")
 
 
 class LLMError(RuntimeError):
@@ -587,22 +591,34 @@ class LLMScreener:
         events, self.usage = self.usage, []
         return events
 
-    def _body(self, messages: list[dict[str, str]]) -> dict[str, Any]:
-        schema = _without_keywords(SCREEN_SCHEMA, self.provider.unsupported_schema_keywords)
+    def _body(
+        self,
+        messages: list[dict[str, str]],
+        schema: dict[str, Any] | None = None,
+        name: str = "job_screen",
+        max_completion_tokens: int | None = None,
+    ) -> dict[str, Any]:
+        schema = _without_keywords(
+            SCREEN_SCHEMA if schema is None else schema,
+            self.provider.unsupported_schema_keywords,
+        )
         body: dict[str, Any] = {
             "model": self.provider.model,
             "temperature": 0,
             "messages": messages,
             "response_format": {
                 "type": "json_schema",
-                "json_schema": {"name": "job_screen", "strict": True, "schema": schema},
+                "json_schema": {"name": name, "strict": True, "schema": schema},
             },
         }
         # Resolved per provider and model: Groq's qwen 400s on it.
         if self.provider.reasoning_effort:
             body["reasoning_effort"] = self.provider.reasoning_effort
-        if self.provider.max_completion_tokens:
-            body["max_completion_tokens"] = self.provider.max_completion_tokens
+        # A task may need a bigger ceiling than the screen's: tailoring returns
+        # up to 16 rewritten lines and hit the 4,096 default mid-answer.
+        ceiling = max_completion_tokens or self.provider.max_completion_tokens
+        if ceiling:
+            body["max_completion_tokens"] = ceiling
         return body
 
     def _backoff(self, retry: int) -> float:
@@ -633,9 +649,6 @@ class LLMScreener:
         self, *, title: str, company: str, description_text: str | None, profile_text: str
     ) -> JobScreen:
         """Screen one posting. Raises `LLMError` rather than returning a guess."""
-        if self._client is None:
-            raise LLMError("LLMScreener used outside its async context")
-
         messages = build_messages(
             title=title,
             company=company,
@@ -643,13 +656,39 @@ class LLMScreener:
             profile_text=profile_text,
             max_jd_chars=self.settings.llm_max_jd_chars,
         )
+        return await self.complete(
+            messages,
+            schema=SCREEN_SCHEMA,
+            name="job_screen",
+            parse=lambda content: JobScreen.model_validate(json.loads(content)),
+        )
+
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        schema: dict[str, Any],
+        name: str,
+        parse: Callable[[str], T],
+        max_completion_tokens: int | None = None,
+    ) -> T:
+        """One structured call, paced and retried. The loop every task shares.
+
+        Factored out of `screen` when Stage 3 document tailoring arrived: that
+        call bills the same daily token cap as the deep read, so it has to go
+        through the same limiter and the same 429 handling. What varies is only
+        the schema and how the completion is parsed.
+        """
+        if self._client is None:
+            raise LLMError("LLMScreener used outside its async context")
+
         # Cerebras admits a call only if prompt + `max_completion_tokens` fits
         # its bucket, so reserve that ceiling; `settle` swaps in actual usage.
+        ceiling = max_completion_tokens or self.provider.max_completion_tokens or 0
         estimate = estimate_tokens(
-            messages,
-            max(self.settings.llm_completion_reserve, self.provider.max_completion_tokens or 0),
+            messages, max(self.settings.llm_completion_reserve, ceiling)
         )
-        body = self._body(messages)
+        body = self._body(messages, schema, name, max_completion_tokens)
         last_error = "unknown"
         retries = 0  # schema / transient failures: the row's budget
         throttled = 0  # 429s: the window's budget
@@ -759,10 +798,10 @@ class LLMScreener:
                 spend_retry()
                 continue
             try:
-                return JobScreen.model_validate(json.loads(content))
+                return parse(content)
             except (json.JSONDecodeError, ValidationError) as exc:
                 # Strict mode is supposed to make this impossible. It is not,
                 # so the parse is guarded and the row fails loudly.
-                last_error = f"unparseable screen: {type(exc).__name__}: {exc}"
+                last_error = f"unparseable {name}: {type(exc).__name__}: {exc}"
                 spend_retry()
 

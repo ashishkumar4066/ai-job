@@ -7,6 +7,7 @@ import {
   Briefcase,
   Loader2,
   CalendarDays,
+  FileText,
   Check,
   ShieldCheck,
   ChevronDown,
@@ -34,6 +35,7 @@ export function JobDrawer({
   summary,
   match,
   onClose,
+  onTailor,
   onPrev,
   onNext,
   hasPrev,
@@ -44,6 +46,8 @@ export function JobDrawer({
   /** Present when opened from Matches: carries the ranker and LLM fit verdicts. */
   match?: Match;
   onClose: () => void;
+  /** Only from Matches — the Jobs tile has no profile-scored row to tailor against. */
+  onTailor?: () => void;
   onPrev: () => void;
   onNext: () => void;
   hasPrev: boolean;
@@ -153,111 +157,117 @@ export function JobDrawer({
           </div>
         </div>
 
-        {/* Meta grid */}
-        {job && (
-          <div className="relative grid grid-cols-2 gap-x-4 gap-y-3.5 border-b border-edge px-5 py-4 sm:grid-cols-3">
-            <Meta
-              icon={job.remote ? <Globe2 size={13} /> : <MapPin size={13} />}
-              label="Location"
-              value={job.locations.length ? job.locations.join(" · ") : job.remote ? "Remote" : "—"}
-            />
-            <Meta icon={<Layers size={13} />} label="Department" value={job.department ?? "—"} />
-            {/* The hint carries the filter's own pay reasoning — including when
+        {/* One scroll region for everything between header and footer. Only
+            the JD used to scroll, so a tall fit/validity section squeezed it
+            to zero height and the rest of the drawer was unreachable. */}
+        <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {/* Meta grid */}
+          {job && (
+            <div className="relative grid grid-cols-2 gap-x-4 gap-y-3.5 border-b border-edge px-5 py-4 sm:grid-cols-3">
+              <Meta
+                icon={job.remote ? <Globe2 size={13} /> : <MapPin size={13} />}
+                label="Location"
+                value={
+                  job.locations.length ? job.locations.join(" · ") : job.remote ? "Remote" : "—"
+                }
+              />
+              <Meta icon={<Layers size={13} />} label="Department" value={job.department ?? "—"} />
+              {/* The hint carries the filter's own pay reasoning — including when
                 it read a bare number as an hourly or monthly rate — so a
                 surprising verdict can be checked rather than just trusted. */}
-            <Meta
-              icon={<Wallet size={13} />}
-              label="Salary"
-              value={
-                formatSalary(job.salary_min, job.salary_max, job.salary_currency) ?? "Not stated"
-              }
-              hint={job.eligibility_reasons
-                .find((reason) => reason.startsWith("pay_"))
-                ?.split(":")
-                .slice(1)
-                .join(":")}
-            />
-            <Meta
-              icon={<CalendarDays size={13} />}
-              label="Posted"
-              value={job.posted_at ? absoluteDate(job.posted_at) : "Not stated"}
-              hint={job.posted_at ? relativeTime(job.posted_at) : undefined}
-            />
-            <Meta
-              icon={<Clock size={13} />}
-              label="First seen"
-              value={relativeTime(job.first_seen_at)}
-              hint={absoluteDate(job.first_seen_at)}
-            />
-            <Meta
-              icon={<Clock size={13} />}
-              label="Last seen"
-              value={relativeTime(job.last_seen_at)}
-              hint="Confirmed live on the board"
-            />
-            {/* "Not stated" rather than a guess: Greenhouse publishes
+              <Meta
+                icon={<Wallet size={13} />}
+                label="Salary"
+                value={
+                  formatSalary(job.salary_min, job.salary_max, job.salary_currency) ?? "Not stated"
+                }
+                hint={job.eligibility_reasons
+                  .find((reason) => reason.startsWith("pay_"))
+                  ?.split(":")
+                  .slice(1)
+                  .join(":")}
+              />
+              <Meta
+                icon={<CalendarDays size={13} />}
+                label="Posted"
+                value={job.posted_at ? absoluteDate(job.posted_at) : "Not stated"}
+                hint={job.posted_at ? relativeTime(job.posted_at) : undefined}
+              />
+              <Meta
+                icon={<Clock size={13} />}
+                label="First seen"
+                value={relativeTime(job.first_seen_at)}
+                hint={absoluteDate(job.first_seen_at)}
+              />
+              <Meta
+                icon={<Clock size={13} />}
+                label="Last seen"
+                value={relativeTime(job.last_seen_at)}
+                hint="Confirmed live on the board"
+              />
+              {/* "Not stated" rather than a guess: Greenhouse publishes
                 neither of these for any of its 2,224 rows, and a blank is
                 honest where "On-site" would be an invention. */}
-            <Meta
-              icon={<Briefcase size={13} />}
-              label="Commitment"
-              value={
-                job.employment_type
-                  ? titleCase(job.employment_type.replace(/_/g, " "))
-                  : "Not stated"
-              }
-            />
-            <Meta
-              icon={<Globe2 size={13} />}
-              label="Work mode"
-              value={job.workplace_type ? titleCase(job.workplace_type) : "Not stated"}
-            />
-            <Meta icon={<Server size={13} />} label="Source" value={job.source_key} mono />
-          </div>
-        )}
+              <Meta
+                icon={<Briefcase size={13} />}
+                label="Commitment"
+                value={
+                  job.employment_type
+                    ? titleCase(job.employment_type.replace(/_/g, " "))
+                    : "Not stated"
+                }
+              />
+              <Meta
+                icon={<Globe2 size={13} />}
+                label="Work mode"
+                value={job.workplace_type ? titleCase(job.workplace_type) : "Not stated"}
+              />
+              <Meta icon={<Server size={13} />} label="Source" value={job.source_key} mono />
+            </div>
+          )}
 
-        {job && <ChecksBar job={job} />}
+          {job && <ChecksBar job={job} />}
 
-        {match && <FitSection match={match} />}
+          {match && <FitSection match={match} />}
 
-        {/* Validity — the deterministic verdict, plus the deep read when one
+          {/* Validity — the deterministic verdict, plus the deep read when one
             exists. Shown ABOVE the JD because it is the thing that decides
             whether the JD is worth reading at all. */}
-        {job && job.validity_score != null && (
-          <ValiditySection job={job} llm={data?.llm_validity ?? null} />
-        )}
-
-        {/* Description */}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
-          {isLoading && !summary ? (
-            <div className="space-y-3">
-              {Array.from({ length: 9 }, (_, index) => (
-                <div
-                  key={index}
-                  className="skeleton h-3 rounded-full"
-                  style={{ width: `${65 + ((index * 37) % 35)}%` }}
-                />
-              ))}
-            </div>
-          ) : isError ? (
-            <p className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-[13px] text-danger">
-              Couldn't load this description: {(error as Error).message}
-            </p>
-          ) : safeHtml ? (
-            // Sanitized before it reaches the DOM. The board carries
-            // aggregator feeds (Himalayas, Remotive, Wellfound, Jobicy, The Muse, YC) whose HTML is
-            // written by whoever posted the job rather than by a vetted ATS,
-            // so this is third-party markup executing on the same origin as
-            // the API. `sanitizeHtml` is allowlist-only — see its module docs.
-            <div
-              className="jd"
-              dangerouslySetInnerHTML={{ __html: safeHtml }}
-            />
-          ) : data?.description_text ? (
-            <p className="jd whitespace-pre-wrap">{data.description_text}</p>
-          ) : (
-            <p className="text-[13px] text-subtle">This posting has no description on the board.</p>
+          {job && job.validity_score != null && (
+            <ValiditySection job={job} llm={data?.llm_validity ?? null} />
           )}
+
+          {/* Description */}
+          <div className="px-5 py-5">
+            {isLoading && !summary ? (
+              <div className="space-y-3">
+                {Array.from({ length: 9 }, (_, index) => (
+                  <div
+                    key={index}
+                    className="skeleton h-3 rounded-full"
+                    style={{ width: `${65 + ((index * 37) % 35)}%` }}
+                  />
+                ))}
+              </div>
+            ) : isError ? (
+              <p className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-[13px] text-danger">
+                Couldn't load this description: {(error as Error).message}
+              </p>
+            ) : safeHtml ? (
+              // Sanitized before it reaches the DOM. The board carries
+              // aggregator feeds (Himalayas, Remotive, Wellfound, Jobicy, The Muse, YC) whose HTML is
+              // written by whoever posted the job rather than by a vetted ATS,
+              // so this is third-party markup executing on the same origin as
+              // the API. `sanitizeHtml` is allowlist-only — see its module docs.
+              <div className="jd" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+            ) : data?.description_text ? (
+              <p className="jd whitespace-pre-wrap">{data.description_text}</p>
+            ) : (
+              <p className="text-[13px] text-subtle">
+                This posting has no description on the board.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -272,6 +282,16 @@ export function JobDrawer({
               Apply on {sourceLabel(job.ats)}
               <ArrowUpRight size={15} />
             </a>
+            {onTailor && (
+              <button
+                onClick={onTailor}
+                title="Rewrite your resume to lead with what this posting asks for"
+                className="flex items-center gap-1.5 rounded-xl border border-edge bg-panel px-3.5 py-2.5 text-[13px] font-medium text-muted transition-all duration-200 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text"
+              >
+                <FileText size={14} />
+                Tailor resume
+              </button>
+            )}
             <button
               onClick={() => {
                 navigator.clipboard?.writeText(job.apply_url);
@@ -496,14 +516,26 @@ function FitSection({ match }: { match: Match }) {
 /* ------------------------------------------------------------------ validity */
 
 const VALIDITY_TONE: Record<string, { label: string; text: string; bg: string }> = {
-  solid: { label: "Solid", text: "text-success", bg: "bg-success/12 border-success/25" },
-  ok: { label: "OK", text: "text-accent-text", bg: "bg-accent/10 border-accent/25" },
+  solid: {
+    label: "Solid",
+    text: "text-success",
+    bg: "bg-success/12 border-success/25",
+  },
+  ok: {
+    label: "OK",
+    text: "text-accent-text",
+    bg: "bg-accent/10 border-accent/25",
+  },
   questionable: {
     label: "Questionable",
     text: "text-highlight",
     bg: "bg-highlight/12 border-highlight/25",
   },
-  suspect: { label: "Suspect", text: "text-danger", bg: "bg-danger/10 border-danger/25" },
+  suspect: {
+    label: "Suspect",
+    text: "text-danger",
+    bg: "bg-danger/10 border-danger/25",
+  },
 };
 
 /** Human wording for the reason codes `validation.py` emits.
@@ -535,7 +567,10 @@ const VALIDITY_REASONS: Record<string, string> = {
   "llm:inconsistent": "Deep read found internal contradictions",
 };
 
-function describeValidityReason(raw: string): { label: string; penalty: number | null } {
+function describeValidityReason(raw: string): {
+  label: string;
+  penalty: number | null;
+} {
   const [body, penaltyPart] = raw.split(":-");
   const parts = (body ?? "").split(":");
   // `llm:` reasons are two segments before any evidence.

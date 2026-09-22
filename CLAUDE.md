@@ -13,7 +13,7 @@ Build in **phases, in order**. When I say `Implement Phase N`, treat that phase'
 | 1 | Aggregator (adapters, ingest, alerts, API) | ✅ Done |
 | 2A | Dashboard (browse / filter / inspect) | ✅ Done |
 | 2B | Validation layer (deterministic + LLM) | ✅ Built — only the deep read's data is incomplete (10 of ~314 in-preference routed rows read) |
-| 2C | Matches (profile fit + tailored résumé/cover letter) | 🟡 Stage 1 + Stage 2 done, plus a preferences gate, funnels, Send-to-Matches and a capped LLM shortlist; Stage 3 (documents) and profile editing not started |
+| 2C | Matches (profile fit + tailored résumé/cover letter) | 🟡 Stages 1-3 done for the **résumé** (LaTeX editor + live PDF + refine-by-chat, per job), plus a preferences gate, funnels, Send-to-Matches and a capped LLM shortlist; the **cover letter** and profile editing are not started |
 | 3 | Autofill (review-before-submit) | ⬜ Not started |
 
 ### Deviation from the original 2B/2C split
@@ -604,6 +604,121 @@ phase produces.
   review time. This needs a fixture test, not just a prompt instruction.
 - Stored as **drafts**, labelled as such, versioned by (job, profile_version).
   They feed Phase 3's autofill; they do not replace its review step.
+
+**Built (2026-09-20) — Stage 3, the résumé (migration `0008`):**
+
+A "Tailor" button on every Matches row and in the job drawer opens a modal with
+the LaTeX on the left and the compiled PDF on the right, Overleaf-style. What
+is downloaded is byte-for-byte what is previewed.
+
+- **The résumé is LaTeX, and `data/Ashish_AI_FullStack_v2.tex` is the
+  template.** `app/resume_tex.py` parses it into 16 addressable regions
+  (`summary`, `exp.asint.0-7`, `exp.incture-technologies.0`, `proj.0`, five
+  `skills.*` rows) and splices edits back in from the end of the file
+  backwards. **Rendering with no edits is byte-identical to the template** —
+  that is the safety property, and a section the model said nothing about
+  cannot change.
+- **The model never sees or writes LaTeX.** It gets plain text with `**bold**`
+  markers and answers with decisions keyed by region id. `to_latex` escapes in
+  a single pass, so `\input{/etc/passwd}` becomes literal characters. It cannot
+  add a bullet: there is no slot to add one to.
+- **A dropped bullet takes its `\item` with it.** The first cut made the region
+  start *after* the token, which rendered an empty bullet in the PDF. Skills
+  rows are re-worded, never removed — dropping one leaves a dangling `\\` that
+  breaks the tabular.
+- **`app/factcheck.py` is the fixture test's subject.** Numbers are
+  **blocking**: a rewrite carrying a metric absent from the profile is
+  discarded and the original bullet kept, because "80% mAP" becoming "92%"
+  reads exactly as well as the truth and survives any proofreading. Unknown
+  terms only **warn** — mirroring the JD's vocabulary is the feature.
+- **`gaps:` is a denylist, not part of the allowlist.** The first version built
+  one corpus from the whole profile, so "Shipped it on Kubernetes" passed:
+  `kubernetes` is a key in `gaps:`, and the evidence line "No AWS, Azure or
+  Kubernetes in production" put it there twice over. Claiming a `gaps:` stack
+  is now blocking. `unproven:` is deliberately NOT treated this way — it is
+  prose ("leads and mentors, no direct reports stated") and harvesting its
+  words would forbid "leads" and "mentors", which the résumé states truthfully.
+- **The corpus indexes every word; the claim side only capitalised ones.**
+  Indexing only proper nouns made the two sides asymmetric, and any word the
+  résumé writes lower-case that a rewrite happened to start a sentence with was
+  reported as invented — "Schema-grounded" was, on the first run.
+
+**Compilation — Tectonic, vendored (`app/latex.py`):**
+
+- There is no TeX distribution on this machine and installing one is ~500MB
+  that then repeats in the Docker image. Tectonic is one binary that fetches
+  only what a document needs. `python -m scripts.install_tectonic` puts it in
+  `backend/.tools/` (gitignored, ~50MB). **Cold: ~5 min once, ever. Warm:
+  ~1-3.5s.** That is why Recompile is a button, not a keystroke.
+- Run with `--untrusted`: the .tex is hand-editable in the browser, so it is
+  input, not code we wrote.
+- **`data/resume.cls` is reconstructed, not the Overleaf original**, which was
+  never in the repo — `data/` is gitignored as PII. It is Trey Hunner's
+  upstream class plus two changes, each found by diffing a Tectonic render
+  against the real `Ashish_AI_FullStack_v2.pdf` until they matched: `hyperref`
+  (the résumé uses `\href` and the class never loads it, so nothing compiled at
+  all), and rSection's `\leftmargin` 1.5em → 0em. Verified: one page, same line
+  breaks, same blue links. **If the Overleaf original turns up, drop it in.**
+
+**Cost, measured live (Cerebras qwen):**
+
+- **~6.3-8.8k tokens per document**, against ~1,800 for a deep-read screen: the
+  JD, the profile brief and all 16 regions go up, and up to 16 rewritten lines
+  come back. On Groq's free 200K/day that is ~22 documents a day.
+- It needs a **bigger completion ceiling** than the screen — at 4,096 the
+  answer truncated mid-JSON. `llm_tailor_completion_tokens` (10,000) is its own
+  knob because Cerebras books the figure against its limits up front.
+- Nothing generates one automatically. The modal opens on an empty state with a
+  button; `POST /matches/{job_id}/document` returns the stored document and
+  spends nothing when neither the JD nor the profile has moved.
+
+**Storage and the API:**
+
+- `generated_documents` stores the **LaTeX**, not the PDF: the PDF is a pure
+  function of it and recompiles in seconds, and the compiled bytes live in a
+  small in-process cache keyed by (document id, hash of the .tex).
+- `tailoring` (what the model said, verbatim) is kept beside `edits` (what was
+  applied), so "why is this bullet unchanged?" stays answerable after the fact
+  check discards a rewrite. It also makes **Revert free** — hand edits are
+  undone by replaying the stored tailoring, with no second LLM call.
+- `GET|POST /matches/{job_id}/document`, `PUT /documents/{id}`,
+  `POST /documents/{id}/{compile,revert}`, `GET /documents/{id}/{pdf,tex}`,
+  `GET /documents/base`. A failed compile answers **200 with `ok: false`** —
+  the editor is expected to be mid-edit and broken half the time, so a broken
+  document is a state to render, not an HTTP error to handle.
+- Fixed on the way: `api.py` already had a route handler named `get_job`, which
+  silently shadowed the imported helper of the same name and called it with
+  swapped arguments (an instant 500 on the cache-hit path). Imported as
+  `require_job` now.
+
+**Built (2026-09-21) — refining the résumé by chat (migration `0009`):**
+
+The Tailor modal's left pane has a **LaTeX | Chat** tab pair. Chat sits there
+and not over the PDF, because the preview is what each suggestion gets
+checked against. `app/resume_chat.py`, `components/ResumeChat.tsx`.
+
+- **A reply is a proposal, never an edit.** Each change shows before/after and
+  is applied (all, or ticked ones) or dismissed. Applying is free and marks the
+  document `hand_edited`, so Revert undoes chat edits like any other.
+- **Same guards as tailoring:** region ids in, plain text out, and `factcheck`
+  against the profile **plus the base résumé**, never the current document.
+  Otherwise a hand edit would launder an invented metric into "already stated".
+  Blocked changes stay visible with their reason. Verified live: "add Next.js"
+  was refused in the reply, and only the reorder was proposed.
+- **Stale-safe:** a proposal stores the hash of the .tex it was written
+  against. If the résumé has moved since, it still applies when every region
+  it touches still reads as it did, and is refused otherwise.
+- Stored as `generated_documents.chat` (JSON) and reset on regenerate. The last
+  8 messages go back to the model. Starter prompts come free from the stored
+  `jd_keywords` and the deep read's `must_have_gaps`.
+- **Cost:** ~4k tokens a message measured (Cerebras qwen), and up to the
+  tailoring's ~9k on a long JD.
+- `GET|POST|DELETE /documents/{id}/chat`,
+  `POST /documents/{id}/chat/{message_id}/{apply,dismiss}`.
+
+**Not built:** the cover letter, and the diff-against-base view. `GET
+/documents/base` already returns the untailored .tex and its regions, so the
+diff is a UI addition with no backend work left.
 
 ### Schema
 

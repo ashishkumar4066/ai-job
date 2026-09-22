@@ -53,7 +53,7 @@ transfer:
     first_seen_after: null
     eligibility_pass: true
     min_validity: null
-  count_at_transfer: 153
-  transferred_at: '2026-09-19T17:34:48.647934Z'
+  count_at_transfer: 168
+  transferred_at: '2026-09-22T13:38:17.708301Z'
 include_unstated: true
-updated_at: '2026-09-19T17:34:48.651035+00:00'
+updated_at: '2026-09-22T13:38:17.708301+00:00'

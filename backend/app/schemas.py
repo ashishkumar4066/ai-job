@@ -550,3 +550,134 @@ class PipelineStatusOut(BaseModel):
     validity: ValidityRunOut | None = None
     ranking: MatchRunOut | None = None
     estimate: LLMEstimateOut | None = None
+
+
+# --------------------------------------------------------------------------
+# Stage 3 — tailored documents
+# --------------------------------------------------------------------------
+class FactIssueOut(BaseModel):
+    """One claim in the generated text the profile does not support.
+
+    `blocking` means the rewrite was DISCARDED and the original bullet kept —
+    it is a report of something that did not happen. `warning` means the text
+    shipped and a human should look at it. See `app/factcheck.py`.
+    """
+
+    region_id: str
+    kind: Literal["number", "term"]
+    token: str
+    severity: Literal["blocking", "warning"]
+    message: str
+    text: str = ""
+
+
+class DocumentOut(BaseModel):
+    """A tailored résumé: its LaTeX, and everything about how it was made."""
+
+    id: int
+    job_id: int
+    kind: str
+    profile_version: str
+    tex: str
+    is_draft: bool
+    hand_edited: bool
+    llm_used: bool
+    llm_tokens: int
+    created_at: datetime
+    updated_at: datetime
+
+    # True when the JD or the tailoring prompt moved since this was generated.
+    stale: bool = False
+    # What the model changed and why, lifted out of the stored tailoring.
+    tailoring_notes: list[str] = Field(default_factory=list)
+    jd_keywords: list[str] = Field(default_factory=list)
+    issues: list[FactIssueOut] = Field(default_factory=list)
+    # Which regions ended up reworded, dropped or moved — drives the diff.
+    reworded: list[str] = Field(default_factory=list)
+    dropped: list[str] = Field(default_factory=list)
+
+
+class DocumentSaveIn(BaseModel):
+    """A hand edit from the editor pane."""
+
+    tex: str = Field(min_length=1)
+
+
+class CompileOut(BaseModel):
+    """The result of one compile. `ok=false` is a normal, expected outcome."""
+
+    ok: bool
+    errors: list[str] = Field(default_factory=list)
+    log: str = ""
+    duration_s: float = 0.0
+    # Changes whenever the PDF does, so the preview can bust its own cache.
+    pdf_hash: str = ""
+    # Blocking fact-check findings over the CURRENT text, re-run after a hand
+    # edit. Never blocks the compile.
+    fact_warnings: list[str] = Field(default_factory=list)
+
+
+class BaseResumeOut(BaseModel):
+    """The untailored résumé — the left-hand side of the diff."""
+
+    tex: str
+    regions: list[dict[str, str]] = Field(default_factory=list)
+    available: bool = True
+    note: str = ""
+
+
+class ChatChangeOut(BaseModel):
+    """One edit a chat reply proposes. `blocked` ones are shown, never applied."""
+
+    region_id: str
+    label: str
+    kind: str
+    action: Literal["rewrite", "drop"]
+    before: str
+    after: str
+    reason: str = ""
+    status: Literal["proposed", "blocked"]
+    blocked: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ChatProposalOut(BaseModel):
+    # `none`: the reply answered a question and proposed nothing.
+    status: Literal["none", "pending", "applied", "dismissed"]
+    changes: list[ChatChangeOut] = Field(default_factory=list)
+    order: list[str] = Field(default_factory=list)
+    order_preview: list[dict[str, str]] = Field(default_factory=list)
+    applied: list[str] = Field(default_factory=list)
+
+
+class ChatMessageOut(BaseModel):
+    id: str
+    role: Literal["user", "assistant"]
+    text: str
+    created_at: datetime
+    tokens: int = 0
+    proposal: ChatProposalOut | None = None
+
+
+class ChatOut(BaseModel):
+    """The whole conversation about one tailored résumé."""
+
+    document_id: int
+    messages: list[ChatMessageOut] = Field(default_factory=list)
+    # Free starter prompts built from stored data — no LLM call.
+    suggestions: list[str] = Field(default_factory=list)
+    tokens: int = 0
+
+
+class ChatIn(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class ChatApplyIn(BaseModel):
+    # Region ids to apply, plus "order" for the reorder. Omitted: all of them.
+    accept: list[str] | None = None
+
+
+class ChatApplyOut(BaseModel):
+    document: DocumentOut
+    chat: ChatOut

@@ -1,4 +1,6 @@
 import type {
+  BaseResume,
+  CompileResult,
   Facets,
   Filters,
   Health,
@@ -18,6 +20,8 @@ import type {
   Prefs,
   PrefsPatch,
   ProfileSummary,
+  TailoredDocument,
+  ResumeChat,
   ValidityRun,
 } from "./types";
 
@@ -297,4 +301,104 @@ export function runValidity(force = false): Promise<ValidityRun> {
   const p = new URLSearchParams();
   if (force) p.set("force", "true");
   return request<ValidityRun>("/validity/run", p, { method: "POST" });
+}
+
+// ---------------------------------------------------------------------------
+// Stage 3 — tailored documents
+//
+// The PDF is not fetched as JSON: `documentPdfUrl` is handed straight to an
+// <iframe> and to the download link, so the browser's own PDF viewer renders
+// the same bytes the download writes to disk.
+// ---------------------------------------------------------------------------
+
+/** The stored résumé for this job at the current profile version, or null. */
+export async function fetchDocument(jobId: number): Promise<TailoredDocument | null> {
+  try {
+    return await request<TailoredDocument>(`/matches/${jobId}/document`);
+  } catch (error) {
+    // 404 is the normal "not generated yet" answer, not a failure.
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+/** Tailor the résumé to this job. One LLM call — only ever on a click. */
+export function generateDocument(jobId: number, force = false): Promise<TailoredDocument> {
+  const p = new URLSearchParams();
+  if (force) p.set("force", "true");
+  return request<TailoredDocument>(`/matches/${jobId}/document`, p, { method: "POST" });
+}
+
+/** Save hand-edited LaTeX. Free. */
+export function saveDocument(docId: number, tex: string): Promise<TailoredDocument> {
+  return request<TailoredDocument>(`/documents/${docId}`, undefined, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tex }),
+  });
+}
+
+/** Discard hand edits and replay the stored tailoring. Free — no LLM call. */
+export function revertDocument(docId: number): Promise<TailoredDocument> {
+  return request<TailoredDocument>(`/documents/${docId}/revert`, undefined, { method: "POST" });
+}
+
+/** Build the PDF. `ok: false` is a normal outcome while editing, not an error. */
+export function compileDocument(docId: number, force = false): Promise<CompileResult> {
+  const p = new URLSearchParams();
+  if (force) p.set("force", "true");
+  return request<CompileResult>(`/documents/${docId}/compile`, p, { method: "POST" });
+}
+
+/** `version` busts the iframe's cache when the PDF changes. */
+export function documentPdfUrl(docId: number, version: string, download = false): string {
+  const p = new URLSearchParams({ v: version });
+  if (download) p.set("download", "true");
+  return `${BASE}/documents/${docId}/pdf?${p}`;
+}
+
+export function documentTexUrl(docId: number): string {
+  return `${BASE}/documents/${docId}/tex`;
+}
+
+/** The untailored résumé — the left side of the diff. */
+export function fetchBaseResume(): Promise<BaseResume> {
+  return request<BaseResume>("/documents/base");
+}
+
+// Résumé chat. Sending costs one LLM call; everything else is free.
+
+export function fetchChat(docId: number): Promise<ResumeChat> {
+  return request<ResumeChat>(`/documents/${docId}/chat`);
+}
+
+export function sendChat(docId: number, message: string): Promise<ResumeChat> {
+  return request<ResumeChat>(`/documents/${docId}/chat`, undefined, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+}
+
+/** `accept`: region ids (and "order") to apply; omitted applies every unblocked change. */
+export function applyChat(
+  docId: number,
+  messageId: string,
+  accept?: string[],
+): Promise<{ document: TailoredDocument; chat: ResumeChat }> {
+  return request(`/documents/${docId}/chat/${messageId}/apply`, undefined, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ accept: accept ?? null }),
+  });
+}
+
+export function dismissChat(docId: number, messageId: string): Promise<ResumeChat> {
+  return request<ResumeChat>(`/documents/${docId}/chat/${messageId}/dismiss`, undefined, {
+    method: "POST",
+  });
+}
+
+export function clearChat(docId: number): Promise<ResumeChat> {
+  return request<ResumeChat>(`/documents/${docId}/chat`, undefined, { method: "DELETE" });
 }

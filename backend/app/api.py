@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import Select, and_, case, func, or_, select
 from sqlalchemy.orm import defer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,21 @@ from app.adapters import supported_ats
 from app.companies import CompanyConfigError, load_companies
 from app.config import get_settings
 from app.db import get_session, session_scope
+from app.documents import get_job as require_job  # `get_job` is taken by the /jobs/{id} route
+from app.documents import (
+    DocumentError,
+    check_facts,
+    compile_document,
+    generate_resume,
+    get_document,
+    is_stale,
+    revert,
+    save_tex,
+    tex_hash,
+)
 from app.funnel import jobs_funnel, matches_funnel
+from app.latex import LatexUnavailable
+from app.llm import LLMError, LLMNotConfigured, LLMRateLimited
 from app.ingest import is_fresh, run_ingest
 from app.ingest_state import RunProgress, tracker
 from app.job_filters import IS_REMOTE, JobFilterSet, apply_job_filters
@@ -25,16 +40,27 @@ from app.llm_runner import LLMProgress, LLMRunResult, run_llm_screen
 from app.llm_runner import tracker as llm_tracker
 from app.match_runner import MatchRunResult, run_matching
 from app.matching import get_weights
-from app.models import IngestRun, JobMatch, JobPosting, utcnow
+from app.models import GeneratedDocument, IngestRun, JobMatch, JobPosting, utcnow
 from app.normalize import detect_currency, find_usd_pay
 from app.pipeline import LLMEstimate, PipelineProgress, estimate_llm_pass, run_pipeline
 from app.pipeline import tracker as pipeline_tracker
 from app.prefs import Prefs, PrefsError, TransferPrefs, get_prefs, load_prefs, save_prefs
 from app.profile import ProfileError, get_profile
+from app.resume_tex import ResumeDocument, ResumeTemplateError
+from app import resume_chat
 from app.shortlist import HARD_MAX_READS, reasons_excluded, shortlist_clause
 from app.validation_runner import ValidityRunResult, run_validation
 from app.validation_runner import _band as validity_band
 from app.schemas import (
+    BaseResumeOut,
+    CompileOut,
+    ChatApplyIn,
+    ChatApplyOut,
+    ChatIn,
+    ChatOut,
+    DocumentOut,
+    DocumentSaveIn,
+    FactIssueOut,
     IngestRunOut,
     IngestStatusOut,
     JobDetailOut,
@@ -1257,3 +1283,350 @@ async def run_validity(
     out = _validity_out(result)
     assert out is not None  # run_validation always returns a result
     return out
+
+
+# --------------------------------------------------------------------------
+# Stage 3 — tailored documents
+#
+# The résumé is LaTeX end to end: the editor round-trips `tex`, and the PDF is
+# compiled from it on demand rather than stored (see `app/documents.py`).
+# Generation is synchronous — one LLM call for one job, ~10s, started by a
+# person who is watching. That is the opposite of the deep read, which is a
+# multi-hour pass and therefore a background task with a poll endpoint.
+# --------------------------------------------------------------------------
+def _document_out(document: GeneratedDocument, job: JobPosting) -> DocumentOut:
+    tailoring = document.tailoring or {}
+    edits = document.edits or {}
+    bullets = edits.get("bullets") or []
+    return DocumentOut(
+        id=document.id,
+        job_id=document.job_id,
+        kind=document.kind,
+        profile_version=document.profile_version,
+        tex=document.tex,
+        is_draft=document.is_draft,
+        hand_edited=document.hand_edited,
+        llm_used=document.llm_used,
+        llm_tokens=document.llm_tokens,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
+        stale=is_stale(document, job),
+        tailoring_notes=list(tailoring.get("tailoring_notes") or []),
+        jd_keywords=list(tailoring.get("jd_keywords") or []),
+        issues=[FactIssueOut(**issue) for issue in (document.issues or [])],
+        reworded=[b["id"] for b in bullets if b.get("text")],
+        dropped=[b["id"] for b in bullets if not b.get("include", True)],
+    )
+
+
+async def _load_document(session: AsyncSession, doc_id: int) -> GeneratedDocument:
+    document = await session.get(GeneratedDocument, doc_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail=f"document {doc_id} not found")
+    return document
+
+
+def _document_filename(job: JobPosting, extension: str) -> str:
+    """`Ashish_Kumar_Canonical_Security_Software_Engineer.pdf`.
+
+    Named for the employer and role because these land in a downloads folder
+    among a dozen others, where `resume.pdf` is unrecoverable.
+    """
+    try:
+        who = get_profile().identity.full_name
+    except ProfileError:
+        who = "resume"
+    parts = [who, job.company, job.title]
+    stem = "_".join(re.sub(r"[^A-Za-z0-9]+", "_", part).strip("_") for part in parts if part)
+    return f"{stem[:120]}.{extension}"
+
+
+@router.get("/documents/base", response_model=BaseResumeOut, tags=["documents"])
+async def base_resume() -> BaseResumeOut:
+    """The untailored résumé and its editable regions.
+
+    Backs the diff pane, and answers "is tailoring possible at all" — the .tex
+    lives beside the PDF in `data/`, which is gitignored as PII, so a fresh
+    checkout has the profile but not the template.
+    """
+    try:
+        template = ResumeDocument.load()
+    except ResumeTemplateError as exc:
+        return BaseResumeOut(tex="", available=False, note=str(exc))
+    return BaseResumeOut(
+        tex=template.tex,
+        regions=[
+            {"id": r.id, "kind": r.kind, "group": r.group, "label": r.label, "text": r.text}
+            for r in template.regions
+        ],
+    )
+
+
+@router.get("/matches/{job_id}/document", response_model=DocumentOut, tags=["documents"])
+async def read_document(
+    job_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DocumentOut:
+    """The tailored résumé for this job at the CURRENT profile version.
+
+    404 when none exists — the modal then opens on an empty state with a
+    Generate button, rather than billing an LLM call because a row was clicked.
+    """
+    try:
+        version = get_profile().version
+    except ProfileError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    job = await session.get(JobPosting, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"job {job_id} not found")
+    document = await get_document(session, job_id, profile_version=version)
+    if document is None:
+        raise HTTPException(status_code=404, detail="no tailored resume for this job yet")
+    return _document_out(document, job)
+
+
+@router.post("/matches/{job_id}/document", response_model=DocumentOut, tags=["documents"])
+async def create_document(
+    job_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    force: Annotated[
+        bool, Query(description="Re-run the LLM even if a current document exists")
+    ] = False,
+) -> DocumentOut:
+    """Tailor the résumé to this job. One LLM call, billed to the daily cap.
+
+    Cache-correct per CLAUDE.md: an unchanged JD and an unchanged profile
+    return the stored document and spend nothing. `force` is also how hand
+    edits are discarded, which is why that case refuses without it rather than
+    quietly overwriting the user's own text.
+    """
+    try:
+        result = await generate_resume(session, job_id, force=force)
+    except DocumentError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ResumeTemplateError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except LLMNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except LLMError as exc:
+        raise HTTPException(status_code=502, detail=f"the model failed: {exc}") from exc
+    job = await require_job(session, job_id)
+    return _document_out(result.document, job)
+
+
+@router.put("/documents/{doc_id}", response_model=DocumentOut, tags=["documents"])
+async def update_document(
+    doc_id: int,
+    payload: DocumentSaveIn,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DocumentOut:
+    """Save hand-edited LaTeX. Marks the document hand-edited, costs nothing."""
+    document = await _load_document(session, doc_id)
+    try:
+        document = await save_tex(session, document, payload.tex)
+    except DocumentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    job = await require_job(session, document.job_id)
+    return _document_out(document, job)
+
+
+@router.post("/documents/{doc_id}/revert", response_model=DocumentOut, tags=["documents"])
+async def revert_document(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DocumentOut:
+    """Undo hand edits by replaying the stored tailoring. Free — no LLM call."""
+    document = await _load_document(session, doc_id)
+    try:
+        document = await revert(session, document)
+    except DocumentError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    job = await require_job(session, document.job_id)
+    return _document_out(document, job)
+
+
+@router.post("/documents/{doc_id}/compile", response_model=CompileOut, tags=["documents"])
+async def compile_document_route(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    force: Annotated[bool, Query(description="Ignore the cached PDF")] = False,
+) -> CompileOut:
+    """Build the PDF and report what happened. The bytes come from `/pdf`.
+
+    A failed compile answers 200 with `ok=false`: the editor is expected to be
+    mid-edit and broken half the time, so a broken document is a state to
+    render, not an HTTP error to handle.
+    """
+    document = await _load_document(session, doc_id)
+    try:
+        result = await compile_document(document, use_cache=not force)
+    except LatexUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    warnings: list[str] = []
+    if document.hand_edited:
+        try:
+            warnings = check_facts(document.tex, get_profile(), ResumeDocument.load())
+        except (ProfileError, ResumeTemplateError, ValueError):
+            # The fact check is advisory. It never fails a compile.
+            warnings = []
+
+    return CompileOut(
+        ok=result.ok,
+        errors=result.errors,
+        log=result.log[-4000:],
+        duration_s=round(result.duration_s, 2),
+        pdf_hash=tex_hash(document.tex) if result.ok else "",
+        fact_warnings=warnings,
+    )
+
+
+@router.get("/documents/{doc_id}/pdf", tags=["documents"])
+async def document_pdf(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    download: Annotated[bool, Query(description="Send as an attachment")] = False,
+) -> Response:
+    """The compiled PDF — the preview pane's source, and the download.
+
+    Both read the same cache entry, so the file that lands on disk is
+    byte-for-byte the one that was on screen.
+    """
+    document = await _load_document(session, doc_id)
+    try:
+        result = await compile_document(document)
+    except LatexUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if not result.ok or result.pdf is None:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "the resume does not compile", "errors": result.errors},
+        )
+
+    job = await require_job(session, document.job_id)
+    disposition = "attachment" if download else "inline"
+    filename = _document_filename(job, "pdf")
+    return Response(
+        content=result.pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
+    )
+
+
+@router.get("/documents/{doc_id}/tex", tags=["documents"])
+async def document_tex(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """The LaTeX source, for Overleaf or a local build."""
+    document = await _load_document(session, doc_id)
+    job = await require_job(session, document.job_id)
+    filename = _document_filename(job, "tex")
+    return Response(
+        content=document.tex,
+        media_type="application/x-tex",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# --------------------------------------------------------------------------
+# Stage 3 — refining a tailored résumé by chat (`app/resume_chat.py`)
+#
+# A message costs one LLM call; everything else here is free. A reply never
+# edits the document — it carries a fact-checked proposal that the user applies
+# (or dismisses) with a separate request.
+# --------------------------------------------------------------------------
+async def _chat_out(session: AsyncSession, document: GeneratedDocument) -> ChatOut:
+    messages = list(document.chat or [])
+    return ChatOut(
+        document_id=document.id,
+        messages=messages,
+        suggestions=await resume_chat.suggestions(session, document),
+        tokens=sum(int(m.get("tokens") or 0) for m in messages),
+    )
+
+
+@router.get("/documents/{doc_id}/chat", response_model=ChatOut, tags=["documents"])
+async def read_chat(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ChatOut:
+    document = await _load_document(session, doc_id)
+    return await _chat_out(session, document)
+
+
+@router.post("/documents/{doc_id}/chat", response_model=ChatOut, tags=["documents"])
+async def send_chat(
+    doc_id: int,
+    payload: ChatIn,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ChatOut:
+    """Ask for a change or a question about this résumé. One LLM call."""
+    document = await _load_document(session, doc_id)
+    try:
+        await resume_chat.send_message(session, document, payload.message)
+    except DocumentError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ResumeTemplateError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except LLMNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except LLMRateLimited as exc:
+        raise HTTPException(status_code=429, detail=f"LLM limit reached: {exc}") from exc
+    except LLMError as exc:
+        raise HTTPException(status_code=502, detail=f"the model failed: {exc}") from exc
+    return await _chat_out(session, document)
+
+
+@router.post(
+    "/documents/{doc_id}/chat/{message_id}/apply",
+    response_model=ChatApplyOut,
+    tags=["documents"],
+)
+async def apply_chat(
+    doc_id: int,
+    message_id: str,
+    payload: ChatApplyIn,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ChatApplyOut:
+    """Write a reply's accepted edits into the résumé. Free — no LLM call."""
+    document = await _load_document(session, doc_id)
+    try:
+        document = await resume_chat.apply_proposal(
+            session, document, message_id, payload.accept
+        )
+    except DocumentError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    job = await require_job(session, document.job_id)
+    return ChatApplyOut(
+        document=_document_out(document, job), chat=await _chat_out(session, document)
+    )
+
+
+@router.post(
+    "/documents/{doc_id}/chat/{message_id}/dismiss",
+    response_model=ChatOut,
+    tags=["documents"],
+)
+async def dismiss_chat(
+    doc_id: int,
+    message_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ChatOut:
+    document = await _load_document(session, doc_id)
+    try:
+        await resume_chat.dismiss_proposal(session, document, message_id)
+    except DocumentError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return await _chat_out(session, document)
+
+
+@router.delete("/documents/{doc_id}/chat", response_model=ChatOut, tags=["documents"])
+async def clear_chat(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ChatOut:
+    """Start the conversation over. Leaves the résumé as it is."""
+    document = await _load_document(session, doc_id)
+    await resume_chat.clear_chat(session, document)
+    return await _chat_out(session, document)
