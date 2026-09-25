@@ -20,6 +20,7 @@ import type {
   Prefs,
   PrefsPatch,
   ProfileSummary,
+  DocumentKind,
   TailoredDocument,
   ResumeChat,
   ValidityRun,
@@ -311,10 +312,16 @@ export function runValidity(force = false): Promise<ValidityRun> {
 // the same bytes the download writes to disk.
 // ---------------------------------------------------------------------------
 
-/** The stored résumé for this job at the current profile version, or null. */
-export async function fetchDocument(jobId: number): Promise<TailoredDocument | null> {
+/** The stored résumé (or cover letter) for this job at the current profile version, or null. */
+export async function fetchDocument(
+  jobId: number,
+  kind: DocumentKind = "resume",
+): Promise<TailoredDocument | null> {
   try {
-    return await request<TailoredDocument>(`/matches/${jobId}/document`);
+    return await request<TailoredDocument>(
+      `/matches/${jobId}/document`,
+      new URLSearchParams({ kind }),
+    );
   } catch (error) {
     // 404 is the normal "not generated yet" answer, not a failure.
     if (error instanceof ApiError && error.status === 404) return null;
@@ -322,9 +329,13 @@ export async function fetchDocument(jobId: number): Promise<TailoredDocument | n
   }
 }
 
-/** Tailor the résumé to this job. One LLM call — only ever on a click. */
-export function generateDocument(jobId: number, force = false): Promise<TailoredDocument> {
-  const p = new URLSearchParams();
+/** Tailor the résumé, or draft the cover letter. One LLM call — only ever on a click. */
+export function generateDocument(
+  jobId: number,
+  force = false,
+  kind: DocumentKind = "resume",
+): Promise<TailoredDocument> {
+  const p = new URLSearchParams({ kind });
   if (force) p.set("force", "true");
   return request<TailoredDocument>(`/matches/${jobId}/document`, p, { method: "POST" });
 }

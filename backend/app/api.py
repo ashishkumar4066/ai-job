@@ -20,11 +20,12 @@ from app.config import get_settings
 from app.db import get_session, session_scope
 from app.documents import get_job as require_job  # `get_job` is taken by the /jobs/{id} route
 from app.documents import (
+    COVER_LETTER,
     DocumentError,
-    check_facts,
     compile_document,
-    generate_resume,
+    generate,
     get_document,
+    hand_edit_warnings,
     is_stale,
     revert,
     save_tex,
@@ -1326,17 +1327,23 @@ async def _load_document(session: AsyncSession, doc_id: int) -> GeneratedDocumen
     return document
 
 
-def _document_filename(job: JobPosting, extension: str) -> str:
+DocumentKind = Literal["resume", "cover_letter"]
+
+
+def _document_filename(job: JobPosting, extension: str, kind: str = "resume") -> str:
     """`Ashish_Kumar_Canonical_Security_Software_Engineer.pdf`.
 
     Named for the employer and role because these land in a downloads folder
-    among a dozen others, where `resume.pdf` is unrecoverable.
+    among a dozen others, where `resume.pdf` is unrecoverable. A cover letter
+    gets `_Cover_Letter` on the end, so the pair sorts together.
     """
     try:
         who = get_profile().identity.full_name
     except ProfileError:
         who = "resume"
     parts = [who, job.company, job.title]
+    if kind == COVER_LETTER:
+        parts.append("Cover Letter")
     stem = "_".join(re.sub(r"[^A-Za-z0-9]+", "_", part).strip("_") for part in parts if part)
     return f"{stem[:120]}.{extension}"
 
@@ -1366,8 +1373,9 @@ async def base_resume() -> BaseResumeOut:
 async def read_document(
     job_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
+    kind: Annotated[DocumentKind, Query(description="resume or cover_letter")] = "resume",
 ) -> DocumentOut:
-    """The tailored résumé for this job at the CURRENT profile version.
+    """The tailored résumé (or cover letter) for this job at the CURRENT profile version.
 
     404 when none exists — the modal then opens on an empty state with a
     Generate button, rather than billing an LLM call because a row was clicked.
@@ -1379,9 +1387,10 @@ async def read_document(
     job = await session.get(JobPosting, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail=f"job {job_id} not found")
-    document = await get_document(session, job_id, profile_version=version)
+    document = await get_document(session, job_id, profile_version=version, kind=kind)
     if document is None:
-        raise HTTPException(status_code=404, detail="no tailored resume for this job yet")
+        what = "cover letter" if kind == COVER_LETTER else "tailored resume"
+        raise HTTPException(status_code=404, detail=f"no {what} for this job yet")
     return _document_out(document, job)
 
 
@@ -1392,8 +1401,10 @@ async def create_document(
     force: Annotated[
         bool, Query(description="Re-run the LLM even if a current document exists")
     ] = False,
+    kind: Annotated[DocumentKind, Query(description="resume or cover_letter")] = "resume",
 ) -> DocumentOut:
-    """Tailor the résumé to this job. One LLM call, billed to the daily cap.
+    """Tailor the résumé, or draft the cover letter, for this job. One LLM call,
+    billed to the daily cap.
 
     Cache-correct per CLAUDE.md: an unchanged JD and an unchanged profile
     return the stored document and spend nothing. `force` is also how hand
@@ -1401,13 +1412,15 @@ async def create_document(
     quietly overwriting the user's own text.
     """
     try:
-        result = await generate_resume(session, job_id, force=force)
+        result = await generate(session, job_id, kind=kind, force=force)
     except DocumentError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ResumeTemplateError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except LLMNotConfigured as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except LLMRateLimited as exc:
+        raise HTTPException(status_code=429, detail=f"LLM limit reached: {exc}") from exc
     except LLMError as exc:
         raise HTTPException(status_code=502, detail=f"the model failed: {exc}") from exc
     job = await require_job(session, job_id)
@@ -1466,8 +1479,9 @@ async def compile_document_route(
     warnings: list[str] = []
     if document.hand_edited:
         try:
-            warnings = check_facts(document.tex, get_profile(), ResumeDocument.load())
-        except (ProfileError, ResumeTemplateError, ValueError):
+            job = await require_job(session, document.job_id)
+            warnings = hand_edit_warnings(document, job, get_profile())
+        except (DocumentError, ProfileError, ResumeTemplateError, ValueError):
             # The fact check is advisory. It never fails a compile.
             warnings = []
 
@@ -1500,12 +1514,12 @@ async def document_pdf(
     if not result.ok or result.pdf is None:
         raise HTTPException(
             status_code=422,
-            detail={"message": "the resume does not compile", "errors": result.errors},
+            detail={"message": "the document does not compile", "errors": result.errors},
         )
 
     job = await require_job(session, document.job_id)
     disposition = "attachment" if download else "inline"
-    filename = _document_filename(job, "pdf")
+    filename = _document_filename(job, "pdf", document.kind)
     return Response(
         content=result.pdf,
         media_type="application/pdf",
@@ -1521,7 +1535,7 @@ async def document_tex(
     """The LaTeX source, for Overleaf or a local build."""
     document = await _load_document(session, doc_id)
     job = await require_job(session, document.job_id)
-    filename = _document_filename(job, "tex")
+    filename = _document_filename(job, "tex", document.kind)
     return Response(
         content=document.tex,
         media_type="application/x-tex",
@@ -1536,6 +1550,14 @@ async def document_tex(
 # edits the document — it carries a fact-checked proposal that the user applies
 # (or dismisses) with a separate request.
 # --------------------------------------------------------------------------
+async def _load_resume(session: AsyncSession, doc_id: int) -> GeneratedDocument:
+    """Chat proposals are keyed by résumé regions; a cover letter has none."""
+    document = await _load_document(session, doc_id)
+    if document.kind != "resume":
+        raise HTTPException(status_code=409, detail="chat is only available for the resume")
+    return document
+
+
 async def _chat_out(session: AsyncSession, document: GeneratedDocument) -> ChatOut:
     messages = list(document.chat or [])
     return ChatOut(
@@ -1551,7 +1573,7 @@ async def read_chat(
     doc_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
-    document = await _load_document(session, doc_id)
+    document = await _load_resume(session, doc_id)
     return await _chat_out(session, document)
 
 
@@ -1562,7 +1584,7 @@ async def send_chat(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
     """Ask for a change or a question about this résumé. One LLM call."""
-    document = await _load_document(session, doc_id)
+    document = await _load_resume(session, doc_id)
     try:
         await resume_chat.send_message(session, document, payload.message)
     except DocumentError as exc:
@@ -1590,7 +1612,7 @@ async def apply_chat(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatApplyOut:
     """Write a reply's accepted edits into the résumé. Free — no LLM call."""
-    document = await _load_document(session, doc_id)
+    document = await _load_resume(session, doc_id)
     try:
         document = await resume_chat.apply_proposal(
             session, document, message_id, payload.accept
@@ -1613,7 +1635,7 @@ async def dismiss_chat(
     message_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
-    document = await _load_document(session, doc_id)
+    document = await _load_resume(session, doc_id)
     try:
         await resume_chat.dismiss_proposal(session, document, message_id)
     except DocumentError as exc:
@@ -1627,6 +1649,6 @@ async def clear_chat(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
     """Start the conversation over. Leaves the résumé as it is."""
-    document = await _load_document(session, doc_id)
+    document = await _load_resume(session, doc_id)
     await resume_chat.clear_chat(session, document)
     return await _chat_out(session, document)

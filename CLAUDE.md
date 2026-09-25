@@ -13,7 +13,7 @@ Build in **phases, in order**. When I say `Implement Phase N`, treat that phase'
 | 1 | Aggregator (adapters, ingest, alerts, API) | ✅ Done |
 | 2A | Dashboard (browse / filter / inspect) | ✅ Done |
 | 2B | Validation layer (deterministic + LLM) | ✅ Built — only the deep read's data is incomplete (10 of ~314 in-preference routed rows read) |
-| 2C | Matches (profile fit + tailored résumé/cover letter) | 🟡 Stages 1-3 done for the **résumé** (LaTeX editor + live PDF + refine-by-chat, per job), plus a preferences gate, funnels, Send-to-Matches and a capped LLM shortlist; the **cover letter** and profile editing are not started |
+| 2C | Matches (profile fit + tailored résumé/cover letter) | 🟡 Stages 1-3 done for the **résumé** (LaTeX editor + live PDF + refine-by-chat, per job) and the **cover letter** (same modal, no chat), plus a preferences gate, funnels, Send-to-Matches and a capped LLM shortlist; profile editing is not started |
 | 3 | Autofill (review-before-submit) | ⬜ Not started |
 
 ### Deviation from the original 2B/2C split
@@ -716,7 +716,29 @@ checked against. `app/resume_chat.py`, `components/ResumeChat.tsx`.
 - `GET|POST|DELETE /documents/{id}/chat`,
   `POST /documents/{id}/chat/{message_id}/{apply,dismiss}`.
 
-**Not built:** the cover letter, and the diff-against-base view. `GET
+**Built (2026-09-22) — the cover letter (`app/cover_letter.py`, no migration):**
+
+A **Cover letter** button beside Tailor (row and drawer) opens the same modal,
+with a Résumé | Cover letter switch in its header. Stored in
+`generated_documents` as `kind = "cover_letter"`; the routes take `?kind=`.
+
+- **The model writes only the body paragraphs.** Header, date, addressee,
+  greeting and sign-off are rendered from `profile.yaml` and the posting, and
+  the contact links reuse the résumé's own `\href` labels.
+- **No original to fall back to, so a blocked claim removes its SENTENCE.**
+  The corpus is profile + base résumé, plus the JD's *words* (naming what the
+  employer builds must not warn) but **not the JD's numbers**, or "5+ years"
+  in a requirement would vouch for a claim. `gaps:` stays blocking.
+- The body sits between `% --- BODY` markers so a hand-edited letter is still
+  fact-checked without reading the header (whose date is never in the profile).
+- `edits` stores the rendered paragraphs + company/title/date, so Revert is
+  free. Chat is résumé-only (409 on a letter): its proposals are keyed by
+  résumé regions.
+- **Cost: 7,499 tokens** measured (Cerebras qwen, Pulsora "AI Engineer -
+  India"), close to a tailoring, because the input dominates.
+  `llm_cover_completion_tokens` (6,000) is its own ceiling.
+
+**Not built:** chat for the cover letter, and the diff-against-base view. `GET
 /documents/base` already returns the untailored .tex and its regions, so the
 diff is a UI addition with no backend work left.
 

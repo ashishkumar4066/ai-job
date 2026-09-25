@@ -350,6 +350,11 @@ class Settings(BaseSettings):
     llm_tailor_completion_tokens: int = Field(
         default=10_000, ge=2000, validation_alias=_alias("tailor_completion_tokens")
     )
+    # The cover letter answers with ~350 words plus notes — far less than a
+    # tailoring, and Cerebras books the ceiling up front, so it has its own.
+    llm_cover_completion_tokens: int = Field(
+        default=6_000, ge=2000, validation_alias=_alias("cover_completion_tokens")
+    )
     llm_timeout_seconds: float = Field(
         default=120.0, gt=0, validation_alias=_alias("timeout_seconds")
     )

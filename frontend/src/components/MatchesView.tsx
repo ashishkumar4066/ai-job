@@ -11,6 +11,7 @@ import {
   FileText,
   Gauge,
   Loader2,
+  Mail,
   Send,
   SlidersHorizontal,
   Sparkles,
@@ -32,7 +33,7 @@ import { Funnel } from "./Funnel";
 import { JobDrawer } from "./JobDrawer";
 import { PrefsPanel } from "./PrefsPanel";
 import { TailorModal } from "./TailorModal";
-import type { Match, MatchBandFilters, MatchSort } from "@/lib/types";
+import type { DocumentKind, Match, MatchBandFilters, MatchSort } from "@/lib/types";
 import { CompanyAvatar, EmptyState, SkeletonRow, cx, useSpotlight } from "./primitives";
 
 /**
@@ -100,9 +101,14 @@ export function MatchesView({
   // left running after the dialog closes still shows on the header button.
   const [running, setRunning] = useState(false);
   const [showPrefMisses, setShowPrefMisses] = useState(false);
-  // The row whose résumé is being tailored. Holds the whole Match, not an id:
-  // the modal's header wants the title and company without another fetch.
-  const [tailoring, setTailoring] = useState<Match | null>(null);
+  // The row whose résumé or cover letter is being tailored. Holds the whole
+  // Match, not an id: the modal's header wants the title and company without
+  // another fetch.
+  const [tailoring, setTailoring] = useState<{ match: Match; kind: DocumentKind } | null>(null);
+  const openTailor = useCallback(
+    (match: Match, kind: DocumentKind) => setTailoring({ match, kind }),
+    [],
+  );
 
   // A freshly sent scope does nothing until the free ranking pass re-gates
   // the rows, so arriving from "Send to Matches" opens the Run dialog.
@@ -394,7 +400,7 @@ export function MatchesView({
           onLoadMore={loadMore}
           selectedJobId={selectedJobId}
           onSelectJob={onSelectJob}
-          onTailor={setTailoring}
+          onTailor={openTailor}
         />
       ) : (
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 md:px-3">
@@ -459,9 +465,10 @@ export function MatchesView({
     </div>
 
       <TailorModal
-        jobId={tailoring?.job.id ?? null}
-        jobTitle={tailoring?.job.title ?? ""}
-        company={tailoring?.job.company ?? ""}
+        jobId={tailoring?.match.job.id ?? null}
+        jobTitle={tailoring?.match.job.title ?? ""}
+        company={tailoring?.match.job.company ?? ""}
+        kind={tailoring?.kind ?? "resume"}
         onClose={() => setTailoring(null)}
       />
 
@@ -470,10 +477,11 @@ export function MatchesView({
           jobId={selectedJobId}
           summary={items[selectedIndex]?.job}
           match={items[selectedIndex]}
-          onTailor={() => {
+          onTailor={(kind) => {
             // Hand over to the modal: the drawer sits above it (z-50), so
             // leaving it open covers the editor it just opened.
-            setTailoring(items[selectedIndex] ?? null);
+            const match = items[selectedIndex];
+            if (match) openTailor(match, kind);
             onSelectJob(null);
           }}
           onClose={() => onSelectJob(null)}
@@ -510,7 +518,7 @@ function MatchList({
   onLoadMore: () => void;
   selectedJobId: number | null;
   onSelectJob: (id: number | null) => void;
-  onTailor: (match: Match) => void;
+  onTailor: (match: Match, kind: DocumentKind) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefetch = usePrefetchJob();
@@ -587,7 +595,7 @@ const MatchRow = memo(function MatchRow({
   match: Match;
   onSelect: (id: number) => void;
   onHover: (id: number) => void;
-  onTailor: (match: Match) => void;
+  onTailor: (match: Match, kind: DocumentKind) => void;
 }) {
   const onSelect = () => onSelectId(match.job.id);
   const onPointerMove = useSpotlight<HTMLDivElement>();
@@ -812,7 +820,9 @@ const MatchRow = memo(function MatchRow({
 
         {/* Posted + checks + Apply. Falls back to first-seen when the board
             gave no posting date, same as the Jobs table. */}
-        <div className="flex w-[168px] shrink-0 flex-col items-end gap-1.5 pt-0.5">
+        {/* Sized to its content (min 168px), not fixed: three buttons do not
+            fit in 168px, and a fixed width let them spill over the subscores. */}
+        <div className="flex min-w-[168px] shrink-0 flex-col items-end gap-1.5 pt-0.5">
           <span className="flex items-center gap-1">
             <VerifierBadge
               score={match.job.validity_score}
@@ -832,14 +842,14 @@ const MatchRow = memo(function MatchRow({
             <Clock size={11} className="text-subtle" />
             {relativeTime(match.job.posted_at ?? match.job.first_seen_at)}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 whitespace-nowrap">
             {/* Tailor sits beside Apply because they are one action in two
                 steps: rewrite the resume for this JD, then go and submit it. */}
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                onTailor(match);
+                onTailor(match, "resume");
               }}
               onKeyDown={(event) => event.stopPropagation()}
               title="Tailor your resume to this job description"
@@ -847,6 +857,19 @@ const MatchRow = memo(function MatchRow({
             >
               <FileText size={12} />
               Tailor
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onTailor(match, "cover_letter");
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              title="Write a cover letter for this job description"
+              className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2 py-1 text-[11.5px] font-semibold text-muted opacity-70 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text focus-visible:opacity-100"
+            >
+              <Mail size={12} />
+              Cover letter
             </button>
             <a
               href={match.job.apply_url}

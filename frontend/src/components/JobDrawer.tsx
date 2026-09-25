@@ -16,6 +16,7 @@ import {
   Globe2,
   Layers,
   Link2,
+  Mail,
   MapPin,
   Server,
   Wallet,
@@ -26,7 +27,7 @@ import { LlmBadge, VerifierBadge, fitBand } from "./CheckBadges";
 import { absoluteDate, formatSalary, relativeTime, sourceLabel, titleCase } from "@/lib/format";
 import { JOB_DETAIL_STALE_MS } from "@/lib/hooks";
 import { sanitizeHtml } from "@/lib/sanitize";
-import type { Job, LlmValidity, Match } from "@/lib/types";
+import type { DocumentKind, Job, LlmValidity, Match } from "@/lib/types";
 import { validityBand } from "@/lib/types";
 import { Badge, CompanyAvatar, cx } from "./primitives";
 
@@ -47,7 +48,7 @@ export function JobDrawer({
   match?: Match;
   onClose: () => void;
   /** Only from Matches — the Jobs tile has no profile-scored row to tailor against. */
-  onTailor?: () => void;
+  onTailor?: (kind: DocumentKind) => void;
   onPrev: () => void;
   onNext: () => void;
   hasPrev: boolean;
@@ -283,14 +284,24 @@ export function JobDrawer({
               <ArrowUpRight size={15} />
             </a>
             {onTailor && (
-              <button
-                onClick={onTailor}
-                title="Rewrite your resume to lead with what this posting asks for"
-                className="flex items-center gap-1.5 rounded-xl border border-edge bg-panel px-3.5 py-2.5 text-[13px] font-medium text-muted transition-all duration-200 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text"
-              >
-                <FileText size={14} />
-                Tailor resume
-              </button>
+              <>
+                <button
+                  onClick={() => onTailor("resume")}
+                  title="Rewrite your resume to lead with what this posting asks for"
+                  className="flex items-center gap-1.5 rounded-xl border border-edge bg-panel px-3.5 py-2.5 text-[13px] font-medium text-muted transition-all duration-200 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text"
+                >
+                  <FileText size={14} />
+                  Tailor resume
+                </button>
+                <button
+                  onClick={() => onTailor("cover_letter")}
+                  title="Write a cover letter for this posting from your profile"
+                  className="flex items-center gap-1.5 rounded-xl border border-edge bg-panel px-3.5 py-2.5 text-[13px] font-medium text-muted transition-all duration-200 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text"
+                >
+                  <Mail size={14} />
+                  Cover letter
+                </button>
+              </>
             )}
             <button
               onClick={() => {

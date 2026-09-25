@@ -23,6 +23,11 @@
  * The left pane has two tabs: the LaTeX editor, and a chat (`ResumeChat.tsx`)
  * for asking for changes in words. Chat sits in the left pane, not over the
  * PDF, because the preview is what the user checks each suggestion against.
+ *
+ * The same modal edits the job's cover letter (`kind="cover_letter"`), with a
+ * switch in the header to move between the two. The letter has the editor,
+ * the preview and the download, but no chat: chat proposals are keyed by
+ * résumé regions, and a letter is prose with none.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -34,6 +39,7 @@ import {
   Code2,
   FileText,
   Loader2,
+  Mail,
   MessageSquare,
   RefreshCw,
   Sparkles,
@@ -52,25 +58,33 @@ import {
   revertDocument,
   saveDocument,
 } from "../lib/api";
-import type { CompileResult, FactIssue, TailoredDocument } from "../lib/types";
+import type { CompileResult, DocumentKind, FactIssue, TailoredDocument } from "../lib/types";
 import { cx } from "./primitives";
 import { ResumeChat } from "./ResumeChat";
 
 type Pane = "editor" | "chat";
 
+const NOUN: Record<DocumentKind, string> = { resume: "résumé", cover_letter: "cover letter" };
+
 export function TailorModal({
   jobId,
   jobTitle,
   company,
+  kind: initialKind = "resume",
   onClose,
 }: {
   jobId: number | null;
   jobTitle: string;
   company: string;
+  /** Which document the modal opens on. The header switch changes it. */
+  kind?: DocumentKind;
   onClose: () => void;
 }) {
   const open = jobId != null;
   const queryClient = useQueryClient();
+  const [kind, setKind] = useState<DocumentKind>(initialKind);
+  useEffect(() => setKind(initialKind), [initialKind, jobId]);
+  const docKey = useMemo(() => ["document", jobId, kind] as const, [jobId, kind]);
 
   // The editor's working copy. `null` means "show the server's text" — kept
   // distinct from "" so an empty edit is still an edit.
@@ -82,8 +96,8 @@ export function TailorModal({
   const [pane, setPane] = useState<Pane>("editor");
 
   const document_ = useQuery({
-    queryKey: ["document", jobId],
-    queryFn: () => fetchDocument(jobId!),
+    queryKey: docKey,
+    queryFn: () => fetchDocument(jobId!, kind),
     enabled: open,
     staleTime: 60_000,
   });
@@ -99,15 +113,17 @@ export function TailorModal({
   const tex = draft ?? doc?.tex ?? "";
   const dirty = draft != null && draft !== doc?.tex;
 
-  // Reset per job: a stale draft leaking across rows would silently overwrite
-  // one résumé with another's text on the next save.
+  // Reset per job and per document: a stale draft leaking across rows (or from
+  // the résumé into the letter) would silently overwrite one document with
+  // another's text on the next save.
   useEffect(() => {
     setDraft(null);
     setCompileState(null);
     setPdfVersion("");
     setShowLog(false);
     setError(null);
-  }, [jobId]);
+    setPane("editor");
+  }, [jobId, kind]);
 
   const runCompile = useCallback(
     async (docId: number) => {
@@ -126,9 +142,9 @@ export function TailorModal({
   }, [doc, compileState, runCompile]);
 
   const generate = useMutation({
-    mutationFn: (force: boolean) => generateDocument(jobId!, force),
+    mutationFn: (force: boolean) => generateDocument(jobId!, force, kind),
     onSuccess: (next) => {
-      queryClient.setQueryData(["document", jobId], next);
+      queryClient.setQueryData(docKey,next);
       // Regenerating starts a new conversation server-side.
       void queryClient.invalidateQueries({ queryKey: ["resume-chat", next.id] });
       setDraft(null);
@@ -145,7 +161,7 @@ export function TailorModal({
       return saved;
     },
     onSuccess: (next) => {
-      queryClient.setQueryData(["document", jobId], next);
+      queryClient.setQueryData(docKey,next);
       setDraft(null);
       setError(null);
     },
@@ -155,7 +171,7 @@ export function TailorModal({
   const revert = useMutation({
     mutationFn: () => revertDocument(doc!.id),
     onSuccess: (next) => {
-      queryClient.setQueryData(["document", jobId], next);
+      queryClient.setQueryData(docKey,next);
       setDraft(null);
       setCompileState(null);
     },
@@ -166,7 +182,7 @@ export function TailorModal({
     mutationFn: async () => {
       if (dirty && doc) {
         const saved = await saveDocument(doc.id, tex);
-        queryClient.setQueryData(["document", jobId], saved);
+        queryClient.setQueryData(docKey,saved);
         setDraft(null);
         return runCompile(saved.id);
       }
@@ -204,10 +220,17 @@ export function TailorModal({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={`Tailor résumé for ${jobTitle}`}
+          aria-label={`Tailor ${NOUN[kind]} for ${jobTitle}`}
           className="glass-strong animate-fade-up pointer-events-auto flex h-full max-h-[94vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
         >
           <Header
+            kind={kind}
+            onKindChange={(next) => {
+              if (next === kind) return;
+              // Switching discards the editor's unsaved text, so ask first.
+              if (dirty && !window.confirm("Discard your unsaved edits?")) return;
+              setKind(next);
+            }}
             jobTitle={jobTitle}
             company={company}
             doc={doc}
@@ -241,14 +264,15 @@ export function TailorModal({
             </Centered>
           ) : !doc ? (
             <EmptyTailorState
+              kind={kind}
               busy={generate.isPending}
               onGenerate={() => generate.mutate(false)}
             />
           ) : (
             <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
               <section className="flex min-h-0 flex-1 flex-col border-edge lg:max-w-[46%] lg:border-r">
-                <PaneTabs pane={pane} dirty={dirty} onChange={setPane} />
-                {pane === "editor" ? (
+                <PaneTabs pane={pane} dirty={dirty} chat={kind === "resume"} onChange={setPane} />
+                {pane === "editor" || kind !== "resume" ? (
                   <>
                     <TailoringSummary doc={doc} blocking={blocking} warnings={warnings} />
                     <Editor value={tex} onChange={(next) => setDraft(next)} />
@@ -258,7 +282,7 @@ export function TailorModal({
                     doc={doc}
                     dirty={dirty}
                     onApplied={(next) => {
-                      queryClient.setQueryData(["document", jobId], next);
+                      queryClient.setQueryData(docKey,next);
                       setDraft(null);
                       void runCompile(next.id).catch((e: unknown) => setError(describe(e)));
                     }}
@@ -274,6 +298,7 @@ export function TailorModal({
 
               <section className="flex min-h-0 flex-1 flex-col bg-black/20">
                 <Preview
+                  noun={NOUN[kind]}
                   docId={doc.id}
                   version={pdfVersion}
                   compiling={recompile.isPending}
@@ -298,15 +323,18 @@ export function TailorModal({
 function PaneTabs({
   pane,
   dirty,
+  chat,
   onChange,
 }: {
   pane: Pane;
   dirty: boolean;
+  /** Chat is résumé-only; the letter shows the editor tab alone. */
+  chat: boolean;
   onChange: (next: Pane) => void;
 }) {
   const tabs: { id: Pane; label: string; icon: React.ReactNode }[] = [
     { id: "editor", label: "LaTeX", icon: <Code2 size={12} /> },
-    { id: "chat", label: "Chat", icon: <MessageSquare size={12} /> },
+    ...(chat ? [{ id: "chat" as const, label: "Chat", icon: <MessageSquare size={12} /> }] : []),
   ];
   return (
     <div role="tablist" className="flex shrink-0 gap-1 border-b border-edge px-3 pt-2">
@@ -335,6 +363,8 @@ function PaneTabs({
 }
 
 function Header({
+  kind,
+  onKindChange,
   jobTitle,
   company,
   doc,
@@ -347,6 +377,8 @@ function Header({
   onRecompile,
   onRevert,
 }: {
+  kind: DocumentKind;
+  onKindChange: (next: DocumentKind) => void;
   jobTitle: string;
   company: string;
   doc: TailoredDocument | null;
@@ -361,10 +393,14 @@ function Header({
 }) {
   return (
     <header className="flex shrink-0 items-center gap-3 border-b border-edge px-4 py-3">
-      <FileText size={16} className="shrink-0 text-accent" />
+      {kind === "resume" ? (
+        <FileText size={16} className="shrink-0 text-accent" />
+      ) : (
+        <Mail size={16} className="shrink-0 text-accent" />
+      )}
       <div className="min-w-0 flex-1">
         <h2 className="truncate text-[13.5px] font-semibold text-ink">
-          Tailored résumé — {jobTitle}
+          {kind === "resume" ? "Tailored résumé" : "Cover letter"} — {jobTitle}
         </h2>
         <p className="truncate text-[11.5px] text-subtle">
           {company}
@@ -379,6 +415,8 @@ function Header({
           )}
         </p>
       </div>
+
+      <KindSwitch kind={kind} disabled={busy} onChange={onKindChange} />
 
       <div className="flex shrink-0 items-center gap-1.5">
         {doc && (
@@ -431,6 +469,45 @@ function Header({
   );
 }
 
+/** Résumé | Cover letter for the same job — one modal, two documents. */
+function KindSwitch({
+  kind,
+  disabled,
+  onChange,
+}: {
+  kind: DocumentKind;
+  disabled: boolean;
+  onChange: (next: DocumentKind) => void;
+}) {
+  const options: { id: DocumentKind; label: string }[] = [
+    { id: "resume", label: "Résumé" },
+    { id: "cover_letter", label: "Cover letter" },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Document"
+      className="flex shrink-0 rounded-lg border border-edge bg-panel p-0.5"
+    >
+      {options.map((option) => (
+        <button
+          key={option.id}
+          role="tab"
+          aria-selected={kind === option.id}
+          disabled={disabled}
+          onClick={() => onChange(option.id)}
+          className={cx(
+            "rounded-md px-2.5 py-1 text-[12px] font-medium disabled:opacity-50",
+            kind === option.id ? "bg-accent/15 text-accent" : "text-subtle hover:text-ink",
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ToolButton({
   children,
   onClick,
@@ -454,13 +531,28 @@ function ToolButton({
   );
 }
 
-function EmptyTailorState({ busy, onGenerate }: { busy: boolean; onGenerate: () => void }) {
+function EmptyTailorState({
+  kind,
+  busy,
+  onGenerate,
+}: {
+  kind: DocumentKind;
+  busy: boolean;
+  onGenerate: () => void;
+}) {
+  const resume = kind === "resume";
+  const idle = resume ? "Tailor résumé" : "Write cover letter";
   return (
     <Centered>
-      <Sparkles size={22} className="text-accent" />
+      {resume ? (
+        <Sparkles size={22} className="text-accent" />
+      ) : (
+        <Mail size={22} className="text-accent" />
+      )}
       <p className="max-w-sm text-center text-[13px] text-muted">
-        Rewrite your résumé to lead with what this posting asks for. Your bullets are
-        re-ordered and re-worded — never invented.
+        {resume
+          ? "Rewrite your résumé to lead with what this posting asks for. Your bullets are re-ordered and re-worded — never invented."
+          : "Draft a cover letter for this posting from your profile. Any sentence claiming something your profile doesn't state is removed before you see it."}
       </p>
       <button
         onClick={onGenerate}
@@ -468,9 +560,9 @@ function EmptyTailorState({ busy, onGenerate }: { busy: boolean; onGenerate: () 
         className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-black disabled:opacity-60"
       >
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-        {busy ? "Tailoring…" : "Tailor résumé"}
+        {busy ? (resume ? "Tailoring…" : "Writing…") : idle}
       </button>
-      <p className="text-[11px] text-subtle">One LLM call, ~9k tokens.</p>
+      <p className="text-[11px] text-subtle">One LLM call, {resume ? "~9k" : "~7.5k"} tokens.</p>
     </Centered>
   );
 }
@@ -490,6 +582,20 @@ function TailoringSummary({
   // contradicted a tailoring whose own note said no bullet was rewritten.
   const bullets = doc.reworded.filter((id) => !id.startsWith("skills."));
   const rows = doc.reworded.length - bullets.length;
+  const letter = doc.kind === "cover_letter";
+  // A letter has no original to fall back to: a blocked claim removes its sentence.
+  const removed = [...new Set(blocking.map((issue) => issue.text))];
+  const counts = letter
+    ? removed.length > 0
+      ? `${removed.length} sentence${removed.length === 1 ? "" : "s"} removed`
+      : "draft"
+    : [
+        bullets.length > 0 && `${bullets.length} bullet${bullets.length === 1 ? "" : "s"}`,
+        rows > 0 && `${rows} skills row${rows === 1 ? "" : "s"}`,
+        doc.dropped.length > 0 && `${doc.dropped.length} dropped`,
+      ]
+        .filter(Boolean)
+        .join(", ") || "reordered only";
 
   return (
     <div className="shrink-0 border-b border-edge">
@@ -497,16 +603,8 @@ function TailoringSummary({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-2 px-4 py-2 text-left text-[11px] font-semibold tracking-wide text-subtle uppercase hover:text-ink"
       >
-        What changed
-        <span className="font-normal normal-case text-muted">
-          {[
-            bullets.length > 0 && `${bullets.length} bullet${bullets.length === 1 ? "" : "s"}`,
-            rows > 0 && `${rows} skills row${rows === 1 ? "" : "s"}`,
-            doc.dropped.length > 0 && `${doc.dropped.length} dropped`,
-          ]
-            .filter(Boolean)
-            .join(", ") || "reordered only"}
-        </span>
+        {letter ? "What it leads with" : "What changed"}
+        <span className="font-normal normal-case text-muted">{counts}</span>
         <span className="ml-auto text-[10px]">{open ? "hide" : "show"}</span>
       </button>
 
@@ -534,7 +632,31 @@ function TailoringSummary({
             ))}
           </ul>
 
-          {blocking.length > 0 && (
+          {letter && removed.length > 0 && (
+            <div className="mt-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2">
+              <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-rose-200">
+                <AlertTriangle size={12} />
+                {removed.length} sentence{removed.length === 1 ? "" : "s"} removed — they
+                claimed something your profile doesn&apos;t state
+              </p>
+              <ul className="space-y-1 text-[11px] text-rose-200/80">
+                {removed.map((sentence, index) => (
+                  <li key={index}>
+                    <span className="italic">&ldquo;{sentence}&rdquo;</span>
+                    <span className="text-rose-200/60">
+                      {" — "}
+                      {blocking
+                        .filter((issue) => issue.text === sentence)
+                        .map((issue) => issue.message)
+                        .join("; ")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!letter && blocking.length > 0 && (
             <div className="mt-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2">
               <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-rose-200">
                 <AlertTriangle size={12} />
@@ -651,12 +773,14 @@ function CompileBar({
 }
 
 function Preview({
+  noun,
   docId,
   version,
   compiling,
   failed,
   errors,
 }: {
+  noun: string;
   docId: number;
   version: string;
   compiling: boolean;
@@ -667,7 +791,7 @@ function Preview({
     return (
       <Centered>
         <AlertTriangle size={20} className="text-rose-300" />
-        <p className="text-[13px] text-muted">This résumé doesn&apos;t compile.</p>
+        <p className="text-[13px] text-muted">This {noun} doesn&apos;t compile.</p>
         <ul className="max-w-md space-y-1 font-mono text-[11px] text-rose-200/80">
           {errors.slice(0, 6).map((line, index) => (
             <li key={index}>{line}</li>
@@ -699,7 +823,7 @@ function Preview({
         // browsers happily keep showing a cached PDF at an unchanged URL.
         key={version}
         src={`${documentPdfUrl(docId, version)}#toolbar=1&navpanes=0&view=FitH`}
-        title="Résumé preview"
+        title={`${noun} preview`}
         className="h-full w-full border-0 bg-neutral-800"
       />
     </div>

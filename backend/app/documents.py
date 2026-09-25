@@ -1,8 +1,9 @@
-"""Stage 3 service layer — generate, store, edit and compile a tailored résumé.
+"""Stage 3 service layer — generate, store, edit and compile tailored documents.
 
-Sits between the API and the three modules that do the work: `tailor.py` (the
-LLM pass), `resume_tex.py` (the template) and `latex.py` (the compile). The API
-handlers stay thin, and the whole flow is testable without HTTP.
+Two kinds share one table and one flow: the **résumé** (`tailor.py` over the
+`resume_tex.py` template) and the **cover letter** (`cover_letter.py`, prose
+rendered into its own LaTeX). Both compile through `latex.py`. The API handlers
+stay thin, and the whole flow is testable without HTTP.
 
 The PDF cache
 -------------
@@ -29,17 +30,26 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import cover_letter
 from app.config import Settings, get_settings
-from app.factcheck import FactCorpus
+from app.factcheck import FactCorpus, FactIssue
 from app.latex import CompileResult, compile_tex
 from app.models import GeneratedDocument, JobPosting
 from app.profile import Profile, get_profile
-from app.resume_tex import ResumeDocument
+from app.resume_tex import ResumeDocument, ResumeTemplateError
 from app.tailor import TAILOR_PROMPT_VERSION, TailoredResume, tailor_resume
 
 log = logging.getLogger(__name__)
 
 RESUME = "resume"
+COVER_LETTER = "cover_letter"
+KINDS = (RESUME, COVER_LETTER)
+
+# Which prompt revision a current document of each kind must carry.
+_PROMPT_VERSIONS = {
+    RESUME: TAILOR_PROMPT_VERSION,
+    COVER_LETTER: cover_letter.COVER_PROMPT_VERSION,
+}
 
 # Each entry is one compiled résumé — ~30KB. 24 of them is under a megabyte
 # and covers far more documents than one sitting touches.
@@ -110,7 +120,8 @@ def is_stale(document: GeneratedDocument, job: JobPosting) -> bool:
     """
     if document.content_hash and document.content_hash != (job.content_hash or ""):
         return True
-    return bool(document.prompt_version) and document.prompt_version != TAILOR_PROMPT_VERSION
+    current = _PROMPT_VERSIONS.get(document.kind, TAILOR_PROMPT_VERSION)
+    return bool(document.prompt_version) and document.prompt_version != current
 
 
 # --------------------------------------------------------------------------
@@ -174,17 +185,7 @@ async def generate_resume(
     document.prompt_version = TAILOR_PROMPT_VERSION
     document.edits = tailored.edits.model_dump()
     document.tailoring = tailored.tailoring.model_dump()
-    document.issues = [
-        {
-            "region_id": issue.region_id,
-            "kind": issue.kind,
-            "token": issue.token,
-            "severity": issue.severity,
-            "message": issue.message,
-            "text": issue.text,
-        }
-        for issue in tailored.issues
-    ]
+    document.issues = _issue_rows(tailored.issues)
     document.llm_used = True
     document.llm_tokens = tailored.tokens
     document.hand_edited = False
@@ -208,6 +209,102 @@ async def generate_resume(
         },
     )
     return GenerateResult(document=document, tailored=tailored, reused=False)
+
+
+def _issue_rows(issues: list[FactIssue]) -> list[dict[str, str]]:
+    return [
+        {
+            "region_id": issue.region_id,
+            "kind": issue.kind,
+            "token": issue.token,
+            "severity": issue.severity,
+            "message": issue.message,
+            "text": issue.text,
+        }
+        for issue in issues
+    ]
+
+
+async def generate_cover_letter(
+    session: AsyncSession,
+    job_id: int,
+    *,
+    force: bool = False,
+    profile: Profile | None = None,
+    settings: Settings | None = None,
+) -> GenerateResult:
+    """Draft the cover letter for one job, or hand back the one already stored.
+
+    Same cache rule and same hand-edit guard as `generate_resume`.
+    """
+    settings = settings or get_settings()
+    profile = profile or get_profile()
+    job = await get_job(session, job_id)
+
+    existing = await get_document(
+        session, job_id, profile_version=profile.version, kind=COVER_LETTER
+    )
+    if existing is not None and not force and not is_stale(existing, job):
+        log.info("documents.reused", extra={"job_id": job_id, "doc_id": existing.id})
+        return GenerateResult(document=existing, tailored=None, reused=True)
+
+    if existing is not None and existing.hand_edited and not force:
+        raise DocumentError(
+            "this cover letter has been edited by hand — pass force=true to regenerate "
+            "and discard those edits"
+        )
+
+    try:
+        letter = await cover_letter.write_cover_letter(
+            title=job.title,
+            company=job.company,
+            description_text=job.description_text,
+            profile=profile,
+            settings=settings,
+        )
+    except ValueError as exc:
+        raise DocumentError(str(exc)) from exc
+
+    document = existing or GeneratedDocument(
+        job_id=job_id, profile_version=profile.version, kind=COVER_LETTER
+    )
+    document.tex = letter.tex
+    document.content_hash = job.content_hash or ""
+    document.prompt_version = cover_letter.COVER_PROMPT_VERSION
+    # What was rendered, and the header facts it was rendered with, so Revert
+    # can rebuild the exact letter with no LLM call.
+    document.edits = {
+        "paragraphs": letter.paragraphs,
+        "company": job.company,
+        "title": job.title,
+        "dated": letter.dated,
+    }
+    document.tailoring = letter.draft.model_dump()
+    document.issues = _issue_rows(letter.issues)
+    document.llm_used = True
+    document.llm_tokens = letter.tokens
+    document.hand_edited = False
+    document.is_draft = True
+    document.chat = []
+    document.updated_at = datetime.now(UTC)
+    session.add(document)
+    await session.commit()
+    await session.refresh(document)
+    drop_cached(document.id)
+
+    log.info(
+        "documents.generated",
+        extra={"job_id": job_id, "doc_id": document.id, "kind": COVER_LETTER, "tokens": letter.tokens},
+    )
+    return GenerateResult(document=document, tailored=None, reused=False)
+
+
+async def generate(
+    session: AsyncSession, job_id: int, *, kind: str = RESUME, force: bool = False
+) -> GenerateResult:
+    if kind == COVER_LETTER:
+        return await generate_cover_letter(session, job_id, force=force)
+    return await generate_resume(session, job_id, force=force)
 
 
 # --------------------------------------------------------------------------
@@ -241,8 +338,18 @@ async def revert(session: AsyncSession, document: GeneratedDocument) -> Generate
 
     if not document.edits:
         raise DocumentError("nothing to revert to — this document was never generated")
-    template = ResumeDocument.load()
-    document.tex = template.render(ResumeEdits.model_validate(document.edits))
+    if document.kind == COVER_LETTER:
+        edits = document.edits
+        document.tex = cover_letter.render_letter(
+            list(edits.get("paragraphs") or []),
+            profile=get_profile(),
+            company=str(edits.get("company") or ""),
+            title=str(edits.get("title") or ""),
+            dated=str(edits.get("dated") or ""),
+        )
+    else:
+        template = ResumeDocument.load()
+        document.tex = template.render(ResumeEdits.model_validate(document.edits))
     document.hand_edited = False
     document.updated_at = datetime.now(UTC)
     drop_cached(document.id)
@@ -282,3 +389,21 @@ def check_facts(tex: str, profile: Profile, template: ResumeDocument) -> list[st
             if issue.severity == "blocking":
                 messages.append(f"{region.label}: {issue.message}")
     return messages
+
+
+def hand_edit_warnings(document: GeneratedDocument, job: JobPosting, profile: Profile) -> list[str]:
+    """Blocking fact-check findings over a document's CURRENT text, by kind."""
+    if document.kind == COVER_LETTER:
+        try:
+            resume_tex: str | None = ResumeDocument.load().tex
+        except ResumeTemplateError:
+            resume_tex = None
+        corpus = cover_letter.build_corpus(
+            profile,
+            company=job.company,
+            title=job.title,
+            description_text=job.description_text,
+            resume_tex=resume_tex,
+        )
+        return cover_letter.check_letter(document.tex, corpus)
+    return check_facts(document.tex, profile, ResumeDocument.load())

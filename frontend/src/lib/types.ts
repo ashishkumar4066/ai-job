@@ -567,10 +567,13 @@ export interface FactIssue {
   text: string;
 }
 
+/** What a Tailor modal is editing. Both are LaTeX, compiled the same way. */
+export type DocumentKind = "resume" | "cover_letter";
+
 export interface TailoredDocument {
   id: number;
   job_id: number;
-  kind: string;
+  kind: DocumentKind;
   profile_version: string;
   tex: string;
   is_draft: boolean;
