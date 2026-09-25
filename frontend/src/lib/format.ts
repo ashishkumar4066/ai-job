@@ -131,3 +131,34 @@ export function initials(name: string): string {
   if (words.length === 1) return words[0]![0]!.toUpperCase();
   return (words[0]![0]! + words[1]![0]!).toUpperCase();
 }
+
+/**
+ * A posting's work mode, decided exactly as the backend's `IS_REMOTE` is
+ * (`app/job_filters.py`): the board's own `workplace_type` when it published
+ * one, else the keyword flag.
+ *
+ * It exists because the two have to be read together. Himalayas publishes a
+ * *candidate-location restriction* ("India") and no office, so a row rendered
+ * from `locations[0]` alone reads as an on-site Indian role when it is in fact
+ * remote-from-India — which is what the Matches card used to show. The work
+ * mode is a separate fact from the place, and both have to be on screen.
+ */
+export function workMode(job: {
+  workplace_type: string | null;
+  remote: boolean;
+}): "remote" | "hybrid" | "onsite" | null {
+  const stated = (job.workplace_type ?? "").toLowerCase();
+  if (stated === "remote" || stated === "hybrid" || stated === "onsite") return stated;
+  if (stated) return null; // a value we don't model — don't guess at it
+  return job.remote ? "remote" : null;
+}
+
+/** The work mode as a label, or `null` when the board never said. */
+export function workModeLabel(job: {
+  workplace_type: string | null;
+  remote: boolean;
+}): string | null {
+  const mode = workMode(job);
+  if (mode === null) return null;
+  return { remote: "Remote", hybrid: "Hybrid", onsite: "On-site" }[mode];
+}

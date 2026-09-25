@@ -10,7 +10,9 @@ import {
   Clock,
   FileText,
   Gauge,
+  Globe2,
   Loader2,
+  MapPin,
   Mail,
   Send,
   SlidersHorizontal,
@@ -20,7 +22,7 @@ import {
 } from "lucide-react";
 
 import { clearTransfer, fetchMatches, fetchMatchesFunnel, fetchProfile } from "@/lib/api";
-import { absoluteDate, relativeTime } from "@/lib/format";
+import { absoluteDate, relativeTime, workMode, workModeLabel } from "@/lib/format";
 import { usePrefetchJob } from "@/lib/hooks";
 import { FIT_BANDS, LlmBadge, VerifierBadge, fitBand } from "./CheckBadges";
 import {
@@ -745,7 +747,28 @@ const MatchRow = memo(function MatchRow({
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
             <span className="truncate">{match.job.company}</span>
             <span className="text-subtle">·</span>
-            <span className="truncate">{match.job.locations[0] ?? "Remote"}</span>
+            <span className="truncate">{match.job.locations[0] ?? "Not specified"}</span>
+            {/* The work mode is a separate fact from the place, and has to be
+                shown next to it: a Himalayas row reading "India" is a
+                remote-from-India role, not an on-site one. Absent means the
+                board never said — rendered as such, never as on-site. */}
+            <span className="text-subtle">·</span>
+            {workModeLabel(match.job) ? (
+              <span
+                className={
+                  workMode(match.job) === "remote"
+                    ? "inline-flex items-center gap-1 text-accent-text"
+                    : "inline-flex items-center gap-1 text-muted"
+                }
+              >
+                {workMode(match.job) === "remote" ? <Globe2 size={11} /> : <MapPin size={11} />}
+                {workModeLabel(match.job)}
+              </span>
+            ) : (
+              <span className="text-subtle" title="The board published no work mode.">
+                mode not stated
+              </span>
+            )}
             {match.years_required != null && (
               <>
                 <span className="text-subtle">·</span>

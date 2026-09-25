@@ -1,7 +1,14 @@
 import { memo, useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUpRight, Globe2, Loader2, MapPin, SearchX } from "lucide-react";
-import { formatLocations, formatSalary, relativeTime, sourceLabel } from "@/lib/format";
+import {
+  formatLocations,
+  formatSalary,
+  relativeTime,
+  sourceLabel,
+  workMode,
+  workModeLabel,
+} from "@/lib/format";
 import { usePrefetchJob } from "@/lib/hooks";
 import type { Job } from "@/lib/types";
 import { LlmBadge, VerifierBadge } from "./CheckBadges";
@@ -199,6 +206,8 @@ const JobRow = memo(function JobRow({
   onSelect: (id: number) => void;
   onHover: (id: number) => void;
 }) {
+  const mode = workModeLabel(job);
+  const isRemote = workMode(job) === "remote";
   return (
     <div
       role="button"
@@ -270,25 +279,30 @@ const JobRow = memo(function JobRow({
             <span>{sourceLabel(job.ats)}</span>
             <span className="md:hidden">
               <span className="opacity-40"> · </span>
-              {formatLocations(job.locations, job.remote)}
+              {formatLocations(job.locations, isRemote)}
             </span>
           </p>
         </div>
       </div>
 
-      {/* Location */}
+      {/* Location. The badge reads `workMode`, not the bare keyword flag, so
+          it cannot contradict the Remote filter — that runs on the backend's
+          `IS_REMOTE`, which prefers the board's own `workplace_type`. */}
       <div className="hidden min-w-0 items-center gap-1.5 md:flex">
-        {job.remote ? (
+        {isRemote ? (
           <Globe2 size={13} className="shrink-0 text-accent-text" />
         ) : (
           <MapPin size={13} className="shrink-0 text-subtle" />
         )}
         <span className="truncate text-[13px] text-muted" title={job.locations.join(" · ")}>
-          {formatLocations(job.locations, job.remote)}
+          {formatLocations(job.locations, isRemote)}
         </span>
-        {job.remote && (
-          <Badge tone="accent" className="hidden shrink-0 xl:inline-flex">
-            Remote
+        {mode && (
+          <Badge
+            tone={isRemote ? "accent" : "neutral"}
+            className="hidden shrink-0 xl:inline-flex"
+          >
+            {mode}
           </Badge>
         )}
       </div>
