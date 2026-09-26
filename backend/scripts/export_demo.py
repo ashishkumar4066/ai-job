@@ -57,55 +57,46 @@ REPO_ROOT = BACKEND_ROOT.parent
 OUT_DIR = REPO_ROOT / "frontend" / "public" / "demo"
 
 # ---------------------------------------------------------------------------
-# The fictional candidate the demo shows.
+# What gets redacted before the snapshot ships.
 #
-# Substituted by longest key first, so "krashish1350@gmail.com" is replaced
-# before a bare "krashish1350" could match inside it. Every value here is
-# deliberately a reserved example domain or a non-routable number.
+# The demo shows the REAL candidate: real name, real résumé, real employment
+# history, real email. That is deliberate — it is the author's own portfolio,
+# and a tailored résumé belonging to a fictional person demonstrates the
+# feature while proving nothing about the person launching it.
+#
+# The phone number is the one exception, and the reasoning is asymmetry rather
+# than secrecy: nobody browsing a launch page needs to call, so publishing it
+# buys nothing, while a mobile number in ten downloadable PDFs is an OTP,
+# WhatsApp-scam and SIM-swap target that is trivially harvested. A recruiter
+# who wants to make contact has the email.
+#
+# Longest needle first, so "+91-8789777738" is replaced before the bare digits
+# could match inside it and leave a mangled "+91-" prefix behind.
 # ---------------------------------------------------------------------------
-# Unambiguous identifiers: a full name, an address, a phone number, a handle.
-# None of these can plausibly occur in a job posting by coincidence, so they are
-# replaced everywhere and their survival anywhere is a hard failure.
+PHONE_PLACEHOLDER = "+91-XXXXX-XXXXX"
+
 PERSONA_IDS: dict[str, str] = {
-    "Ashish Kumar": "Rohit Verma",
-    "ashishkumar4066@gmail.com": "rohit.verma@example.com",
-    "krashish1350@gmail.com": "rohit.verma@example.com",
-    "ashish-kumar-17417914b": "rohit-verma-demo",
-    # The résumé prints its LinkedIn as display text (`linkedin.com/in/ashish-kumar`),
-    # which carries no numeric suffix and so matched none of the URL rules. It
-    # survived into a compiled PDF on the first run and was found by the
-    # case-insensitive sweep below, not by the substitution list.
-    "ashish-kumar": "rohit-verma-demo",
-    "ashishkumar4066": "rohitverma-demo",
-    "krashish1350": "rohit.verma",
-    "+91-8789777738": "+91-90000-00000",
-    "8789777738": "9000000000",
+    "+91-8789777738": PHONE_PLACEHOLDER,
+    # The bare digits, in case a field stores them without the country prefix.
+    "8789777738": "XXXXXXXXXX",
 }
 
-# Bare given/family names, applied ONLY to the profile and document trees.
-#
-# Measured, not assumed: running these over the job data too renamed a "Kumar"
-# mentioned in two job descriptions. These are Indian job boards, where Kumar is
-# one of the commonest surnames on them — quietly rewriting an employer's own
-# text is corruption of the data the demo exists to show, in exchange for
-# nothing, since a bare first name on its own identifies no one.
-PERSONA_NAMES: dict[str, str] = {
-    "Ashish": "Rohit",
-    "Kumar": "Verma",
-}
+# Nothing else is substituted. Kept as an explicit empty mapping rather than
+# deleted, so the two-tier scrub below (identifiers everywhere, names in the
+# profile trees only) still reads as a deliberate choice and is one edit away
+# from being reinstated.
+PERSONA_NAMES: dict[str, str] = {}
 
 PERSONA: dict[str, str] = {**PERSONA_IDS, **PERSONA_NAMES}
 
-# A case-insensitive backstop over the PROFILE trees, independent of the
-# substitution list above.
+# A backstop over every tree, independent of the substitution list above.
 #
-# This exists because the list can only replace spellings someone thought of.
-# The first export leaked `linkedin.com/in/ashish-kumar` — a display string with
-# no numeric suffix, matching no rule — straight into a compiled PDF, and the
-# equality check passed because the needle it leaked was not a needle it knew.
-# These stems are checked over the profile and documents only: they cannot occur
-# there except as a leak, whereas a job posting may legitimately name a person.
-FORBIDDEN_STEMS: tuple[str, ...] = ("ashish", "krashish", "8789777738", "17417914b")
+# It exists because the list can only replace spellings someone thought of. An
+# earlier run leaked `linkedin.com/in/ashish-kumar` — a display string matching
+# none of the URL rules — into a compiled PDF while the equality check reported
+# clean. Only the phone is listed now, since it is the only redacted item, and
+# ten digits cannot occur in a job posting by coincidence.
+FORBIDDEN_STEMS: tuple[str, ...] = ("8789777738",)
 
 # Sources whose terms forbid republishing their listings on a third-party site.
 # Remotive's terms are explicit about it; the rest of the board is titles and
@@ -536,9 +527,17 @@ async def export(args: argparse.Namespace) -> None:
     meta = scrub(meta, PERSONA)
     documents = scrub(documents, PERSONA)
 
-    for tree, label in ((jobs, "jobs"), (details, "jd"), (matches, "matches")):
-        assert_clean(tree, PERSONA_IDS, label)
-    for tree, label in ((meta, "meta"), (documents, "documents")):
+    # The stem sweep now runs over every tree, not just the profile ones. It
+    # only looks for the phone digits, which — unlike a name — cannot appear in
+    # an employer's job description by coincidence, so there is no false
+    # positive to trade against the extra coverage.
+    for tree, label in (
+        (jobs, "jobs"),
+        (details, "jd"),
+        (matches, "matches"),
+        (meta, "meta"),
+        (documents, "documents"),
+    ):
         assert_clean(tree, PERSONA, label, stems=True)
 
     pdfs: dict[str, str] = {}

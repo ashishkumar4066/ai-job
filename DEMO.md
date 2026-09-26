@@ -77,23 +77,32 @@ lazily.
 
 ### Identity
 
-`profile.yaml` holds a real name, email and phone, which must not ship in a
-public bundle. The exporter substitutes a persona (`Rohit Verma`) across every
-captured payload — including the LaTeX — then recompiles the PDFs from the
-substituted source, and **aborts the export** if any real identifier survives.
+The demo ships the **real candidate** — real name, real résumé, real employment
+history, real email, real LinkedIn and GitHub. That is deliberate: it is your
+own portfolio, and a tailored résumé belonging to a fictional person
+demonstrates the feature while proving nothing about the person launching it.
 
-Two layers, because one was not enough:
+**The phone number is the one redaction**, replaced with `+91-XXXXX-XXXXX`.
+The reasoning is asymmetry rather than secrecy: nobody browsing a launch page
+needs to call, so publishing it buys nothing, while a mobile number sitting in
+ten downloadable PDFs is an OTP, WhatsApp-scam and SIM-swap target and PDFs are
+the most harvestable format there is. Anyone who wants to make contact has the
+email.
 
-- an equality check over the known identifiers, everywhere;
-- a case-insensitive stem sweep (`ashish`, `krashish`, …) over the profile and
-  document trees only.
+The substitution runs over every captured payload including the LaTeX, the
+PDFs are compiled from the substituted source, and **the export aborts** if the
+digits survive anywhere — in the JSON, in a document, or in a compiled PDF.
+Verified on every run.
 
-The second exists because the first missed
-`linkedin.com/in/ashish-kumar` — a display string with no numeric suffix,
-matching none of the URL rules — which reached a compiled PDF on the first run.
-Bare first/last names are **not** substituted in job data: these are Indian job
-boards where "Kumar" is a common surname, and rewriting an employer's own text
-corrupts the data the demo exists to show.
+> Changing your mind is one edit: `PERSONA_IDS` in `scripts/export_demo.py`,
+> then re-export. `PERSONA_NAMES` is an explicit empty mapping so the two-tier
+> scrub (identifiers everywhere, bare names in the profile trees only) is one
+> edit away from being reinstated if you ever want a fictional persona back.
+>
+> If you do reinstate names, note what the first version got wrong: running
+> bare surnames over the job data renamed a "Kumar" inside two employers'
+> descriptions. These are Indian job boards. Scrub names in the profile trees
+> only.
 
 Remotive's rows are dropped: its terms forbid reposting its listings to third
 parties. Remote OK and Jobicy attribution stays visible in the UI.
@@ -210,7 +219,8 @@ Driven in a real browser (Playwright) against the production build:
 - applying records, stays idempotent, survives a reload
 - the Tailor modal loads 7,086 chars of stored LaTeX, its PDF serves 29,711
   real bytes through the rewrite, and the Diff and Chat tabs render
-- no real identity in any JSON, any LaTeX, or any of the 10 PDFs
+- the phone number appears in no JSON, no LaTeX and none of the 10 PDFs, while
+  the real name, email and links are intact
 
 Re-run with `scratchpad/verify_all.py` against `npm run preview:demo`.
 
