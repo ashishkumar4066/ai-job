@@ -19,7 +19,7 @@
  *     server-side failure is not.
  */
 
-const ENDPOINT = (import.meta.env.VITE_WAITLIST_URL as string | undefined)?.trim();
+const ENDPOINT = (import.meta.env.WAITLIST_URL as string | undefined)?.trim();
 
 export interface WaitlistResult {
   ok: boolean;
@@ -29,37 +29,50 @@ export interface WaitlistResult {
 /** Deliberately permissive: this rejects typos, not unusual-but-valid addresses. */
 export function looksLikeEmail(value: string): boolean {
   const trimmed = value.trim();
-  return trimmed.length >= 5 && trimmed.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed);
+  return (
+    trimmed.length >= 5 &&
+    trimmed.length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)
+  );
 }
 
-export async function joinWaitlist(email: string, note?: string): Promise<WaitlistResult> {
+export async function joinWaitlist(
+  email: string,
+  note?: string,
+): Promise<WaitlistResult> {
   if (!looksLikeEmail(email)) {
-    return { ok: false, message: "That does not look like an email address." };
+    return { ok: false, message: 'That does not look like an email address.' };
   }
   if (!ENDPOINT) {
     // A missing endpoint is a deploy misconfiguration, not a visitor's problem,
     // so it says so plainly rather than pretending the sign-up worked.
     return {
       ok: false,
-      message: "The waitlist is not wired up on this deployment yet.",
+      message: 'The waitlist is not wired up on this deployment yet.',
     };
   }
 
   try {
     await fetch(ENDPOINT, {
-      method: "POST",
+      method: 'POST',
       // See the note above: this exact value is what avoids the preflight.
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         email: email.trim(),
         note: note?.trim() || null,
-        source: "product-hunt-demo",
+        source: 'product-hunt-demo',
         referrer: document.referrer || null,
         at: new Date().toISOString(),
       }),
     });
-    return { ok: true, message: "You're on the list. I'll email you when it opens up." };
+    return {
+      ok: true,
+      message: "You're on the list. I'll email you when it opens up.",
+    };
   } catch {
-    return { ok: false, message: "Could not reach the waitlist. Mind trying again?" };
+    return {
+      ok: false,
+      message: 'Could not reach the waitlist. Mind trying again?',
+    };
   }
 }

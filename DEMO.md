@@ -4,7 +4,7 @@ The dashboard, deployed with no backend behind it, for Product Hunt.
 
 Everything the app asks the API for is answered from a static snapshot of the
 real board. Your local setup is untouched: `npm run dev` still proxies to
-`127.0.0.1:8000` exactly as before, and none of this loads unless `VITE_DEMO=1`.
+`127.0.0.1:8000` exactly as before, and none of this loads unless `DEMO_JOB=1`.
 
 ---
 
@@ -13,7 +13,7 @@ real board. Your local setup is untouched: `npm run dev` still proxies to
 One interceptor, installed below the app rather than inside it.
 
 ```
-main.tsx ──(VITE_DEMO=1 only)──> src/demo/install.ts ──> wraps window.fetch
+main.tsx ──(DEMO_JOB=1 only)──> src/demo/install.ts ──> wraps window.fetch
                                                              │
    every component, hook and query is untouched              ▼
    and never learns the demo exists              src/demo/router.ts
@@ -26,19 +26,19 @@ main.tsx ──(VITE_DEMO=1 only)──> src/demo/install.ts ──> wraps windo
 ```
 
 `window.fetch` is the interception point because `lib/api.ts` is the only place
-the dashboard makes requests — so wrapping the layer *below* it means no
+the dashboard makes requests — so wrapping the layer _below_ it means no
 component, type or query key is edited. An endpoint added to `api.ts` later
 keeps working here for free.
 
-| File | What it does |
-| --- | --- |
-| `backend/scripts/export_demo.py` | Captures the snapshot from the real API |
-| `frontend/src/demo/snapshot.ts` | Loads the JSON, lazily for the big parts |
-| `frontend/src/demo/query.ts` | Port of `app/job_filters.py` — filters, sorts, funnels |
-| `frontend/src/demo/router.ts` | Answers all ~34 endpoints |
-| `frontend/src/demo/state.ts` | Applications, prefs, hand edits (localStorage) |
-| `frontend/src/demo/overlay.tsx` | Demo bar + waitlist, in its own React root |
-| `frontend/vercel.json` | SPA rewrite + the PDF rewrite |
+| File                             | What it does                                           |
+| -------------------------------- | ------------------------------------------------------ |
+| `backend/scripts/export_demo.py` | Captures the snapshot from the real API                |
+| `frontend/src/demo/snapshot.ts`  | Loads the JSON, lazily for the big parts               |
+| `frontend/src/demo/query.ts`     | Port of `app/job_filters.py` — filters, sorts, funnels |
+| `frontend/src/demo/router.ts`    | Answers all ~34 endpoints                              |
+| `frontend/src/demo/state.ts`     | Applications, prefs, hand edits (localStorage)         |
+| `frontend/src/demo/overlay.tsx`  | Demo bar + waitlist, in its own React root             |
+| `frontend/vercel.json`           | SPA rewrite + the PDF rewrite                          |
 
 The only edit to pre-existing code is a guarded block in `src/main.tsx` and a
 `--mode demo` plugin in `vite.config.ts`. Both are inert without the flag.
@@ -59,14 +59,14 @@ never starts and no job board is contacted.
 
 What it writes into `frontend/public/demo/`:
 
-| File | Size | Contents |
-| --- | --- | --- |
-| `jobs.json` | ~12 MB | all 11,775 open postings, in the `/jobs` list shape |
-| `jd.json` | ~9.7 MB | 2,004 full descriptions (lazily loaded) |
-| `matches.json` | ~1.9 MB | 970 scored rows with verdicts |
-| `meta.json` | ~250 KB | facets, dashboard, prefs, profile, funnels |
-| `documents.json` | ~230 KB | 10 tailored documents, their diffs and chats |
-| `pdf/*.pdf` | ~280 KB | the compiled PDFs |
+| File             | Size    | Contents                                            |
+| ---------------- | ------- | --------------------------------------------------- |
+| `jobs.json`      | ~12 MB  | all 11,775 open postings, in the `/jobs` list shape |
+| `jd.json`        | ~9.7 MB | 2,004 full descriptions (lazily loaded)             |
+| `matches.json`   | ~1.9 MB | 970 scored rows with verdicts                       |
+| `meta.json`      | ~250 KB | facets, dashboard, prefs, profile, funnels          |
+| `documents.json` | ~230 KB | 10 tailored documents, their diffs and chats        |
+| `pdf/*.pdf`      | ~280 KB | the compiled PDFs                                   |
 
 Roughly **2.7 MB over the wire** once gzipped, and the two big files load
 lazily.
@@ -129,10 +129,10 @@ npm run preview:demo   # serve that build
 3. Settings:
    - **Root Directory:** `frontend`
    - **Framework Preset:** Vite
-   - **Build Command:** `npm run build:demo` ← *not the default `npm run build`*
+   - **Build Command:** `npm run build:demo` ← _not the default `npm run build`_
    - **Output Directory:** `dist`
    - **Production Branch:** `demo` (Settings → Git), so `main` never deploys
-4. **Environment Variables:** `VITE_WAITLIST_URL` = your Apps Script URL (below)
+4. **Environment Variables:** `WAITLIST_URL` = your Apps Script URL (below)
 5. Deploy.
 
 The Hobby plan is free and covers this — a static SPA with no serverless
@@ -152,9 +152,15 @@ serverless function, no submission cap.
 function doPost(e) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   let body = {};
-  try { body = JSON.parse(e.postData.contents); } catch (err) { body = {}; }
+  try {
+    body = JSON.parse(e.postData.contents);
+  } catch (err) {
+    body = {};
+  }
 
-  const email = String(body.email || '').trim().slice(0, 254);
+  const email = String(body.email || '')
+    .trim()
+    .slice(0, 254);
   if (!email || email.indexOf('@') === -1) {
     return ContentService.createTextOutput('bad email');
   }
@@ -171,16 +177,16 @@ function doPost(e) {
 ```
 
 3. **Deploy → New deployment → Web app**
-   - *Execute as:* **Me**
-   - *Who has access:* **Anyone**
-4. Copy the `/exec` URL into Vercel as `VITE_WAITLIST_URL`, and redeploy.
+   - _Execute as:_ **Me**
+   - _Who has access:_ **Anyone**
+4. Copy the `/exec` URL into Vercel as `WAITLIST_URL`, and redeploy.
 
 **Why the request looks the way it does:** Apps Script does not answer CORS
 preflight, so the form posts `Content-Type: text/plain;charset=utf-8` — a
 safelisted value that avoids a preflight. Apps Script still reads the JSON from
 `e.postData.contents`. The consequence is that the response is not readable, so
-success is inferred from the request not throwing: a *network* failure is
-reported to the visitor, a server-side one is not. With `VITE_WAITLIST_URL`
+success is inferred from the request not throwing: a _network_ failure is
+reported to the visitor, a server-side one is not. With `WAITLIST_URL`
 unset, the form says it is not wired up rather than silently dropping addresses.
 
 Check it works by submitting once and looking at the Sheet.
@@ -194,18 +200,18 @@ genuinely local are applied, and anything that would cost an LLM call is
 refused with a message saying so. A demo whose Apply button does nothing reads
 as broken; a demo that pretends a deep read ran is claiming something false.
 
-| Action | Demo behaviour |
-| --- | --- |
-| Browse, filter, sort, funnels, facets | Real, recomputed from the snapshot |
-| Apply / change stage / delete | Applied, in `localStorage`, idempotent |
-| Edit preferences, Send to Matches | Applied, in `localStorage` |
-| Open a stored résumé or cover letter | Real — 10 of them ship, with diffs and chat |
-| Revert a document | Real: replays the stored tailoring |
-| Recompile an **unedited** document | Succeeds — the exported PDF *is* that compile |
-| Recompile a **hand-edited** document | Refused: no Tectonic in a browser |
-| Tailor / generate a new document | Refused, points at the 10 that exist |
-| Deep read, chat message, profile upload | Refused, names the cost |
-| Refresh (`r`) | Replays a fabricated sweep through the real sync screen |
+| Action                                  | Demo behaviour                                          |
+| --------------------------------------- | ------------------------------------------------------- |
+| Browse, filter, sort, funnels, facets   | Real, recomputed from the snapshot                      |
+| Apply / change stage / delete           | Applied, in `localStorage`, idempotent                  |
+| Edit preferences, Send to Matches       | Applied, in `localStorage`                              |
+| Open a stored résumé or cover letter    | Real — 10 of them ship, with diffs and chat             |
+| Revert a document                       | Real: replays the stored tailoring                      |
+| Recompile an **unedited** document      | Succeeds — the exported PDF _is_ that compile           |
+| Recompile a **hand-edited** document    | Refused: no Tectonic in a browser                       |
+| Tailor / generate a new document        | Refused, points at the 10 that exist                    |
+| Deep read, chat message, profile upload | Refused, names the cost                                 |
+| Refresh (`r`)                           | Replays a fabricated sweep through the real sync screen |
 
 ---
 

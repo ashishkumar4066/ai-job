@@ -7,16 +7,17 @@
  * means no component, hook, type or query key is edited or even aware of the
  * demo. An endpoint added to `api.ts` later keeps working here for free.
  *
- * Nothing in this module runs unless `VITE_DEMO=1`, and `main.tsx` imports it
+ * Nothing in this module runs unless `DEMO_JOB=1`, and `main.tsx` imports it
  * dynamically, so a normal build never loads the snapshot or this code.
  */
 
-import { handle } from "./router";
-import { realFetch } from "./snapshot";
-import { mountOverlay } from "./overlay";
+import { handle } from './router';
+import { realFetch } from './snapshot';
+import { mountOverlay } from './overlay';
 
 /** Matches the `BASE` in `lib/api.ts`. */
-const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "/api";
+const API_BASE =
+  (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api';
 
 let installed = false;
 
@@ -29,7 +30,7 @@ let installed = false;
  */
 function apiPath(input: RequestInfo | URL): string | null {
   let href: string;
-  if (typeof input === "string") href = input;
+  if (typeof input === 'string') href = input;
   else if (input instanceof URL) href = input.href;
   else href = input.url;
 
@@ -41,13 +42,18 @@ function apiPath(input: RequestInfo | URL): string | null {
   }
   if (url.origin !== window.location.origin) return null;
   if (!url.pathname.startsWith(API_BASE)) return null;
-  return url.pathname.slice(API_BASE.length) || "/";
+  return url.pathname.slice(API_BASE.length) || '/';
 }
 
-async function readBody(input: RequestInfo | URL, init?: RequestInit): Promise<unknown> {
-  const raw = init?.body ?? (input instanceof Request ? await input.clone().text() : undefined);
+async function readBody(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<unknown> {
+  const raw =
+    init?.body ??
+    (input instanceof Request ? await input.clone().text() : undefined);
   if (raw == null) return undefined;
-  if (typeof raw !== "string") return raw; // FormData (the résumé upload) — refused anyway.
+  if (typeof raw !== 'string') return raw; // FormData (the résumé upload) — refused anyway.
   try {
     return JSON.parse(raw);
   } catch {
@@ -76,9 +82,9 @@ async function readBody(input: RequestInfo | URL, init?: RequestInit): Promise<u
 function landOnDashboard(): void {
   try {
     const url = new URL(window.location.href);
-    if (url.searchParams.has("view") || url.searchParams.has("job")) return;
-    url.searchParams.set("view", "dashboard");
-    window.history.replaceState(null, "", url.toString());
+    if (url.searchParams.has('view') || url.searchParams.has('job')) return;
+    url.searchParams.set('view', 'dashboard');
+    window.history.replaceState(null, '', url.toString());
   } catch {
     /* A URL we cannot parse is not worth failing the boot over. */
   }
@@ -90,20 +96,30 @@ export function installDemo(): void {
 
   landOnDashboard();
 
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  window.fetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
     const path = apiPath(input);
     if (path === null) return realFetch(input as RequestInfo, init);
 
-    const href = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const href =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
     const url = new URL(href, window.location.origin);
-    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    const method = (
+      init?.method ?? (input instanceof Request ? input.method : 'GET')
+    ).toUpperCase();
 
     // The PDF preview is an <iframe src>, not a fetch, so it never reaches here
     // — a rewrite in `vercel.json` maps that path onto the exported file. This
     // branch only catches code that fetches the PDF directly.
     if (/^\/documents\/\d+\/pdf$/.test(path)) {
-      const id = path.split("/")[2];
-      return realFetch(`${import.meta.env.BASE_URL ?? "/"}demo/pdf/${id}.pdf`);
+      const id = path.split('/')[2];
+      return realFetch(`${import.meta.env.BASE_URL ?? '/'}demo/pdf/${id}.pdf`);
     }
 
     return handle(method, path, url.searchParams, await readBody(input, init));
@@ -112,8 +128,8 @@ export function installDemo(): void {
   mountOverlay();
   // eslint-disable-next-line no-console
   console.info(
-    "%cDemo mode%c — every API call is answered from a static snapshot. Source: github.com/ashishkumar4066/ai-job",
-    "background:#6366f1;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600",
-    "color:inherit",
+    '%cDemo mode%c — every API call is answered from a static snapshot. Source: github.com/ashishkumar4066/ai-job',
+    'background:#6366f1;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600',
+    'color:inherit',
   );
 }
