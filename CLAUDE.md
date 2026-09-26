@@ -11,7 +11,8 @@ Build in **phases, in order**. When I say `Implement Phase N`, treat that phase'
 | Phase | Scope | State |
 | --- | --- | --- |
 | 1 | Aggregator (adapters, ingest, alerts, API) | ✅ Done |
-| 2A | Dashboard (browse / filter / inspect) | ✅ Done |
+| 2A | Jobs dashboard (browse / filter / inspect) | ✅ Done |
+| 2A+ | Dashboard panel (application tracking, pipeline health, budget) | ✅ Done (2026-09-26) — not in the original plan; see below |
 | 2B | Validation layer (deterministic + LLM) | ✅ Done (deep read has covered 483 rows so far; it is resumable by design, so "all rows" is a budget question, not a build one) |
 | 2C | Matches (profile fit + tailored résumé/cover letter) | ✅ Done — Stages 1-3 complete: profile upload/edit from the dashboard, fit scoring, and tailored résumé + cover letter with chat and a diff against base |
 | 3 | Autofill (review-before-submit) | 🟡 Started ahead of its gate — `app/autofill/lever.py` + `scripts/autofill.py` work against a live Lever form; no Greenhouse/Ashby fillers, no API route, no tests |
@@ -278,7 +279,8 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
 - Glassmorphism design system, dark/light themes (no FOUC), keyboard shortcuts (`/` `j` `k` `r` `t` `esc`), skeletons, empty states, responsive to 430px.
 - **Left nav shell** (`components/SideNav.tsx`): the app is a rail plus a
   content column, with one tile per top-level surface — **Jobs** (everything
-  above) and **Matches** (Phase 4, shell only). The active tile lives in the URL
+  above) and **Matches** (a shell when 2A shipped; filled in by 2C, and its
+  "Soon" badge removed 2026-09-26). The active tile lives in the URL
   as `?view=`, parsed by `useFilters` alongside the filters, so a view is
   linkable and back moves between views. Default (`jobs`) is left out of the
   URL, so existing links keep meaning the job list. Switching tiles keeps the
@@ -334,6 +336,73 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
 - ✅ Dashboard renders 3,391 live jobs without visible lag (virtualized, verified in-browser).
 
 ---
+
+## DASHBOARD PANEL — application tracking (2026-09-26, migration `0010`)
+
+Not in the original plan. Everything up to here answers "what should I apply
+to"; nothing recorded **what I actually applied to**, so there was no way to
+ask how many are outstanding. Phase 3 specifies an autofill audit log, but most
+applications are still sent by hand, so the tracker cannot wait on it.
+
+- **`applications` table**, one row per posting (unique on `job_id` — applying
+  twice to one posting is a mistake, not two applications). Six stages in
+  pipeline order: `applied` (which *is* "awaiting"), `screening`,
+  `interviewing`, `offer`, `rejected`, `ghosted`. A table rather than columns on
+  `job_postings` because an application is a fact about *me and a posting*: the
+  board neither knows nor cares, and the closure sweep must never touch it.
+- **Clicking Apply records it** (`source = "apply_click"`), which is the only
+  default that yields a tracker with anything in it — one that needs discipline
+  to stay accurate ends up empty. The JD is already in the drawer, so reaching
+  for Apply means intent. `source` keeps a click distinguishable from a typed
+  assertion rather than laundering one into the other, and `DELETE` removes a
+  misclick outright — "I did not apply" is the absence of an application, not a
+  stage of one.
+- **`POST /applications` is idempotent**, and that is load-bearing: the Apply
+  button fires on every press, so re-opening a form to check a question must not
+  drag `interviewing` back to `applied` or restamp a three-week-old application
+  as today's.
+- **Silence is computed, never stored.** "No movement for 30 days" is derived
+  from `status_changed_at` on every read, so it needs no background job and
+  every *stored* status stays something the user asserted. The panel offers to
+  mark those rows `ghosted`; nothing does it on a timer. It measures from
+  `status_changed_at`, not `applied_at` — a reply then silence restarts the
+  clock, and measuring from the application date would report an active
+  interview process as stale on day 31.
+- **`response_rate` reads the status history, not the current stage.** Being
+  rejected after a final round is still a response, and the number is about
+  whether anyone replied. It is `None` with no applications, because `0.0`
+  would read as "nobody replies" — a different claim.
+- **One `/dashboard` payload**, not six endpoints: the panel is useless
+  half-populated, and separate calls would let its numbers disagree. Three
+  bands — applications, pipeline health (counts other surfaces already compute),
+  and today's token spend against the provider cap, which is what decides
+  whether another tailored document is affordable.
+- **Activity is bucketed in Python, not SQL.** SQLite has no `date_trunc`, and
+  doing it with `strftime` would make this the one query that breaks the
+  Postgres move the stack rules exist to keep cheap. Twelve weeks, and every
+  week is present even at zero — missing keys would render a quiet stretch as a
+  gap rather than a zero.
+- `application_status` rides on every `JobOut`, joined per page with one `IN`
+  rather than a relationship (a lazy relationship raises under asyncio) so the
+  Apply button can render its own state without a second request. Shared by the
+  Jobs table, the drawer and Matches through one `useApplications` hook — the
+  invalidation set is the part that is easy to get subtly wrong.
+- **Nav**: a **Dashboard** tile leads the rail, and **Interview Prep** closes it
+  with a "Soon" badge and a page that says the scope is undecided. `jobs` stays
+  the URL default, so every link written before these existed still means the
+  job list.
+- **Found on the way:** the dev server's `init_db()` calls
+  `Base.metadata.create_all`, so adding a model to `models.py` makes a reloading
+  server create the table *before* Alembic sees it — the migration then failed
+  with "table applications already exists" and never stamped. The convenience is
+  documented in `main.py`, but it silently bypasses migrations during
+  development. Upgrade *and* downgrade were verified on a copy of the live
+  database before touching it.
+- **Tests:** `test_applications.py` (30). 933 collected, all green.
+
+**Not built:** notes are stored and editable through the API but have no UI
+control yet, and there is no per-round interview detail (that was the option
+Interview Prep would plug into).
 
 ## PHASE 2B — Validation
 

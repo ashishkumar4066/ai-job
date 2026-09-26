@@ -10,7 +10,9 @@ from __future__ import annotations
 from datetime import timedelta
 
 import httpx
+from sqlalchemy import select
 
+from app.applications import mark_applied
 from app.main import app
 from app.match_runner import run_matching
 from app.matching import MatchWeights
@@ -133,8 +135,6 @@ async def test_hide_blocked_removes_blocked_jobs(session_factory, monkeypatch, t
 
 async def test_llm_band_selects_on_the_deep_read(session_factory, monkeypatch, tmp_path) -> None:
     """`llm_band` filters on the LLM's fit_band; stale and failed reads count as unread."""
-    from sqlalchemy import select
-
     from app.models import JobMatch
 
     profile = Profile(skills={"backend": {"python": 3}}, gaps={})
@@ -202,3 +202,41 @@ async def test_llm_band_selects_on_the_deep_read(session_factory, monkeypatch, t
     assert none["total"] == 0 and none["llm_bands"] == {}
     assert everything["validity_bands"] == {"solid": 4}
     assert suspect["total"] == 0 and suspect["validity_bands"] == {"solid": 4}
+
+
+async def test_applied_count_and_filter(session_factory, monkeypatch, tmp_path) -> None:
+    """The Applied chip: a count over the list, and a filter both ways.
+
+    The count is taken before the filter is applied — the chip has to say how
+    many rows selecting it would show, not describe the current selection.
+    """
+    profile = Profile(skills={"backend": {"python": 3}}, gaps={})
+    monkeypatch.setattr("app.api.get_profile", lambda: profile)
+    monkeypatch.setenv("PREFS_FILE", str(tmp_path / "prefs.yaml"))
+    from app.config import get_settings
+    from app.prefs import get_prefs
+
+    get_settings.cache_clear()
+    get_prefs.cache_clear()
+
+    async with session_factory() as session:
+        session.add_all([_job(21), _job(22)])
+        await session.commit()
+        await run_matching(session, profile=profile, weights=MatchWeights(), prefs=Prefs())
+        applied_id = (await session.scalars(select(JobPosting.id).order_by(JobPosting.id))).first()
+        await mark_applied(session, applied_id, source="apply_click")
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        base = {"match_prefs": "false"}
+        every = (await client.get("/matches", params=base)).json()
+        only = (await client.get("/matches", params={**base, "applied": "true"})).json()
+        rest = (await client.get("/matches", params={**base, "applied": "false"})).json()
+
+    assert every["total"] == 2 and every["applied"] == 1
+    assert only["total"] == 1 and only["items"][0]["job"]["id"] == applied_id
+    assert only["items"][0]["job"]["application_status"] == "applied"
+    # Counted before the filter, so selecting it does not make it describe itself.
+    assert only["applied"] == 1
+    assert rest["total"] == 1 and rest["items"][0]["job"]["id"] != applied_id
+    assert rest["items"][0]["job"]["application_status"] is None

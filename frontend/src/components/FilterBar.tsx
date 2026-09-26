@@ -205,7 +205,7 @@ export function FilterBar({
               className="cursor-pointer appearance-none bg-transparent pr-4 font-medium text-ink outline-none"
             >
               {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value} className="bg-bg-elevated">
+                <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}

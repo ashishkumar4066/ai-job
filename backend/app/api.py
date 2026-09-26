@@ -42,7 +42,7 @@ from app.llm_runner import LLMProgress, LLMRunResult, run_llm_screen
 from app.llm_runner import tracker as llm_tracker
 from app.match_runner import MatchRunResult, run_matching
 from app.matching import get_weights
-from app.models import GeneratedDocument, IngestRun, JobMatch, JobPosting, utcnow
+from app.models import Application, GeneratedDocument, IngestRun, JobMatch, JobPosting, utcnow
 from app.normalize import detect_currency, find_usd_pay
 from app.pipeline import LLMEstimate, PipelineProgress, estimate_llm_pass, run_pipeline
 from app.pipeline import tracker as pipeline_tracker
@@ -50,17 +50,22 @@ from app.prefs import Prefs, PrefsError, TransferPrefs, get_prefs, load_prefs, s
 from app.profile import ProfileError, get_profile
 from app import profile_intake
 from app.resume_tex import ResumeDocument, ResumeTemplateError
-from app import cover_chat, resume_chat
+from app import applications, cover_chat, resume_chat
 from app.shortlist import HARD_MAX_READS, reasons_excluded, shortlist_clause
 from app.validation_runner import ValidityRunResult, run_validation
 from app.validation_runner import _band as validity_band
 from app.schemas import (
+    ApplicationListOut,
+    ApplicationMarkIn,
+    ApplicationOut,
+    ApplicationPatchIn,
     BaseResumeOut,
     CompileOut,
     ChatApplyIn,
     ChatApplyOut,
     ChatIn,
     ChatOut,
+    DashboardOut,
     DiffRowOut,
     DocumentDiffOut,
     DocumentOut,
@@ -86,6 +91,7 @@ from app.schemas import (
     ProfileSaveIn,
     SourceProgressOut,
     ValidityRunOut,
+    WeekPointOut,
 )
 from app.prefs import EMPLOYMENT_TYPES, WORKPLACE_TYPES
 
@@ -197,6 +203,28 @@ async def list_companies() -> list[dict[str, object]]:
     ]
 
 
+async def _attach_applications(
+    session: AsyncSession, items: list[JobOut]
+) -> list[JobOut]:
+    """Fill in `application_status` for a page of rows.
+
+    A separate query rather than a relationship: a lazy-loaded relationship
+    raises under asyncio, and an outer join would have to be threaded through
+    `apply_job_filters`, which every list surface shares. One `IN` over at most
+    500 ids is cheaper than either.
+    """
+    ids = [item.id for item in items]
+    if not ids:
+        return items
+    rows = await session.execute(
+        select(Application.job_id, Application.status).where(Application.job_id.in_(ids))
+    )
+    statuses = dict(rows.all())
+    for item in items:
+        item.application_status = statuses.get(item.id)
+    return items
+
+
 @router.get("/jobs", response_model=JobListOut, tags=["jobs"])
 async def list_jobs(
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -230,7 +258,9 @@ async def list_jobs(
         total=total or 0,
         limit=limit,
         offset=offset,
-        items=[JobOut.model_validate(row) for row in rows],
+        items=await _attach_applications(
+            session, [JobOut.model_validate(row) for row in rows]
+        ),
     )
 
 
@@ -384,6 +414,8 @@ async def get_job(
     payload = JobDetailOut.model_validate(job)
     if not include_raw:
         payload.raw_json = None
+    application = await applications.get_application(session, job_id)
+    payload.application_status = application.status if application else None
     return payload
 
 
@@ -999,6 +1031,10 @@ async def list_matches(
     hide_blocked: Annotated[
         bool, Query(description="true = drop jobs whose JD states a hard blocker")
     ] = False,
+    applied: Annotated[
+        bool | None,
+        Query(description="true = only jobs already applied to; false = only ones not yet"),
+    ] = None,
     match_prefs: Annotated[
         bool,
         Query(
@@ -1088,12 +1124,17 @@ async def list_matches(
     want_llm = {b.lower() for b in llm_band or []}
     want_validity = {b.lower() for b in validity or []}
 
+    # An application exists for this job. A subquery rather than a join: the
+    # statement is reused for the page itself, and a join would multiply rows if
+    # the one-application-per-job invariant ever slipped.
+    is_applied = JobMatch.job_id.in_(select(Application.job_id))
     band_rows = await session.execute(
         stmt.with_only_columns(
             JobMatch.score,
             shortlist_clause(threshold),
             case((llm_read, llm_fit), else_=None),
             JobPosting.validity_score,
+            is_applied,
         )
     )
     bands: dict[str, int] = {}
@@ -1101,10 +1142,13 @@ async def list_matches(
     validity_bands: dict[str, int] = {}
     on_shortlist = 0
     total_all = 0
-    for score, is_short, read_band, validity_score in band_rows:
+    applied_count = 0
+    for score, is_short, read_band, validity_score, row_applied in band_rows:
         total_all += 1
         if is_short:
             on_shortlist += 1
+        if row_applied:
+            applied_count += 1
         keys = (_band_of(score), read_band or "unread", _validity_band_of(validity_score))
         hits = (
             not want_fit or keys[0] in want_fit,
@@ -1141,6 +1185,9 @@ async def list_matches(
         if "unchecked" in want_validity:
             clauses.append(JobPosting.validity_score.is_(None))
         stmt = stmt.where(or_(*clauses, False))
+    # Last, so `applied_count` above stays the number this filter would show.
+    if applied is not None:
+        stmt = stmt.where(is_applied if applied else ~is_applied)
 
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
 
@@ -1181,6 +1228,8 @@ async def list_matches(
         )
         for m, job in rows
     ]
+    # Matches rows carry the same Apply button, so they need the same status.
+    await _attach_applications(session, [item.job for item in items])
     return MatchListOut(
         total=total,
         limit=limit,
@@ -1193,6 +1242,7 @@ async def list_matches(
         shortlisted=on_shortlist,
         total_all=total_all,
         blocked=blocked_count,
+        applied=applied_count,
     )
 
 
@@ -1902,3 +1952,147 @@ async def clear_chat(
     document = await _load_document(session, doc_id)
     await _chat_module(document).clear_chat(session, document)
     return await _chat_out(session, document)
+
+
+# --------------------------------------------------------------------------
+# Applications and the Dashboard (`app/applications.py`)
+#
+# Everything here is free — no LLM call, no network. `POST /applications` is the
+# one write the Apply button makes, and it is idempotent, so clicking Apply
+# again to re-read a form cannot restamp or reset an application already in
+# progress.
+# --------------------------------------------------------------------------
+def _application_out(application: Application, job: JobPosting) -> ApplicationOut:
+    return ApplicationOut(
+        job_id=application.job_id,
+        status=application.status,  # type: ignore[arg-type]
+        applied_at=application.applied_at,
+        status_changed_at=application.status_changed_at,
+        source=application.source,
+        notes=application.notes,
+        days_silent=applications.days_silent(application),
+        silent=applications.is_silent(application),
+        history=list(application.history or []),
+        company=job.company,
+        title=job.title,
+        apply_url=job.apply_url,
+        locations=list(job.locations or []),
+        posted_at=job.posted_at,
+        status_of_posting=job.status,  # type: ignore[arg-type]
+    )
+
+
+@router.get("/applications", response_model=ApplicationListOut, tags=["applications"])
+async def list_applications_route(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    status: Annotated[
+        list[str] | None, Query(description="Repeatable. Omit for every stage.")
+    ] = None,
+    silent_only: Annotated[
+        bool, Query(description="Only open applications with no movement for 30 days")
+    ] = False,
+    limit: Annotated[int, Query(ge=1, le=500)] = 200,
+) -> ApplicationListOut:
+    """Tracked applications, most recently moved first."""
+    try:
+        rows = await applications.list_applications(
+            session, statuses=status, silent_only=silent_only, limit=limit
+        )
+    except applications.ApplicationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return ApplicationListOut(
+        total=len(rows), items=[_application_out(a, j) for a, j in rows]
+    )
+
+
+@router.post("/applications", response_model=ApplicationOut, tags=["applications"])
+async def mark_applied_route(
+    payload: ApplicationMarkIn,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ApplicationOut:
+    """Record an application. Idempotent — a second call changes nothing.
+
+    That matters because the Apply button calls this every time it is pressed,
+    and re-opening a form to check something must not reset a status or restamp
+    a three-week-old application as today's.
+    """
+    try:
+        application, _created = await applications.mark_applied(
+            session, payload.job_id, source=payload.source
+        )
+    except applications.ApplicationError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    job = await require_job(session, application.job_id)
+    return _application_out(application, job)
+
+
+@router.patch(
+    "/applications/{job_id}", response_model=ApplicationOut, tags=["applications"]
+)
+async def patch_application(
+    job_id: int,
+    payload: ApplicationPatchIn,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ApplicationOut:
+    """Move an application to another stage, and/or edit its notes."""
+    try:
+        application = await applications.set_status(
+            session, job_id, status=payload.status, notes=payload.notes
+        )
+    except applications.ApplicationError as exc:
+        code = 404 if "no application" in str(exc) else 422
+        raise HTTPException(status_code=code, detail=str(exc)) from exc
+    job = await require_job(session, job_id)
+    return _application_out(application, job)
+
+
+@router.delete("/applications/{job_id}", tags=["applications"])
+async def delete_application(
+    job_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, bool]:
+    """Undo. A hard delete, so a misclicked Apply leaves nothing in the counts."""
+    return {"removed": await applications.unmark(session, job_id)}
+
+
+@router.get("/dashboard", response_model=DashboardOut, tags=["applications"])
+async def dashboard_route(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DashboardOut:
+    """Applications, pipeline health and the LLM budget, as of one instant."""
+    data = await applications.dashboard(session)
+    return DashboardOut(
+        by_status=data.by_status,
+        total_applications=data.total_applications,
+        awaiting=data.awaiting,
+        active=data.active,
+        silent=data.silent,
+        applied_last_7d=data.applied_last_7d,
+        applied_last_30d=data.applied_last_30d,
+        response_rate=data.response_rate,
+        silent_after_days=applications.SILENT_AFTER_DAYS,
+        statuses=list(applications.STATUSES),
+        jobs_open=data.jobs_open,
+        jobs_eligible=data.jobs_eligible,
+        jobs_fresh=data.jobs_fresh,
+        matches_scored=data.matches_scored,
+        matches_shortlisted=data.matches_shortlisted,
+        documents=data.documents,
+        last_sweep_at=data.last_sweep_at,
+        last_sweep_fetched=data.last_sweep_fetched,
+        provider=data.provider,
+        model=data.model,
+        tokens_today=data.tokens_today,
+        tokens_per_day=data.tokens_per_day,
+        requests_today=data.requests_today,
+        requests_per_day=data.requests_per_day,
+        deep_reads=data.deep_reads,
+        activity=[
+            WeekPointOut(
+                week=point.week,
+                applications=point.applications,
+                jobs_found=point.jobs_found,
+            )
+            for point in data.activity
+        ],
+    )

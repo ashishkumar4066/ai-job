@@ -10,7 +10,9 @@ import {
   workModeLabel,
 } from "@/lib/format";
 import { usePrefetchJob } from "@/lib/hooks";
-import type { Job } from "@/lib/types";
+import { useApplications } from "@/lib/useApplications";
+import type { ApplicationStatus, Job } from "@/lib/types";
+import { ApplicationControl } from "./ApplicationControl";
 import { LlmBadge, VerifierBadge } from "./CheckBadges";
 import { Badge, CompanyAvatar, EmptyState, SkeletonRow, cx } from "./primitives";
 
@@ -20,7 +22,7 @@ const OVERSCAN = 8;
 
 /** Shared column template keeps the header and rows locked together. */
 const GRID =
-  "grid grid-cols-[minmax(0,1fr)_112px] items-center gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.1fr)_120px_96px] lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1fr)_132px_104px_92px]";
+  "grid grid-cols-[minmax(0,1fr)_150px] items-center gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.1fr)_120px_150px] lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1fr)_132px_104px_150px]";
 
 export function JobTable({
   jobs,
@@ -56,6 +58,7 @@ export function JobTable({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefetch = usePrefetchJob();
+  const { mark, setStatus, statusPendingId, unmark, unmarkingId } = useApplications();
 
   const virtualizer = useVirtualizer({
     count: jobs.length,
@@ -212,6 +215,11 @@ export function JobTable({
                       selected={job.id === selectedId}
                       onSelect={onSelect}
                       onHover={prefetch}
+                      onApply={mark}
+                      onStatus={setStatus}
+                      onUnapply={unmark}
+                      statusPending={statusPendingId === job.id}
+                      unapplying={unmarkingId === job.id}
                     />
                   </div>
                 );
@@ -254,12 +262,25 @@ const JobRow = memo(function JobRow({
   selected,
   onSelect,
   onHover,
+  onApply,
+  onStatus,
+  onUnapply,
+  statusPending,
+  unapplying,
 }: {
   job: Job;
   isNew: boolean;
   selected: boolean;
   onSelect: (id: number) => void;
   onHover: (id: number) => void;
+  /** Records the application. Fires beside the link opening, never before it. */
+  onApply: (id: number) => void;
+  /** Moves it along the pipeline. Nothing else ever does — no board tells us. */
+  onStatus: (change: { jobId: number; status: ApplicationStatus }) => void;
+  /** Undo — deletes the application outright, so a misclick leaves no trace. */
+  onUnapply: (id: number) => void;
+  statusPending: boolean;
+  unapplying: boolean;
 }) {
   const mode = workModeLabel(job);
   const isRemote = workMode(job) === "remote";
@@ -408,18 +429,37 @@ const JobRow = memo(function JobRow({
 
       {/* Apply */}
       <div className="flex justify-end">
-        <a
-          href={job.apply_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => event.stopPropagation()}
-          // Always visible (an empty "Apply" column reads as broken), but muted
-          // until the row is hovered so 3000 rows don't shout at once.
-          className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2.5 py-1.5 text-[12px] font-semibold text-muted opacity-55 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text hover:shadow-[0_4px_12px_-6px_var(--accent-glow)] focus-visible:opacity-100"
-        >
-          Apply
-          <ArrowUpRight size={13} className="transition-transform duration-200 group-hover:translate-x-px group-hover:-translate-y-px" />
-        </a>
+        {job.application_status ? (
+          <ApplicationControl
+            compact
+            status={job.application_status}
+            applyUrl={job.apply_url}
+            jobTitle={job.title}
+            onStatus={(status) => onStatus({ jobId: job.id, status })}
+            onUnapply={() => onUnapply(job.id)}
+            statusPending={statusPending}
+            unapplying={unapplying}
+          />
+        ) : (
+          <a
+            href={job.apply_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => {
+              event.stopPropagation();
+              // Runs beside the new tab opening, never before it. Idempotent, so
+              // re-opening a form to check a question changes nothing.
+              onApply(job.id);
+            }}
+            title="Opens the application page and records it on your Dashboard"
+            // Always visible (an empty "Apply" column reads as broken), but muted
+            // until the row is hovered so 3000 rows don't shout at once.
+            className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2.5 py-1.5 text-[12px] font-semibold text-muted opacity-55 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text hover:shadow-[0_4px_12px_-6px_var(--accent-glow)] focus-visible:opacity-100"
+          >
+            Apply
+            <ArrowUpRight size={13} className="transition-transform duration-200 group-hover:translate-x-px group-hover:-translate-y-px" />
+          </a>
+        )}
       </div>
     </div>
   );

@@ -7,10 +7,12 @@ import { useDailyRefresh } from "@/lib/useDailyRefresh";
 import { useFilters } from "@/lib/useFilters";
 import type { Job } from "@/lib/types";
 import { FilterBar } from "@/components/FilterBar";
+import { DashboardView } from "@/components/DashboardView";
 import { Funnel } from "@/components/Funnel";
 import { JobDrawer } from "@/components/JobDrawer";
 import { JobTable } from "@/components/JobTable";
 import { MatchesView } from "@/components/MatchesView";
+import { PrepView } from "@/components/PrepView";
 import { ProfilePanel } from "@/components/ProfilePanel";
 import { SideNav } from "@/components/SideNav";
 import { StatsStrip } from "@/components/StatsStrip";
@@ -255,11 +257,35 @@ export default function App() {
           onOpenProfile={() => openProfile()}
           onReplaceResume={() => openProfile("upload")}
           profileName={profileQuery.data?.full_name ?? ""}
-          // Matches has no list for the search box to filter — see TopBar.
-          title={view === "matches" ? "Matches" : undefined}
+          // Only Jobs has a list for the search box to filter — every other
+          // surface takes its slot with a title instead of offering a box that
+          // quietly searches something off screen. See TopBar.
+          title={
+            view === "jobs"
+              ? undefined
+              : view === "matches"
+                ? "Matches"
+                : view === "dashboard"
+                  ? "Dashboard"
+                  : "Interview Prep"
+          }
         />
 
-        {view === "matches" ? (
+        {view === "dashboard" ? (
+          // Outside the sync gate for the same reason as Matches: it reads
+          // stored applications and counts, so a pending sweep has nothing
+          // stale to protect against, and gating it would make the panel wait
+          // ~90s on data it does not display.
+          <DashboardView
+            onOpenJob={(jobId) => {
+              setView("jobs");
+              selectJob(jobId);
+            }}
+            onBrowseJobs={() => setView("jobs")}
+          />
+        ) : view === "prep" ? (
+          <PrepView onOpenDashboard={() => setView("dashboard")} />
+        ) : view === "matches" ? (
           // Deliberately outside the sync gate. Matches reads persisted scores
           // rather than live board data, so a pending sweep has nothing stale
           // to protect us from — and gating it would make the panel wait ~90s

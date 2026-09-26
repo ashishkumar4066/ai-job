@@ -29,7 +29,7 @@ const PARAM = {
 
 const SORTS: SortField[] = ["first_seen_at", "posted_at", "title", "company", "last_seen_at"];
 const STATUSES: StatusFilter[] = ["open", "closed", "any"];
-const VIEWS: ViewId[] = ["jobs", "matches"];
+const VIEWS: ViewId[] = ["dashboard", "jobs", "matches", "prep"];
 
 /** Which nav tile the URL is pointing at. Jobs is the default surface. */
 export function parseView(search: string): ViewId {

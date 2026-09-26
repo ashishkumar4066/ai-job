@@ -23,12 +23,20 @@ import {
   X,
 } from "lucide-react";
 import { api, llmStatus, startLlmOne } from "@/lib/api";
+import { ApplicationControl } from "./ApplicationControl";
 import { LlmBadge, VerifierBadge, fitBand } from "./CheckBadges";
 import { absoluteDate, formatSalary, relativeTime, sourceLabel, titleCase } from "@/lib/format";
 import { JOB_DETAIL_STALE_MS } from "@/lib/hooks";
 import { sanitizeHtml } from "@/lib/sanitize";
-import type { DocumentKind, Job, LlmValidity, Match } from "@/lib/types";
+import type {
+  ApplicationStatus,
+  DocumentKind,
+  Job,
+  LlmValidity,
+  Match,
+} from "@/lib/types";
 import { validityBand } from "@/lib/types";
+import { useApplications } from "@/lib/useApplications";
 import { Badge, CompanyAvatar, cx } from "./primitives";
 
 export function JobDrawer({
@@ -75,6 +83,8 @@ export function JobDrawer({
   useEffect(() => setCopied(false), [jobId]);
 
   const job = data ?? summary;
+  const { mark, setStatus, statusPending, unmark, unmarkPending } = useApplications();
+  const applied = job?.application_status != null;
 
   // A full DOM parse of the JD — once per job, not on every drawer render
   // (the copy toast and the deep-read poll both re-render it).
@@ -274,15 +284,32 @@ export function JobDrawer({
         {/* Footer */}
         {job && (
           <div className="flex items-center gap-2.5 border-t border-edge bg-panel-strong/30 px-5 py-4">
-            <a
-              href={job.apply_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-semibold"
-            >
-              Apply on {sourceLabel(job.ats)}
-              <ArrowUpRight size={15} />
-            </a>
+            {applied ? (
+              // Applied: the primary action becomes the stage control, because
+              // "where is this now" is the only remaining question about it.
+              <ApplicationControl
+                className="flex-1 px-2 py-1"
+                status={job.application_status as ApplicationStatus}
+                applyUrl={job.apply_url}
+                jobTitle={job.title}
+                onStatus={(status) => setStatus({ jobId: job.id, status })}
+                onUnapply={() => unmark(job.id)}
+                statusPending={statusPending}
+                unapplying={unmarkPending}
+              />
+            ) : (
+              <a
+                href={job.apply_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => mark(job.id)}
+                title="Opens the application page and records it on your Dashboard"
+                className="btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[14px] font-semibold"
+              >
+                Apply on {sourceLabel(job.ats)}
+                <ArrowUpRight size={15} />
+              </a>
+            )}
             {onTailor && (
               <>
                 <button

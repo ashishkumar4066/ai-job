@@ -1,6 +1,10 @@
 import type {
+  Application,
+  ApplicationList,
+  ApplicationStatus,
   BaseResume,
   CompileResult,
+  Dashboard,
   Facets,
   Filters,
   Health,
@@ -227,6 +231,8 @@ export function fetchMatches(opts: {
   shortlisted?: boolean | null;
   /** true = drop jobs whose JD states a hard blocker. */
   hideBlocked?: boolean;
+  /** true = only jobs already applied to; false = only ones not yet. */
+  applied?: boolean | null;
   /** false = show every scored row, preference misses included. */
   matchPrefs?: boolean;
   sort?: MatchSort;
@@ -245,6 +251,7 @@ export function fetchMatches(opts: {
   for (const b of opts.bands?.validity ?? []) p.append("validity", b);
   if (opts.shortlisted != null) p.set("shortlisted", String(opts.shortlisted));
   if (opts.hideBlocked) p.set("hide_blocked", "true");
+  if (opts.applied != null) p.set("applied", String(opts.applied));
   // Default ON server-side. Sent explicitly only when switched off, so the
   // common request stays short.
   if (opts.matchPrefs === false) p.set("match_prefs", "false");
@@ -462,4 +469,61 @@ export function dismissChat(docId: number, messageId: string): Promise<ResumeCha
 
 export function clearChat(docId: number): Promise<ResumeChat> {
   return request<ResumeChat>(`/documents/${docId}/chat`, undefined, { method: "DELETE" });
+}
+
+/* ------------------------------------------- Applications and the Dashboard */
+//
+// Every call here is free — no LLM, no network beyond our own API.
+
+/** Record an application for this job.
+ *
+ *  Idempotent, and that matters: the Apply button calls it on every press, so
+ *  re-opening a form to check a question must not reset a status already moved
+ *  on, or restamp an old application as today's. */
+export function markApplied(
+  jobId: number,
+  source: "apply_click" | "manual" = "apply_click",
+): Promise<Application> {
+  return request<Application>("/applications", undefined, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ job_id: jobId, source }),
+  });
+}
+
+/** Move an application to another stage, and/or edit its notes. */
+export function patchApplication(
+  jobId: number,
+  patch: { status?: ApplicationStatus; notes?: string },
+): Promise<Application> {
+  return request<Application>(`/applications/${jobId}`, undefined, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+}
+
+/** Undo. A hard delete, so a misclicked Apply leaves nothing in the counts. */
+export function unmarkApplied(jobId: number): Promise<{ removed: boolean }> {
+  return request<{ removed: boolean }>(`/applications/${jobId}`, undefined, {
+    method: "DELETE",
+  });
+}
+
+export function fetchApplications(options?: {
+  status?: ApplicationStatus[];
+  silentOnly?: boolean;
+}): Promise<ApplicationList> {
+  const p = new URLSearchParams();
+  for (const status of options?.status ?? []) p.append("status", status);
+  if (options?.silentOnly) p.set("silent_only", "true");
+  return request<ApplicationList>("/applications", p);
+}
+
+/** Applications, pipeline health and the LLM budget, as of one instant.
+ *
+ *  One request rather than several: the panel is useless half-populated, and
+ *  separate calls would let its numbers disagree with each other. */
+export function fetchDashboard(): Promise<Dashboard> {
+  return request<Dashboard>("/dashboard");
 }

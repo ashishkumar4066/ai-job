@@ -201,6 +201,10 @@ class JobOut(BaseModel):
     # Whether the LLM has read this exact JD text. Every row shows both this
     # and the verifier state, so "was this checked?" is never a guess.
     llm_read: bool = False
+    # The tracked application's stage, or None if none is recorded. A fact about
+    # me and this posting rather than about the posting, so it lives in its own
+    # table and is joined in per page — see `app/applications.py`.
+    application_status: str | None = None
 
 
 class JobDetailOut(JobOut):
@@ -369,6 +373,10 @@ class MatchListOut(BaseModel):
     total_all: int = 0
     # Blocked jobs the "Hide blocked" toggle removes (counted before it applies).
     blocked: int = 0
+    # Rows in this list already applied to, counted before the `applied` filter.
+    # Matches is where applying happens, so "have I been here already?" is a
+    # question of the list itself, not one to answer on the Dashboard.
+    applied: int = 0
 
 
 class MatchRunOut(BaseModel):
@@ -759,3 +767,106 @@ class ChatApplyIn(BaseModel):
 class ChatApplyOut(BaseModel):
     document: DocumentOut
     chat: ChatOut
+
+
+# --------------------------------------------------------------------------
+# Applications and the Dashboard
+# --------------------------------------------------------------------------
+ApplicationStatus = Literal[
+    "applied", "screening", "interviewing", "offer", "rejected", "ghosted"
+]
+
+
+class ApplicationOut(BaseModel):
+    """One tracked application, with enough of its posting to render a row."""
+
+    job_id: int
+    status: ApplicationStatus
+    applied_at: datetime
+    status_changed_at: datetime
+    # `apply_click` means the Apply button was pressed; `manual` means it was
+    # asserted. Surfaced rather than hidden: a click is weaker evidence than a
+    # claim, and the difference is worth seeing when reviewing the list.
+    source: str
+    notes: str | None = None
+    days_silent: int = 0
+    # Open and nothing has moved for 30 days. Derived on every read, never
+    # stored, so the counts stay things the user asserted.
+    silent: bool = False
+    history: list[dict[str, Any]] = Field(default_factory=list)
+
+    company: str = ""
+    title: str = ""
+    apply_url: str = ""
+    locations: list[str] = Field(default_factory=list)
+    posted_at: datetime | None = None
+    status_of_posting: JobStatus = "open"
+
+
+class ApplicationListOut(BaseModel):
+    total: int
+    items: list[ApplicationOut] = Field(default_factory=list)
+
+
+class ApplicationMarkIn(BaseModel):
+    job_id: int
+    # Defaults to the honest value for the Apply button, which is the only
+    # caller that does not pass one explicitly.
+    source: Literal["apply_click", "manual"] = "apply_click"
+
+
+class ApplicationPatchIn(BaseModel):
+    status: ApplicationStatus | None = None
+    notes: str | None = None
+
+
+class WeekPointOut(BaseModel):
+    """One week of the activity chart. `week` is that week's Monday."""
+
+    week: str
+    applications: int
+    jobs_found: int
+
+
+class DashboardOut(BaseModel):
+    """Everything the Dashboard panel shows, as of one instant.
+
+    One payload rather than six endpoints: the panel is useless half-populated,
+    and separate calls would let its numbers disagree with each other.
+    """
+
+    # Applications
+    by_status: dict[str, int] = Field(default_factory=dict)
+    total_applications: int = 0
+    # Sent, nothing back yet — the headline "awaiting" number.
+    awaiting: int = 0
+    active: int = 0
+    silent: int = 0
+    applied_last_7d: int = 0
+    applied_last_30d: int = 0
+    # Share that ever got a human response, off the status history rather than
+    # the current status, so a rejection after an interview still counts.
+    response_rate: float | None = None
+    silent_after_days: int = 30
+    statuses: list[str] = Field(default_factory=list)
+
+    # Pipeline health — is the machine still feeding me?
+    jobs_open: int = 0
+    jobs_eligible: int = 0
+    jobs_fresh: int = 0
+    matches_scored: int = 0
+    matches_shortlisted: int = 0
+    documents: int = 0
+    last_sweep_at: datetime | None = None
+    last_sweep_fetched: int = 0
+
+    # LLM budget — decides whether another document is affordable today.
+    provider: str = ""
+    model: str = ""
+    tokens_today: int = 0
+    tokens_per_day: int | None = None
+    requests_today: int = 0
+    requests_per_day: int | None = None
+    deep_reads: int = 0
+
+    activity: list[WeekPointOut] = Field(default_factory=list)

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Briefcase,
+  LayoutDashboard,
+  MessagesSquare,
   PanelLeftClose,
   PanelLeftOpen,
   RadarIcon,
@@ -25,6 +27,12 @@ type NavTile = {
 
 const TILES: NavTile[] = [
   {
+    id: "dashboard",
+    label: "Dashboard",
+    hint: "Applications, pipeline & budget",
+    icon: LayoutDashboard,
+  },
+  {
     id: "jobs",
     label: "Jobs",
     hint: "Everything the boards swept",
@@ -35,6 +43,12 @@ const TILES: NavTile[] = [
     label: "Matches",
     hint: "Fit, tailored résumé & letter",
     icon: Target,
+  },
+  {
+    id: "prep",
+    label: "Interview Prep",
+    hint: "Not designed yet",
+    icon: MessagesSquare,
     badge: "Soon",
   },
 ];

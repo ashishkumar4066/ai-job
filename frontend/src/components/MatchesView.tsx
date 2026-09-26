@@ -24,6 +24,8 @@ import {
 import { clearTransfer, fetchMatches, fetchMatchesFunnel, fetchProfile } from "@/lib/api";
 import { absoluteDate, relativeTime, workMode, workModeLabel } from "@/lib/format";
 import { usePrefetchJob } from "@/lib/hooks";
+import { useApplications } from "@/lib/useApplications";
+import { ApplicationControl } from "./ApplicationControl";
 import { FIT_BANDS, LlmBadge, VerifierBadge, fitBand } from "./CheckBadges";
 import {
   EMPTY_BAND_FILTERS,
@@ -35,7 +37,13 @@ import { Funnel } from "./Funnel";
 import { JobDrawer } from "./JobDrawer";
 import { PrefsPanel } from "./PrefsPanel";
 import { TailorModal } from "./TailorModal";
-import type { DocumentKind, Match, MatchBandFilters, MatchSort } from "@/lib/types";
+import type {
+  ApplicationStatus,
+  DocumentKind,
+  Match,
+  MatchBandFilters,
+  MatchSort,
+} from "@/lib/types";
 import { CompanyAvatar, EmptyState, SkeletonRow, cx, useSpotlight } from "./primitives";
 
 /**
@@ -98,6 +106,11 @@ export function MatchesView({
   const [sort, setSort] = useState<MatchSort>("posted_at");
   const [onlyShortlisted, setOnlyShortlisted] = useState(false);
   const [hideBlocked, setHideBlocked] = useState(false);
+  // Applying happens here, so "have I already been to this one?" is a question
+  // about this list. Tri-state on purpose: the count answers it at a glance,
+  // `true` reviews what was sent, and `false` is the working filter — a list
+  // with the done ones taken out.
+  const [appliedFilter, setAppliedFilter] = useState<boolean | null>(null);
   const [showPrefs, setShowPrefs] = useState(false);
   // Mirrored up from the dialog's Run control, so a run started there and
   // left running after the dialog closes still shows on the header button.
@@ -136,13 +149,22 @@ export function MatchesView({
   // Paged, not one 200-row request: the first screen arrives after 50 rows,
   // and the rest load as the list scrolls toward them.
   const matches = useInfiniteQuery({
-    queryKey: ["matches", bandFilters, sort, onlyShortlisted, hideBlocked, showPrefMisses],
+    queryKey: [
+      "matches",
+      bandFilters,
+      sort,
+      onlyShortlisted,
+      hideBlocked,
+      appliedFilter,
+      showPrefMisses,
+    ],
     queryFn: ({ pageParam }) =>
       fetchMatches({
         bands: bandFilters,
         sort,
         shortlisted: onlyShortlisted ? true : null,
         hideBlocked,
+        applied: appliedFilter,
         // Preference misses are hidden by default — that is the shape of this
         // surface. They are never lost: the Jobs tile shows the whole board.
         matchPrefs: !showPrefMisses,
@@ -194,6 +216,7 @@ export function MatchesView({
     !filtering &&
     !onlyShortlisted &&
     !hideBlocked &&
+    appliedFilter === null &&
     !showPrefMisses;
   const sent = funnel.data?.transfer ?? null;
 
@@ -315,6 +338,36 @@ export function MatchesView({
                 <span className="font-mono text-[11px] opacity-70">{summary.blocked}</span>
               )}
             </label>
+
+            <button
+              type="button"
+              onClick={() =>
+                setAppliedFilter((current) =>
+                  current === null ? true : current ? false : null,
+                )
+              }
+              title={
+                appliedFilter === null
+                  ? "Jobs here you have already applied to. Click to show only those."
+                  : appliedFilter
+                    ? "Showing only jobs you have applied to. Click to hide them instead."
+                    : "Hiding jobs you have already applied to. Click to show everything."
+              }
+              className={cx(
+                "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] transition-colors",
+                appliedFilter === null
+                  ? "border-edge bg-panel text-muted hover:border-edge-strong"
+                  : appliedFilter
+                    ? "border-sky-400/40 bg-sky-400/10 text-sky-200"
+                    : "border-edge-strong bg-panel text-ink",
+              )}
+            >
+              <Send size={12} />
+              {appliedFilter === false ? "Not applied" : "Applied"}
+              {summary && (
+                <span className="font-mono text-[11px] opacity-70">{summary.applied}</span>
+              )}
+            </button>
 
             <MatchFilterButton
               value={bandFilters}
@@ -524,6 +577,7 @@ function MatchList({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefetch = usePrefetchJob();
+  const { mark, setStatus, statusPendingId, unmark, unmarkingId } = useApplications();
   const select = useCallback((id: number) => onSelectJob(id), [onSelectJob]);
 
   const virtualizer = useVirtualizer({
@@ -567,7 +621,17 @@ function MatchList({
               className="absolute top-0 left-0 w-full pb-1.5 [contain:layout_paint_style]"
               style={{ transform: `translateY(${row.start}px)` }}
             >
-              <MatchRow match={match} onSelect={select} onHover={prefetch} onTailor={onTailor} />
+              <MatchRow
+                match={match}
+                onSelect={select}
+                onHover={prefetch}
+                onTailor={onTailor}
+                onApply={mark}
+                onStatus={setStatus}
+                onUnapply={unmark}
+                statusPending={statusPendingId === match.job.id}
+                unapplying={unmarkingId === match.job.id}
+              />
             </div>
           );
         })}
@@ -593,11 +657,24 @@ const MatchRow = memo(function MatchRow({
   onSelect: onSelectId,
   onHover,
   onTailor,
+  onApply,
+  onStatus,
+  onUnapply,
+  statusPending,
+  unapplying,
 }: {
   match: Match;
   onSelect: (id: number) => void;
   onHover: (id: number) => void;
   onTailor: (match: Match, kind: DocumentKind) => void;
+  /** Records the application. Fires beside the link opening, never before it. */
+  onApply: (id: number) => void;
+  /** Moves it along the pipeline. Nothing else ever does — no board tells us. */
+  onStatus: (change: { jobId: number; status: ApplicationStatus }) => void;
+  /** Undo — deletes the application outright, so a misclick leaves no trace. */
+  onUnapply: (id: number) => void;
+  statusPending: boolean;
+  unapplying: boolean;
 }) {
   const onSelect = () => onSelectId(match.job.id);
   const onPointerMove = useSpotlight<HTMLDivElement>();
@@ -894,43 +971,40 @@ const MatchRow = memo(function MatchRow({
               <Mail size={12} />
               Cover letter
             </button>
-            <a
-              href={match.job.apply_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-              className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2.5 py-1 text-[11.5px] font-semibold text-muted opacity-70 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text focus-visible:opacity-100"
-            >
-              Apply
-              <ArrowUpRight size={12} />
-            </a>
+            {match.job.application_status ? (
+              <ApplicationControl
+                compact
+                status={match.job.application_status}
+                applyUrl={match.job.apply_url}
+                jobTitle={match.job.title}
+                onStatus={(status) => onStatus({ jobId: match.job.id, status })}
+                onUnapply={() => onUnapply(match.job.id)}
+                statusPending={statusPending}
+                unapplying={unapplying}
+              />
+            ) : (
+              <a
+                href={match.job.apply_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onApply(match.job.id);
+                }}
+                onKeyDown={(event) => event.stopPropagation()}
+                title="Opens the application page and records it on your Dashboard"
+                className="flex items-center gap-1 rounded-lg border border-edge bg-panel px-2.5 py-1 text-[11.5px] font-semibold text-muted opacity-70 transition-all duration-200 group-hover:opacity-100 hover:border-accent/45 hover:bg-accent-soft hover:text-accent-text focus-visible:opacity-100"
+              >
+                Apply
+                <ArrowUpRight size={12} />
+              </a>
+            )}
           </span>
         </div>
       </div>
     </div>
   );
 });
-
-/** Shown when `profile.yaml` is missing — the one failure the panel can't
- *  recover from on its own, since matching has nothing to score against. */
-export function MatchesPlaceholder({ onBrowseJobs }: { onBrowseJobs: () => void }) {
-  return (
-    <EmptyState
-      icon={<AlertTriangle size={26} />}
-      title="No profile found"
-      description="Matching needs backend/profile.yaml. Create it, then re-score."
-      action={
-        <button
-          onClick={onBrowseJobs}
-          className="btn-primary rounded-xl px-4 py-2 text-[13px] font-semibold"
-        >
-          Browse all jobs
-        </button>
-      }
-    />
-  );
-}
 
 /* ------------------------------------------------------- preference reasons */
 

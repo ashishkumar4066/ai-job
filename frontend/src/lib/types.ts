@@ -39,6 +39,8 @@ export interface Job {
   validity_checked_at: string | null;
   /** The LLM has read this exact JD text. */
   llm_read: boolean;
+  /** The tracked application's stage, or null if none is recorded. */
+  application_status: ApplicationStatus | null;
 }
 
 export interface JobDetail extends Job {
@@ -147,8 +149,11 @@ export interface Health {
  * Which top-level surface the left nav is pointing at. Lives in the URL like
  * everything else here, so a view is linkable and back/forward moves between
  * them.
+ *
+ * `jobs` stays the default and stays out of the URL, so every link written
+ * before the Dashboard existed still means the job list.
  */
-export type ViewId = "jobs" | "matches";
+export type ViewId = "dashboard" | "jobs" | "matches" | "prep";
 
 export type SortField = "first_seen_at" | "posted_at" | "title" | "company" | "last_seen_at";
 export type SortOrder = "asc" | "desc";
@@ -314,6 +319,8 @@ export interface MatchList {
   total_all: number;
   /** Blocked jobs "Hide blocked" removes (counted before it applies). */
   blocked: number;
+  /** Rows already applied to, counted before the `applied` filter. */
+  applied: number;
 }
 
 export interface MatchRun {
@@ -743,4 +750,108 @@ export interface DocumentDiff {
   /** Non-zero only after a structural hand edit — tailoring has no slot to add
    *  a region to. Surfaced so the diff is a full account of the difference. */
   added: number;
+}
+
+/* ------------------------------------------------- Applications & Dashboard */
+
+/** Mirrors `models.Application.STATUSES`, in pipeline order.
+ *
+ *  `applied` is the "awaiting" state: sent, nothing back yet. */
+export type ApplicationStatus =
+  | "applied"
+  | "screening"
+  | "interviewing"
+  | "offer"
+  | "rejected"
+  | "ghosted";
+
+export const APPLICATION_STATUSES: ApplicationStatus[] = [
+  "applied",
+  "screening",
+  "interviewing",
+  "offer",
+  "rejected",
+  "ghosted",
+];
+
+/** Nothing further is expected to happen to these. Mirrors `Application.CLOSED`. */
+export const CLOSED_STATUSES: ApplicationStatus[] = ["offer", "rejected", "ghosted"];
+
+export const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  applied: "Applied",
+  screening: "Screening",
+  interviewing: "Interviewing",
+  offer: "Offer",
+  rejected: "Rejected",
+  ghosted: "Ghosted",
+};
+
+export interface Application {
+  job_id: number;
+  status: ApplicationStatus;
+  applied_at: string;
+  status_changed_at: string;
+  /** `apply_click` — the Apply button was pressed. `manual` — asserted by hand.
+   *  A click is weaker evidence than a claim, so the two stay distinguishable. */
+  source: string;
+  notes: string | null;
+  days_silent: number;
+  /** Open, and nothing has moved for 30 days. Derived on every read, never
+   *  stored — so the Dashboard can offer to mark it ghosted without any status
+   *  ever changing on a timer. */
+  silent: boolean;
+  history: { status?: string; at?: string }[];
+
+  company: string;
+  title: string;
+  apply_url: string;
+  locations: string[];
+  posted_at: string | null;
+  status_of_posting: JobStatus;
+}
+
+export interface ApplicationList {
+  total: number;
+  items: Application[];
+}
+
+export interface WeekPoint {
+  /** That week's Monday, as an ISO date. */
+  week: string;
+  applications: number;
+  jobs_found: number;
+}
+
+export interface Dashboard {
+  by_status: Partial<Record<ApplicationStatus, number>>;
+  total_applications: number;
+  awaiting: number;
+  active: number;
+  silent: number;
+  applied_last_7d: number;
+  applied_last_30d: number;
+  /** Share that ever got a human response. `null` with no applications — 0.0
+   *  would read as "nobody replies", which is a different claim. */
+  response_rate: number | null;
+  silent_after_days: number;
+  statuses: string[];
+
+  jobs_open: number;
+  jobs_eligible: number;
+  jobs_fresh: number;
+  matches_scored: number;
+  matches_shortlisted: number;
+  documents: number;
+  last_sweep_at: string | null;
+  last_sweep_fetched: number;
+
+  provider: string;
+  model: string;
+  tokens_today: number;
+  tokens_per_day: number | null;
+  requests_today: number;
+  requests_per_day: number | null;
+  deep_reads: number;
+
+  activity: WeekPoint[];
 }

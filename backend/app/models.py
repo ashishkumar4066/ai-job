@@ -381,3 +381,81 @@ class LlmUsage(Base):
     job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     __table_args__ = (Index("ix_llm_usage_model_created", "model", "created_at"),)
+
+
+class Application(Base):
+    """One application I have sent, and where it has got to.
+
+    The tracking layer the Dashboard reads. Phase 3's "audit log per
+    application" is the same idea from the autofill side; this is the
+    human-facing half, and it exists without autofill because most applications
+    are still sent by hand.
+
+    One row per posting
+    -------------------
+    Unique on `job_id`: applying twice to the same posting is a mistake, not two
+    applications. Re-applying after a rejection is a new *posting* in practice,
+    because boards repost rather than reopen.
+
+    On `source`
+    -----------
+    A row created by clicking Apply is not quite the same claim as one the user
+    typed: the click means "I opened the form", and occasionally the form was
+    abandoned. Recording which it was keeps that difference visible instead of
+    laundering a click into an assertion. Nothing branches on it — it is shown,
+    and the status is editable either way.
+
+    Why `ghosted` is a stored status and silence is not
+    --------------------------------------------------
+    "No reply for 30 days" is derived from `status_changed_at` and recomputed on
+    every read, so it is always current and never needs a background job. It is
+    surfaced as a *prompt* to mark something ghosted, not as the status itself:
+    every stored status stays something the user asserted, which is what makes
+    the counts trustworthy.
+    """
+
+    __tablename__ = "applications"
+
+    # Ordered as the pipeline runs, which is also the order the Dashboard shows
+    # them in. `applied` is the "awaiting" state: sent, nothing back yet.
+    STATUSES: tuple[str, ...] = (
+        "applied",
+        "screening",
+        "interviewing",
+        "offer",
+        "rejected",
+        "ghosted",
+    )
+    # Nothing further is expected to happen to these.
+    CLOSED: frozenset[str] = frozenset({"offer", "rejected", "ghosted"})
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("job_postings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="applied", index=True)
+
+    # When the application went out. Distinct from `status_changed_at`, which is
+    # what "silent for N days" counts from: a reply then silence restarts the
+    # clock, and measuring from `applied_at` would call an active process stale.
+    applied_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    status_changed_at: Mapped[datetime] = mapped_column(
+        UtcDateTime, nullable=False, default=utcnow
+    )
+
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Every transition, `[{status, at}]`, so the activity chart can plot moves
+    # and "when did this go quiet?" stays answerable after the fact.
+    history: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(UtcDateTime, nullable=False, default=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("job_id", name="uq_applications_job"),
+        Index("ix_applications_status_changed", "status", "status_changed_at"),
+    )
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return f"<Application job={self.job_id} status={self.status}>"
