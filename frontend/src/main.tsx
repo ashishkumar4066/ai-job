@@ -29,13 +29,13 @@ function mount() {
   );
 }
 
-// The public demo build (`DEMO_JOB=1`) answers every API call from a static
+// The public demo build (`VITE_DEMO_JOB=1`) answers every API call from a static
 // snapshot instead of from the backend. Dynamically imported, so a normal build
 // never loads `src/demo/` at all; installed before `mount()`, so no query can
 // escape to a backend that is not there. A `.then` rather than top-level await,
 // which the build target does not allow. Unset — every local run — this is one
 // comparison and a direct mount.
-if (import.meta.env.DEMO_JOB === '1') {
+if (import.meta.env.VITE_DEMO_JOB === '1') {
   void import('./demo/install').then(({ installDemo }) => {
     installDemo();
     mount();

@@ -4,7 +4,7 @@ The dashboard, deployed with no backend behind it, for Product Hunt.
 
 Everything the app asks the API for is answered from a static snapshot of the
 real board. Your local setup is untouched: `npm run dev` still proxies to
-`127.0.0.1:8000` exactly as before, and none of this loads unless `DEMO_JOB=1`.
+`127.0.0.1:8000` exactly as before, and none of this loads unless `VITE_DEMO_JOB=1`.
 
 ---
 
@@ -13,7 +13,7 @@ real board. Your local setup is untouched: `npm run dev` still proxies to
 One interceptor, installed below the app rather than inside it.
 
 ```
-main.tsx ──(DEMO_JOB=1 only)──> src/demo/install.ts ──> wraps window.fetch
+main.tsx ──(VITE_DEMO_JOB=1 only)──> src/demo/install.ts ──> wraps window.fetch
                                                              │
    every component, hook and query is untouched              ▼
    and never learns the demo exists              src/demo/router.ts
@@ -132,7 +132,7 @@ npm run preview:demo   # serve that build
    - **Build Command:** `npm run build:demo` ← _not the default `npm run build`_
    - **Output Directory:** `dist`
    - **Production Branch:** `demo` (Settings → Git), so `main` never deploys
-4. **Environment Variables:** `WAITLIST_URL` = your Apps Script URL (below)
+4. **Environment Variables:** `VITE_WAITLIST_URL` = your Apps Script URL (below)
 5. Deploy.
 
 The Hobby plan is free and covers this — a static SPA with no serverless
@@ -179,14 +179,14 @@ function doPost(e) {
 3. **Deploy → New deployment → Web app**
    - _Execute as:_ **Me**
    - _Who has access:_ **Anyone**
-4. Copy the `/exec` URL into Vercel as `WAITLIST_URL`, and redeploy.
+4. Copy the `/exec` URL into Vercel as `VITE_WAITLIST_URL`, and redeploy.
 
 **Why the request looks the way it does:** Apps Script does not answer CORS
 preflight, so the form posts `Content-Type: text/plain;charset=utf-8` — a
 safelisted value that avoids a preflight. Apps Script still reads the JSON from
 `e.postData.contents`. The consequence is that the response is not readable, so
 success is inferred from the request not throwing: a _network_ failure is
-reported to the visitor, a server-side one is not. With `WAITLIST_URL`
+reported to the visitor, a server-side one is not. With `VITE_WAITLIST_URL`
 unset, the form says it is not wired up rather than silently dropping addresses.
 
 Check it works by submitting once and looking at the Sheet.

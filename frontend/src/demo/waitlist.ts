@@ -19,7 +19,7 @@
  *     server-side failure is not.
  */
 
-const ENDPOINT = (import.meta.env.WAITLIST_URL as string | undefined)?.trim();
+const ENDPOINT = (import.meta.env.VITE_WAITLIST_URL as string | undefined)?.trim();
 
 export interface WaitlistResult {
   ok: boolean;

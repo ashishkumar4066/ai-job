@@ -7,7 +7,7 @@
  * means no component, hook, type or query key is edited or even aware of the
  * demo. An endpoint added to `api.ts` later keeps working here for free.
  *
- * Nothing in this module runs unless `DEMO_JOB=1`, and `main.tsx` imports it
+ * Nothing in this module runs unless `VITE_DEMO_JOB=1`, and `main.tsx` imports it
  * dynamically, so a normal build never loads the snapshot or this code.
  */
 
