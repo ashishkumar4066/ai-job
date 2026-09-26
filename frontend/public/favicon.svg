@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Job Radar">
+  <!--
+    The Job Radar mark: a contact, the ring it sits in, and the sweep still
+    going round. The same geometry is drawn inside the app by
+    src/components/BrandMark.tsx, and this file is the source the PNG and ICO
+    fallbacks beside it are rendered from (scripts/make_icons.py) — change all
+    three together.
+
+    The outer arc is deliberately open at the lower left. Closed, it reads as a
+    bullseye, which is the Matches tile's icon rather than the brand.
+
+    Colours are the dark theme's accent and accent-strong tokens converted to
+    sRGB. A favicon is painted against browser chrome rather than against our
+    own background, and it is read by icon renderers far older than oklch().
+
+    Note for editors: this file is parsed as XML, not HTML. No double hyphen
+    may appear inside this comment, and every tag must close.
+  -->
+  <defs>
+    <linearGradient id="jr-tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9850ff"/>
+      <stop offset="1" stop-color="#6222f2"/>
+    </linearGradient>
+    <linearGradient id="jr-sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="13" fill="url(#jr-tile)"/>
+  <path d="M0 13A13 13 0 0 1 13 0h22a13 13 0 0 1 13 13v11H0Z" fill="url(#jr-sheen)"/>
+  <circle cx="24" cy="24" r="4" fill="#ffffff"/>
+  <circle cx="24" cy="24" r="9.2" fill="none" stroke="#ffffff" stroke-width="3"/>
+  <path d="M35.19 33.39A14.6 14.6 0 0 0 14.61 12.82" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+</svg>

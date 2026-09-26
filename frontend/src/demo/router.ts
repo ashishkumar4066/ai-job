@@ -156,6 +156,56 @@ function sweepStatus(snapshot: Snapshot): IngestStatus {
   };
 }
 
+/* --------------------------------------------------- the replayed run */
+
+/**
+ * "Run matching", replayed from the run that produced this snapshot.
+ *
+ * The exporter runs the real pipeline — validity, then ranking, then pricing
+ * the deep read — against its throwaway database copy, and captures the
+ * tracker's terminal state. So the numbers this reports are not invented: they
+ * are what those passes actually produced over these rows with these
+ * preferences.
+ *
+ * The first version returned the captured status directly. On a machine where
+ * no run had happened that day the capture was `stage: "idle"` with every field
+ * null, so the button posted, got "nothing is happening" back, and looked
+ * broken. Running the pipeline at export time is what fixed it.
+ *
+ * Clicking walks the stage labels for a few seconds before settling, because
+ * the panel renders which pass is running and landing on `done` instantly
+ * would skip the part worth seeing. While idle it reports the completed run,
+ * which is what the real endpoint does too — a finished run stays readable.
+ */
+const RUN_MS = 3400;
+let runStartedAt: number | null = null;
+
+function pipelineStatus(snapshot: Snapshot): unknown {
+  const finished = snapshot.meta.pipeline_status;
+  if (!finished) return { stage: "idle", validity: null, ranking: null, estimate: null };
+  if (runStartedAt === null) return finished;
+
+  const elapsed = Date.now() - runStartedAt;
+  if (elapsed >= RUN_MS) {
+    runStartedAt = null;
+    return finished;
+  }
+
+  // Each pass is revealed only once its stage has passed, so the panel fills in
+  // the order the real pipeline fills it rather than all at once.
+  const progress = elapsed / RUN_MS;
+  const stage = progress < 0.45 ? "validity" : progress < 0.8 ? "ranking" : "estimating";
+  return {
+    ...finished,
+    stage,
+    started_at: new Date(runStartedAt).toISOString(),
+    finished_at: null,
+    validity: stage === "validity" ? null : finished.validity,
+    ranking: stage === "estimating" ? finished.ranking : null,
+    estimate: null,
+  };
+}
+
 /* ------------------------------------------------------------- decoration */
 
 /**
@@ -413,7 +463,7 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
           const estimate = meta.llm_estimate[limit] ?? Object.values(meta.llm_estimate)[0];
           return estimate ? json(estimate) : refuse("No estimate in this snapshot", 404);
         }
-        if (second === "run" && third === "status") return json(meta.pipeline_status ?? {});
+        if (second === "run" && third === "status") return json(pipelineStatus(snapshot));
         if (second && third === "document") {
           return documentFor(snapshot, Number(second), params.get("kind") ?? "resume");
         }
@@ -479,24 +529,39 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
         return applyRoute(snapshot, body);
       case "validity":
         if (second === "run") {
-          return json({
-            scored: snapshot.jobs.filter((job) => job.validity_score !== null).length,
-            skipped: 0,
-            duplicates: 0,
-            duration_s: 0,
-            note: "Replayed from the snapshot — the verifier already ran on these rows.",
-          });
+          // Likewise: the validity half of the captured run, in its own shape.
+          return json(
+            meta.pipeline_status?.validity ?? {
+              considered: snapshot.jobs.length,
+              scored: snapshot.jobs.filter((job) => job.validity_score !== null).length,
+              unchanged: 0,
+              suspect: 0,
+              duplicates: 0,
+            },
+          );
         }
         break;
       case "matches":
         if (second === "score") {
-          return json({
-            ...(meta.pipeline_status ?? {}),
-            scored: snapshot.matches.length,
-            note: "Replayed from the snapshot — every row here is already scored.",
-          });
+          // The ranking half of the captured run, in its own `MatchRunOut`
+          // shape. The earlier version spread the whole pipeline status into
+          // this response, which is a different schema entirely.
+          return json(
+            meta.pipeline_status?.ranking ?? {
+              profile_version: meta.profile?.version ?? "",
+              considered: snapshot.matches.length,
+              scored: 0,
+              updated: 0,
+              skipped: snapshot.matches.length,
+              shortlisted: 0,
+              low_confidence: 0,
+            },
+          );
         }
-        if (second === "run") return json(meta.pipeline_status ?? {});
+        if (second === "run") {
+          runStartedAt = Date.now();
+          return json(pipelineStatus(snapshot));
+        }
         if (second === "llm") {
           return refuse(
             `Running a deep read costs real LLM tokens. ${NEEDS_BACKEND} ` +

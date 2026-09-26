@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#000000" />
+
+    <!-- One mark, three files, all rendered from public/favicon.svg (see
+         scripts/make_icons.py). The SVG is what every current browser paints
+         in the tab; the ICO is the fallback for the ones that still ask for
+         one, and for Windows shortcuts; the PNG is what iOS puts on a home
+         screen, square because iOS rounds the corners itself. -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Job Radar — personal aggregator</title>
     <style>
       /* Painted before the stylesheet arrives, so the very first frame is

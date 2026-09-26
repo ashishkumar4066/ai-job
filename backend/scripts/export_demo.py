@@ -438,29 +438,45 @@ async def compile_pdfs(by_id: dict[str, Any], out_dir: Path) -> dict[str, str]:
 
 
 async def rerank(force: bool) -> None:
-    """Re-run the free ranking pass against the widened preferences.
+    """Run the free pipeline against the widened preferences.
 
     Writes — but only to the throwaway copy, which is the point of cloning it.
 
-    Without this the export is internally inconsistent: `widen_prefs` changes
-    the preference set, so `prefs_version` on every stored verdict no longer
-    matches the prefs being shipped, and the Matches funnel correctly announces
-    "preferences changed since the last run" on a demo where the visitor has
-    changed nothing. Re-ranking refreshes `prefs_pass` / `prefs_version` against
-    the preferences that actually ship.
+    Two reasons this runs, and both are about the snapshot being internally
+    consistent rather than about refreshing data:
 
-    Free and offline: deterministic scoring plus the preference gate. It never
-    reaches the deep read, so it spends no tokens and contacts nothing.
+    1. `widen_prefs` changes the preference set, so `prefs_version` on every
+       stored verdict stops matching the preferences being shipped, and the
+       Matches funnel correctly announces "preferences changed since the last
+       run" on a demo where the visitor has changed nothing.
+
+    2. The captured `/matches/run/status` is whatever the tracker last held. On
+       a machine where no run happened today that is `stage: "idle"` with every
+       field null — so the demo's Run button had nothing to replay and appeared
+       to do nothing at all. Running the pipeline here leaves the tracker
+       holding a genuinely completed run, with real validity counts, real
+       ranking counts and a real deep-read estimate.
+
+    It is the whole pipeline (validity, then ranking, then pricing the deep
+    read) and it stops there, exactly as `POST /matches/run` does. Free and
+    offline: no tokens, no network.
     """
     from app.db import session_scope  # noqa: PLC0415 - after env setup
-    from app.match_runner import run_matching  # noqa: PLC0415
+    from app.pipeline import run_pipeline, tracker  # noqa: PLC0415
 
     async with session_scope() as session:
-        result = await run_matching(session, force=force)
+        # Into the module-level tracker, because that is the object
+        # `GET /matches/run/status` reads and therefore what gets captured.
+        progress = await run_pipeline(session, force=force, progress=tracker.progress)
+
+    ranking = progress.ranking
     log(
-        f"re-ranked: {result.scored} scored, {result.updated} updated, "
-        f"{result.shortlisted} shortlisted"
+        f"pipeline: stage={progress.stage} "
+        f"scored={getattr(ranking, 'scored', 0)} "
+        f"shortlisted={getattr(ranking, 'shortlisted', 0)}"
     )
+    if progress.error:
+        log(f"pipeline error (captured as-is): {progress.error}")
 
 
 async def export(args: argparse.Namespace) -> None:

@@ -4,11 +4,11 @@ import {
   Circle,
   Clock,
   Loader2,
-  RadarIcon,
   XCircle,
 } from "lucide-react";
 import { sourceLabel } from "@/lib/format";
 import type { IngestStatus, SourceState } from "@/lib/types";
+import { BrandGlyph } from "./BrandMark";
 import { cx } from "./primitives";
 
 const STATE_META: Record<SourceState, { icon: typeof Circle; tone: string; label: string }> = {
@@ -113,7 +113,7 @@ export function SyncScreen({
             {error ? (
               <AlertTriangle size={24} className="relative" />
             ) : (
-              <RadarIcon size={24} strokeWidth={2.2} className="relative" />
+              <BrandGlyph className="relative size-full" />
             )}
           </span>
 

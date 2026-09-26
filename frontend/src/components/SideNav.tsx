@@ -5,13 +5,13 @@ import {
   MessagesSquare,
   PanelLeftClose,
   PanelLeftOpen,
-  RadarIcon,
   Target,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { relativeTime } from "@/lib/format";
 import type { ViewId } from "@/lib/types";
+import { BrandGlyph } from "./BrandMark";
 import { cx } from "./primitives";
 
 const COLLAPSE_KEY = "jr:nav-collapsed";
@@ -148,7 +148,7 @@ export function SideNav({
               aria-hidden
               className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
             />
-            <RadarIcon size={19} strokeWidth={2.2} className="relative" />
+            <BrandGlyph className="relative size-full" />
           </span>
           <h1
             className={cx(
