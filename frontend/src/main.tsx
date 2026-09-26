@@ -8,6 +8,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      //
       retry: (failureCount, error) => {
         // A dead backend won't heal by retrying — surface it immediately.
         if (error instanceof Error && 'status' in error && error.status === 0)
