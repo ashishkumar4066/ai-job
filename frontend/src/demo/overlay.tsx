@@ -29,31 +29,42 @@ const CSS = `
   display: flex; justify-content: center; padding: 0 12px 46px; font: inherit; }
 .demo-layer > * { pointer-events: auto; }
 
-.demo-bar { display: flex; align-items: center; gap: 12px; max-width: min(720px, 100%);
-  padding: 9px 10px 9px 14px; border-radius: 999px;
-  background: var(--panel-strong, rgba(255,255,255,.9)); color: var(--text, #111);
-  border: 1px solid var(--border-strong, rgba(0,0,0,.12));
-  box-shadow: var(--shadow-float, 0 12px 32px rgba(0,0,0,.18));
-  backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); }
-.demo-bar p { margin: 0; font-size: 13px; line-height: 1.35; }
-.demo-bar b { font-weight: 650; }
-.demo-bar small { display: block; color: var(--text-muted, #666); font-size: 11.5px; }
+/* Opaque, not translucent.
+   The first version used a backdrop-filter over --panel-strong, which is a
+   70-88% alpha surface. Over the jobs table that let row text bleed straight
+   through the bar and collide with its own copy — the notice was sitting on
+   the content rather than above it. A solid surface with a real border and a
+   deep shadow is the fix; a blur cannot buy contrast that the alpha gives
+   away. */
+.demo-bar { display: flex; align-items: center; gap: 14px; max-width: min(760px, 100%);
+  padding: 11px 12px 11px 18px; border-radius: 999px;
+  background: var(--bg-elevated, #fff); color: var(--text, #111);
+  border: 1px solid color-mix(in oklab, var(--accent, #6366f1) 42%, transparent);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, .5),
+    0 2px 10px rgba(0, 0, 0, .3),
+    0 0 0 4px color-mix(in oklab, var(--accent, #6366f1) 12%, transparent); }
+.demo-bar p { margin: 0; font-size: 13.5px; line-height: 1.4; }
+.demo-bar b { font-weight: 700; color: var(--text, #111); }
+.demo-bar small { display: block; color: var(--text-muted, #666); font-size: 12px; }
 
 .demo-dot { flex: none; width: 8px; height: 8px; border-radius: 50%;
   background: var(--mint, #34d399); box-shadow: 0 0 0 3px color-mix(in oklab, var(--mint, #34d399) 25%, transparent); }
 
-.demo-btn { flex: none; border: 0; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
-  padding: 7px 14px; border-radius: 999px; background: var(--accent, #6366f1); color: #fff;
-  box-shadow: 0 2px 10px var(--accent-glow, rgba(99,102,241,.4)); }
+.demo-btn { flex: none; border: 0; cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 700;
+  padding: 9px 18px; border-radius: 999px; background: var(--accent, #6366f1); color: #fff;
+  letter-spacing: .005em; white-space: nowrap;
+  box-shadow: 0 3px 14px var(--accent-glow, rgba(99,102,241,.45)); }
 .demo-btn:hover { filter: brightness(1.08); }
 .demo-btn:disabled { opacity: .6; cursor: default; }
 .demo-ghost { background: transparent; color: var(--text-muted, #666); box-shadow: none;
   padding: 7px 8px; font-weight: 500; }
 .demo-ghost:hover { color: var(--text, #111); filter: none; }
 
-.demo-pill { border: 1px solid var(--border, rgba(0,0,0,.1)); background: var(--panel, rgba(255,255,255,.7));
-  color: var(--text-muted, #555); border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 600;
-  cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.demo-pill { border: 1px solid color-mix(in oklab, var(--accent, #6366f1) 35%, transparent);
+  background: var(--bg-elevated, #fff); color: var(--text, #111);
+  border-radius: 999px; padding: 8px 16px; font-size: 12.5px; font-weight: 650; cursor: pointer;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .42); }
 .demo-pill:hover { color: var(--text, #111); }
 
 .demo-scrim { position: fixed; inset: 0; z-index: 2147483100; display: grid; place-items: center;

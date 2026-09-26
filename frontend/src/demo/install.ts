@@ -55,9 +55,40 @@ async function readBody(input: RequestInfo | URL, init?: RequestInit): Promise<u
   }
 }
 
+/**
+ * Land a first-time visitor on the Dashboard rather than the jobs table.
+ *
+ * The app's own default is `jobs`, and that is right for its owner, who opens
+ * it to find work. A visitor arriving from a launch page is asking a different
+ * question — "what is this?" — and the Dashboard answers it in one screen:
+ * applications, pipeline, board health, token spend. The jobs table answers it
+ * with 1,803 rows and no context.
+ *
+ * Done by rewriting the URL before React mounts, rather than by changing the
+ * app's default, so `useFilters` and every existing link keep their meaning and
+ * no app file is edited. `replaceState` leaves no extra history entry, so Back
+ * still leaves the site on the first press.
+ *
+ * Only for a bare arrival. A URL that already names a `view`, or that points at
+ * a specific `job`, is someone's deliberate link and is left exactly as it is —
+ * including links carrying only campaign parameters like `?ref=producthunt`.
+ */
+function landOnDashboard(): void {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("view") || url.searchParams.has("job")) return;
+    url.searchParams.set("view", "dashboard");
+    window.history.replaceState(null, "", url.toString());
+  } catch {
+    /* A URL we cannot parse is not worth failing the boot over. */
+  }
+}
+
 export function installDemo(): void {
   if (installed) return;
   installed = true;
+
+  landOnDashboard();
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const path = apiPath(input);
