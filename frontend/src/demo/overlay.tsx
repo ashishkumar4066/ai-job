@@ -1,5 +1,5 @@
 /**
- * The demo's own UI: a snapshot notice and the waitlist form.
+ * The demo's own UI: a waitlist button and the form behind it.
  *
  * Mounted into a `<div>` appended to `<body>` with its own `createRoot`, which is
  * why no existing component is edited to make room for it. `App.tsx`, `TopBar`
@@ -15,11 +15,8 @@
 
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { loadSnapshot, type Manifest } from "./snapshot";
 import * as state from "./state";
 import { joinWaitlist, looksLikeEmail } from "./waitlist";
-
-const REPO = "https://github.com/ashishkumar4066/ai-job";
 
 const CSS = `
 /* Bottom padding clears the app's own keyboard-hint footer, which the bar
@@ -36,20 +33,14 @@ const CSS = `
    the content rather than above it. A solid surface with a real border and a
    deep shadow is the fix; a blur cannot buy contrast that the alpha gives
    away. */
-.demo-bar { display: flex; align-items: center; gap: 14px; max-width: min(760px, 100%);
-  padding: 11px 12px 11px 18px; border-radius: 999px;
+.demo-bar { display: flex; align-items: center; gap: 6px;
+  padding: 7px 8px 7px 9px; border-radius: 999px;
   background: var(--bg-elevated, #fff); color: var(--text, #111);
   border: 1px solid color-mix(in oklab, var(--accent, #6366f1) 42%, transparent);
   box-shadow:
     0 18px 44px rgba(0, 0, 0, .5),
     0 2px 10px rgba(0, 0, 0, .3),
     0 0 0 4px color-mix(in oklab, var(--accent, #6366f1) 12%, transparent); }
-.demo-bar p { margin: 0; font-size: 13.5px; line-height: 1.4; }
-.demo-bar b { font-weight: 700; color: var(--text, #111); }
-.demo-bar small { display: block; color: var(--text-muted, #666); font-size: 12px; }
-
-.demo-dot { flex: none; width: 8px; height: 8px; border-radius: 50%;
-  background: var(--mint, #34d399); box-shadow: 0 0 0 3px color-mix(in oklab, var(--mint, #34d399) 25%, transparent); }
 
 .demo-btn { flex: none; border: 0; cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 700;
   padding: 9px 18px; border-radius: 999px; background: var(--accent, #6366f1); color: #fff;
@@ -60,12 +51,6 @@ const CSS = `
 .demo-ghost { background: transparent; color: var(--text-muted, #666); box-shadow: none;
   padding: 7px 8px; font-weight: 500; }
 .demo-ghost:hover { color: var(--text, #111); filter: none; }
-
-.demo-pill { border: 1px solid color-mix(in oklab, var(--accent, #6366f1) 35%, transparent);
-  background: var(--bg-elevated, #fff); color: var(--text, #111);
-  border-radius: 999px; padding: 8px 16px; font-size: 12.5px; font-weight: 650; cursor: pointer;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, .42); }
-.demo-pill:hover { color: var(--text, #111); }
 
 .demo-scrim { position: fixed; inset: 0; z-index: 2147483100; display: grid; place-items: center;
   padding: 16px; background: rgba(10, 6, 16, .55); backdrop-filter: blur(3px); }
@@ -86,23 +71,16 @@ const CSS = `
 .demo-note { font-size: 12.5px; margin: 0 0 12px; }
 .demo-note.bad { color: var(--danger, #dc2626); }
 .demo-note.good { color: var(--mint, #059669); }
-.demo-stats { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 16px; padding: 0; list-style: none; }
-.demo-stats li { font-size: 12px; color: var(--text-muted, #666); }
-.demo-stats b { display: block; font-size: 17px; font-weight: 680; color: var(--text, #111); letter-spacing: -.02em; }
 .demo-modal a { color: var(--accent-text, #4f46e5); }
 
 @media (max-width: 560px) {
   .demo-layer { padding-bottom: 14px; }
-  .demo-bar { flex-wrap: wrap; border-radius: 16px; }
-  .demo-bar p { flex: 1 1 100%; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .demo-layer { animation: demo-rise .32s cubic-bezier(.2,.8,.2,1) both; }
   @keyframes demo-rise { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }
 }
 `;
-
-const nf = new Intl.NumberFormat("en-US");
 
 function WaitlistModal({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState("");
@@ -186,59 +164,46 @@ function WaitlistModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * The call to action, and nothing else.
+ *
+ * This used to carry a line explaining that the page was a snapshot and that
+ * nothing costing an API call would run. That copy is gone by request: it
+ * explained the build to someone who has not asked how it was built, and it
+ * competed with the one thing the overlay exists to do. The demo says what it
+ * is through the product; the overlay just asks for an address.
+ *
+ * Nothing is awaited before this renders. The earlier version held the bar back
+ * until the snapshot had loaded, because it quoted a posting count — with the
+ * count gone, so is the reason to wait, and the button is there from the first
+ * paint.
+ */
 function Overlay() {
-  const [manifest, setManifest] = useState<Manifest | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [modal, setModal] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    void loadSnapshot().then((snapshot) => alive && setManifest(snapshot.manifest));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // Held back until the snapshot is in: a bar that says "0 jobs" for the first
-  // second is worse than a bar that arrives a second late.
-  if (!manifest) return null;
-
-  const taken = new Date(manifest.generated_at);
 
   return (
     <>
-      <div className="demo-layer">
-        {collapsed ? (
-          <button type="button" className="demo-pill" onClick={() => setCollapsed(false)}>
-            Demo · join waitlist
-          </button>
-        ) : (
+      {/* Dismissal is component state, not persisted: hiding it is a "not
+          now", and a reload should offer again. Nothing here is worth
+          remembering across visits except having actually signed up. */}
+      {!dismissed && (
+        <div className="demo-layer">
           <div className="demo-bar">
-            <span className="demo-dot" aria-hidden />
-            <p>
-              <b>Live demo.</b> A real snapshot of {nf.format(manifest.counts.jobs)} postings, taken{" "}
-              {taken.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}.
-              <small>
-                Everything is clickable; nothing that costs an API call runs.{" "}
-                <a href={REPO} target="_blank" rel="noreferrer">
-                  Source
-                </a>
-              </small>
-            </p>
             <button type="button" className="demo-btn" onClick={() => setModal(true)}>
               {state.isWaitlisted() ? "On the list ✓" : "Join waitlist"}
             </button>
             <button
               type="button"
               className="demo-btn demo-ghost"
-              aria-label="Collapse the demo notice"
-              onClick={() => setCollapsed(true)}
+              aria-label="Hide the waitlist button"
+              onClick={() => setDismissed(true)}
             >
               ✕
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       {modal && <WaitlistModal onClose={() => setModal(false)} />}
     </>
   );
