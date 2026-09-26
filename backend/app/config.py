@@ -355,6 +355,13 @@ class Settings(BaseSettings):
     llm_cover_completion_tokens: int = Field(
         default=6_000, ge=2000, validation_alias=_alias("cover_completion_tokens")
     )
+    # Stage 1 profile intake reads a whole résumé and answers with the largest
+    # structured object in the app: up to 80 skills, 30 gaps, 10 evidence lines
+    # and every bullet verbatim. Runs once at setup, so the ceiling is generous
+    # — a truncated answer here would cost a re-parse of the whole résumé.
+    llm_intake_completion_tokens: int = Field(
+        default=16_000, ge=4000, validation_alias=_alias("intake_completion_tokens")
+    )
     llm_timeout_seconds: float = Field(
         default=120.0, gt=0, validation_alias=_alias("timeout_seconds")
     )

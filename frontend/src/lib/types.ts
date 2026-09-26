@@ -341,6 +341,10 @@ export interface MatchRun {
 
 export interface ProfileSummary {
   version: string;
+  /** False on a first run. The API answers 200 for this, not 500, so the setup
+   *  dialog can open instead of an error screen. */
+  configured: boolean;
+  error: string | null;
   full_name: string;
   location: string;
   total_years: number;
@@ -352,6 +356,59 @@ export interface ProfileSummary {
   min_annual_inr: number;
   needs_sponsorship: boolean;
   resume_files: Record<string, string>;
+  /** Whether the .tex tailoring needs is on disk. Independent of the profile:
+   *  both can be missing, and they are fixed in different places. */
+  has_template: boolean;
+}
+
+/** The raw `profile.yaml` mapping the editor round-trips.
+ *
+ *  Deliberately loose. The editor writes back keys the backend's `Profile`
+ *  model does not declare, so that a hand-added key survives a save — the file
+ *  stays the source of truth. */
+export type ProfileData = Record<string, unknown>;
+
+export interface ProfileDocument {
+  data: ProfileData;
+  version: string;
+  configured: boolean;
+  error: string | null;
+  path: string;
+  has_template: boolean;
+}
+
+/** A profile proposed from an uploaded résumé. Nothing is saved yet. */
+export interface ProfileDraft {
+  data: ProfileData;
+  tokens: number;
+  /** What the de-TeX pass read, shown beside the draft: a wrong field is
+   *  almost always a parsing problem, and this is where it shows. */
+  resume_text: string;
+  stored: Record<string, string>;
+  warnings: string[];
+}
+
+/** The shape the profile form edits. A view over `ProfileData`, not a
+ *  replacement for it — unknown keys ride along untouched. */
+export interface ProfileForm {
+  full_name: string;
+  email: string;
+  phone: string;
+  location: string;
+  country: string;
+  summary: string;
+  total_years: number;
+  ai_years: number;
+  current_title: string;
+  target_titles: string[];
+  min_annual_inr: number;
+  needs_sponsorship: boolean;
+  remote_only: boolean;
+  skills: Record<string, Record<string, number>>;
+  gaps: Record<string, number>;
+  evidence: { area: string; depth: "production" | "project"; proof: string }[];
+  unproven: string[];
+  domains: string[];
 }
 
 /** Sort options for the Matches panel. */
@@ -606,14 +663,18 @@ export interface BaseResume {
   note: string;
 }
 
-// Résumé chat — `app/resume_chat.py`. A reply never edits the résumé; it
-// carries a fact-checked proposal the user applies or dismisses.
+// Document chat — `app/resume_chat.py` and `app/cover_chat.py`. A reply never
+// edits the document; it carries a fact-checked proposal the user applies or
+// dismisses. Both kinds build proposals in this same shape, so one panel renders
+// either: the résumé addresses template regions, the letter its paragraphs.
 
 export interface ChatChange {
   region_id: string;
   label: string;
+  /** "summary" | "bullet" | "skills_row" for a résumé, "paragraph" for a letter. */
   kind: string;
-  action: "rewrite" | "drop";
+  /** `add` is cover-letter only: the résumé has no slot to add a bullet to. */
+  action: "rewrite" | "drop" | "add";
   before: string;
   after: string;
   reason: string;
@@ -645,4 +706,41 @@ export interface ResumeChat {
   messages: ChatMessage[];
   suggestions: string[];
   tokens: number;
+}
+
+// The diff against the base résumé — `GET /documents/{id}/diff`.
+//
+// Region-level, not line-level: the tailored .tex is the template with spans
+// spliced in, so a line diff is mostly brace noise. `moved` is separate from
+// `reworded` because a reordered bullet's text is identical.
+
+export type DiffStatus = "unchanged" | "reworded" | "dropped" | "moved" | "added";
+
+export interface DiffRow {
+  region_id: string;
+  label: string;
+  kind: string;
+  group: string;
+  status: DiffStatus;
+  base: string;
+  current: string;
+  base_index: number | null;
+  current_index: number | null;
+}
+
+export interface DocumentDiff {
+  document_id: number;
+  kind: DocumentKind;
+  /** False when the template is missing, the LaTeX no longer parses, or the
+   *  document is a cover letter (which has no base to compare against). */
+  available: boolean;
+  note: string;
+  rows: DiffRow[];
+  reworded: number;
+  dropped: number;
+  moved: number;
+  unchanged: number;
+  /** Non-zero only after a structural hand edit — tailoring has no slot to add
+   *  a region to. Surfaced so the diff is a full account of the difference. */
+  added: number;
 }

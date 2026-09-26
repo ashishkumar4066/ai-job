@@ -12,9 +12,9 @@ Build in **phases, in order**. When I say `Implement Phase N`, treat that phase'
 | --- | --- | --- |
 | 1 | Aggregator (adapters, ingest, alerts, API) | ✅ Done |
 | 2A | Dashboard (browse / filter / inspect) | ✅ Done |
-| 2B | Validation layer (deterministic + LLM) | ✅ Built — only the deep read's data is incomplete (10 of ~314 in-preference routed rows read) |
-| 2C | Matches (profile fit + tailored résumé/cover letter) | 🟡 Stages 1-3 done for the **résumé** (LaTeX editor + live PDF + refine-by-chat, per job) and the **cover letter** (same modal, no chat), plus a preferences gate, funnels, Send-to-Matches and a capped LLM shortlist; profile editing is not started |
-| 3 | Autofill (review-before-submit) | ⬜ Not started |
+| 2B | Validation layer (deterministic + LLM) | ✅ Done (deep read has covered 483 rows so far; it is resumable by design, so "all rows" is a budget question, not a build one) |
+| 2C | Matches (profile fit + tailored résumé/cover letter) | ✅ Done — Stages 1-3 complete: profile upload/edit from the dashboard, fit scoring, and tailored résumé + cover letter with chat and a diff against base |
+| 3 | Autofill (review-before-submit) | 🟡 Started ahead of its gate — `app/autofill/lever.py` + `scripts/autofill.py` work against a live Lever form; no Greenhouse/Ashby fillers, no API route, no tests |
 
 ### Deviation from the original 2B/2C split
 
@@ -420,10 +420,14 @@ mistakes are worth auditing. Two decisions in it are non-obvious:
 - **Dashboard** — validity column in the Jobs table (no badge at all when
   unscored), validity + deep-read section in the drawer, `min validity` filter
   (`minval=` in the URL, facet bands). `description_html` now goes through
-  `lib/sanitize.ts`, an allowlist sanitizer. A jsdom test caught a leak in its
-  first version: the parser rewrites NUL to U+FFFD, which slipped past a
-  "no scheme, so relative" fallback. `safeUrl` now rejects anything that
-  looks like a scheme and isn't on the allowlist.
+  `lib/sanitize.ts`, an allowlist sanitizer. A leak was found in its first
+  version: the parser rewrites NUL to U+FFFD, which slipped past a "no scheme,
+  so relative" fallback. `safeUrl` now rejects anything that looks like a
+  scheme and isn't on the allowlist. **Correction (2026-09-26): the jsdom test
+  this used to claim is not in the repo** — `frontend/` has no test runner and
+  no test files at all. The sanitizer ships; its regression test does not.
+  Worth adding, since it is the one piece of frontend code where a silent
+  failure is a security bug.
 - **Stabilization** — `"SF, NYC, SEA, CHI"` resolved to ASEAN through a bare
   `sea` alias; `SEA` and the other US metro codes now map to US.
   `looks_like_timezone` matched "East" under IGNORECASE, so "South East Asia"
@@ -738,9 +742,101 @@ with a Résumé | Cover letter switch in its header. Stored in
   India"), close to a tailoring, because the input dominates.
   `llm_cover_completion_tokens` (6,000) is its own ceiling.
 
-**Not built:** chat for the cover letter, and the diff-against-base view. `GET
-/documents/base` already returns the untailored .tex and its regions, so the
-diff is a UI addition with no backend work left.
+**Built (2026-09-26) — closing 2C: profile intake/editor, the diff, letter chat
+(no migration):**
+
+Three things were outstanding. None needed a schema change.
+
+- **Stage 1's editor exists** (`app/profile_intake.py`, `components/ProfilePanel.tsx`).
+  `GET /profile` now answers **200 with `configured: false`** instead of 500
+  when there is no profile — a first run legitimately has none, and the
+  dashboard has to tell "not set up" from "the server is broken" to open the
+  setup dialog rather than an error screen. Added `GET /profile/document`
+  (the raw mapping), `PUT /profile` and `POST /profile/upload`.
+- **The editor round-trips the raw YAML mapping, not the `Profile` model.**
+  `Profile` drops keys it does not declare, so saving the model would silently
+  delete a hand-added key — and CLAUDE.md says hand-editing must not be
+  second-class. A save is atomic (tmp + replace) and clears `get_profile`'s
+  `lru_cache`, mirroring `save_prefs`.
+- **Upload is two files and two steps.** The **.tex** becomes the tailoring
+  template; the **PDF** is what Phase 3 attaches. `resume_tex.resolve_template`
+  now looks at `data/resume.tex` first, then the legacy hardcoded name, then a
+  lone `.tex` under any name — `data/` is gitignored as PII, so a checkout has
+  whatever was dropped in. The LLM drafts a profile from the .tex and **nothing
+  is written until the human confirms**, because `gaps:` is the fact-checker's
+  denylist, `evidence.depth` decides whether a capability reads as production,
+  and `unproven:` is about what the résumé omits. A gap the model misses is a
+  protection that silently stops applying. One call, ~5-7k tokens, setup only.
+- **Known limit on the upload:** `resume_tex` parses the rSection/itemize
+  structure of *this* class, and `data/resume.cls` is the only class file
+  vendored beside it. A .tex on a different template stores and de-TeXes fine
+  (intake strips markup rather than locating structure), so the profile still
+  fills in — but `/documents/base` will report no editable regions and
+  tailoring stays unavailable until the template matches. The upload warns when
+  a file has no `\documentclass`, not when it has an unfamiliar one.
+- **The intake schema uses arrays where the file uses maps.** `skills:` is
+  `{category: {skill: weight}}` and strict `json_schema` cannot describe an
+  open-ended map (every object needs `additionalProperties: false` and a fixed
+  `required`). The model answers with `{category, name, weight}` rows and
+  `draft_to_profile_data` folds them back. It also **drops a drafted gap that
+  is also a skill** — a term in both would block a claim the résumé supports.
+- **`tex_to_text` is a de-TeXer, deliberately not `ResumeDocument`**, which
+  parses the 16 regions of one known template. Intake must cope with any
+  reasonable file, so it strips markup instead of locating structure. Three
+  bugs it was measured into fixing: `$\sim$90\%` degraded to `$$90%` (math
+  shorthands now map, and `\$` rides a sentinel past the `$` strip); `\itemsep
+  -3pt {}` has no braces, so stripping the macro left "-3pt" mid-résumé; and a
+  `tabular` column spec is three braces deep, so a non-greedy match spilled
+  ">p1.5in @" into the text (`_skip_args` is brace-aware now).
+- **A CRLF .tex was being corrupted — found only by live testing.**
+  `write_text` applies the platform newline translation, so an uploaded
+  Windows file's existing `\r\n` was rewritten to `\r\r\n`: a 7,404-byte
+  template stored as 7,557. `newline=""` fixes it, and the test suite now
+  asserts byte-for-byte storage for both line endings. The inline-LaTeX
+  fixtures are all LF, which is why only the real file exposed it.
+- **The diff against base** — `GET /documents/{id}/diff`,
+  `documents.diff_against_base`, `components/DiffPane.tsx`. Region-level, not
+  line-level: the tailored .tex is the template with spans spliced in, so a
+  line diff is brace noise around every touched bullet.
+- **Bullets are matched by CONTENT, not by region id**, which is the whole
+  difficulty. A bullet's id is its *position* (`exp.asint.3`), so dropping one
+  renumbers every bullet after it and reordering a pair swaps their ids. The
+  first cut matched on id and reported a real tailoring as "the last bullet was
+  deleted plus five rewrites". Within each group, identical texts pair first
+  (`unchanged` / `moved`), leftovers pair by token overlap ≥ 0.25
+  (`reworded`), and the remainder is `dropped` / `added`. Verified live on
+  document 3: 5 reworded, 5 moved, 1 dropped — the moved rows are exactly what
+  id-matching mislabelled. `moved` is a separate verdict because a reordered
+  bullet's text is identical, so a text comparison calls it unchanged. `added`
+  can only come from a structural hand edit and is surfaced, not hidden.
+- **Cover-letter chat** (`app/cover_chat.py`) — the 409 is gone. Its regions
+  are the body paragraphs (`para.0…N`, read back by
+  `cover_letter.body_paragraphs`), and it exposes the same five functions in
+  the same proposal shape as `resume_chat`, so the routes pick a module by
+  `kind` and one panel renders both.
+- **Three differences from the résumé's chat, each forced by the letter.** It
+  **can add a paragraph** (`para.N` one past the end) because prose has no
+  fixed slots — the fact check is the only constraint, not the absence of a
+  slot. A paragraph with one blocked sentence is offered **blocked whole**
+  rather than silently shortened: generation trims because it has no fallback,
+  a chat has one, and quietly returning less than was asked for hides the
+  refusal. And it writes through **`cover_letter.replace_body`**, which splices
+  between the `% --- BODY` markers rather than re-rendering — re-rendering
+  rebuilds the header from the current profile and today's date, so accepting a
+  wording change would restamp the letter's date.
+- **A partial `order` is discarded**, since applying it literally would delete
+  the paragraphs it forgot to mention. Paragraphs are keyed by id through the
+  rewrite, so a drop and a reorder in one proposal still move the right text.
+- Verified live against the stored Pulsora letter: "I have run Kubernetes
+  clusters at scale on AWS" came back blocked naming both gap stacks *and* the
+  offending sentence; an honest rewrite applied with the header, footer and
+  date byte-identical.
+- **Tests:** `test_profile_intake.py` (44), `test_api_profile.py` (19),
+  `test_cover_chat.py` (27), `test_document_diff.py` (11) — 101 new, 903
+  collected, all green. `python-multipart` added for the upload.
+
+**Still not built:** a regression test for `lib/sanitize.ts` (see 2B's
+correction above — `frontend/` has no test runner at all).
 
 ### Schema
 

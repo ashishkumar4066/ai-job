@@ -436,20 +436,98 @@ class LLMStatusOut(BaseModel):
 
 
 class ProfileOut(BaseModel):
-    """The profile, as the dashboard needs to show it."""
+    """The profile, as the dashboard needs to show it.
 
-    version: str
-    full_name: str
-    location: str
-    total_years: int
-    ai_years: int
-    current_title: str
-    target_titles: list[str]
-    skills: dict[str, dict[str, int]]
-    gaps: dict[str, int]
-    min_annual_inr: float
-    needs_sponsorship: bool
-    resume_files: dict[str, str]
+    `configured` exists so a missing profile is a *state* the dashboard can
+    render (the setup dialog) rather than an HTTP 500 it has to interpret. The
+    fields below are all defaulted for that case, and `error` carries why a
+    present-but-broken file would not load.
+    """
+
+    version: str = ""
+    configured: bool = True
+    error: str | None = None
+    full_name: str = ""
+    location: str = ""
+    total_years: int = 0
+    ai_years: int = 0
+    current_title: str = ""
+    target_titles: list[str] = Field(default_factory=list)
+    skills: dict[str, dict[str, int]] = Field(default_factory=dict)
+    gaps: dict[str, int] = Field(default_factory=dict)
+    min_annual_inr: float = 0.0
+    needs_sponsorship: bool = True
+    resume_files: dict[str, str] = Field(default_factory=dict)
+    # Whether the .tex tailoring needs is on disk. A profile can be complete
+    # while the template is missing, and the two are fixed in different places.
+    has_template: bool = False
+
+
+class ProfileDocumentOut(BaseModel):
+    """The raw `profile.yaml` mapping, for the editor to round-trip.
+
+    Deliberately not `ProfileOut`: the editor must write back keys the `Profile`
+    model does not declare (a hand-added note, a Phase 3 answer) instead of
+    silently dropping them.
+    """
+
+    data: dict[str, Any] = Field(default_factory=dict)
+    version: str = ""
+    configured: bool = True
+    error: str | None = None
+    path: str = ""
+    has_template: bool = False
+
+
+class ProfileDraftOut(BaseModel):
+    """A profile proposed from an uploaded résumé. Nothing is saved yet."""
+
+    data: dict[str, Any]
+    tokens: int = 0
+    # What the intake read, so the editor can show it beside the draft: a wrong
+    # field is almost always a de-TeX problem, and this is where it shows.
+    resume_text: str = ""
+    stored: dict[str, str] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ProfileSaveIn(BaseModel):
+    """A full profile mapping to write to disk."""
+
+    data: dict[str, Any]
+
+
+class DiffRowOut(BaseModel):
+    """One region of the résumé, base text against tailored text."""
+
+    region_id: str
+    label: str
+    kind: str
+    group: str
+    status: Literal["unchanged", "reworded", "dropped", "moved", "added"]
+    base: str = ""
+    current: str = ""
+    # Base and current positions within the region's own group, so the UI can
+    # say "moved up 2" without recomputing the ordering itself.
+    base_index: int | None = None
+    current_index: int | None = None
+
+
+class DocumentDiffOut(BaseModel):
+    """The tailored résumé against the untailored one, region by region."""
+
+    document_id: int
+    kind: str
+    available: bool = True
+    note: str = ""
+    rows: list[DiffRowOut] = Field(default_factory=list)
+    reworded: int = 0
+    dropped: int = 0
+    moved: int = 0
+    unchanged: int = 0
+    # Non-zero only after a structural hand edit: tailoring has no slot to add a
+    # region to. Surfaced rather than hidden, so the diff is a full account.
+    added: int = 0
 
 
 # --------------------------------------------------------------------------

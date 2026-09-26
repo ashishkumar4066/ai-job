@@ -20,6 +20,10 @@ import type {
   Prefs,
   PrefsPatch,
   ProfileSummary,
+  ProfileData,
+  ProfileDocument,
+  ProfileDraft,
+  DocumentDiff,
   DocumentKind,
   TailoredDocument,
   ResumeChat,
@@ -170,6 +174,42 @@ export const api = {
 
 export function fetchProfile(): Promise<ProfileSummary> {
   return request<ProfileSummary>("/profile");
+}
+
+/** The raw `profile.yaml` mapping, for the editor to round-trip. */
+export function fetchProfileDocument(): Promise<ProfileDocument> {
+  return request<ProfileDocument>("/profile/document");
+}
+
+/** Write `profile.yaml`. Returns the new `profile_version`.
+ *
+ *  A 422 means the profile would not load back — the message names what is
+ *  wrong, and nothing was written. */
+export function saveProfile(data: ProfileData): Promise<ProfileSummary> {
+  return request<ProfileSummary>("/profile", undefined, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data }),
+  });
+}
+
+/** Upload the résumé's .tex (and optionally its PDF), and propose a profile.
+ *
+ *  `parse: false` stores the files without an LLM call — for replacing a
+ *  template without re-reading the whole profile. Nothing is saved either way;
+ *  the caller reviews the draft and calls `saveProfile`. */
+export function uploadResume(
+  tex: File,
+  resume: File | null,
+  options?: { parse?: boolean },
+): Promise<ProfileDraft> {
+  const form = new FormData();
+  form.append("tex", tex);
+  if (resume) form.append("resume", resume);
+  const params = new URLSearchParams();
+  if (options?.parse === false) params.set("parse", "false");
+  // No Content-Type header: the browser has to set the multipart boundary.
+  return request<ProfileDraft>("/profile/upload", params, { method: "POST", body: form });
 }
 
 /** Run the deterministic scoring pass. No LLM calls — pure CPU, ~9s for 917. */
@@ -377,7 +417,17 @@ export function fetchBaseResume(): Promise<BaseResume> {
   return request<BaseResume>("/documents/base");
 }
 
-// Résumé chat. Sending costs one LLM call; everything else is free.
+/** This résumé against the untailored template, region by region. Free.
+ *
+ *  `available: false` is a normal answer — a missing template, LaTeX that no
+ *  longer parses, or a cover letter (which has no base). The `note` says which. */
+export function fetchDocumentDiff(docId: number): Promise<DocumentDiff> {
+  return request<DocumentDiff>(`/documents/${docId}/diff`);
+}
+
+// Document chat. Sending costs one LLM call; everything else is free. The
+// backend picks résumé or cover-letter chat from the document's kind, so these
+// routes are the same for both.
 
 export function fetchChat(docId: number): Promise<ResumeChat> {
   return request<ResumeChat>(`/documents/${docId}/chat`);

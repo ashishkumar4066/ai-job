@@ -9,7 +9,7 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy import Select, and_, case, func, or_, select
 from sqlalchemy.orm import defer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ from app.documents import (
     COVER_LETTER,
     DocumentError,
     compile_document,
+    diff_against_base,
     generate,
     get_document,
     hand_edit_warnings,
@@ -47,8 +48,9 @@ from app.pipeline import LLMEstimate, PipelineProgress, estimate_llm_pass, run_p
 from app.pipeline import tracker as pipeline_tracker
 from app.prefs import Prefs, PrefsError, TransferPrefs, get_prefs, load_prefs, save_prefs
 from app.profile import ProfileError, get_profile
+from app import profile_intake
 from app.resume_tex import ResumeDocument, ResumeTemplateError
-from app import resume_chat
+from app import cover_chat, resume_chat
 from app.shortlist import HARD_MAX_READS, reasons_excluded, shortlist_clause
 from app.validation_runner import ValidityRunResult, run_validation
 from app.validation_runner import _band as validity_band
@@ -59,6 +61,8 @@ from app.schemas import (
     ChatApplyOut,
     ChatIn,
     ChatOut,
+    DiffRowOut,
+    DocumentDiffOut,
     DocumentOut,
     DocumentSaveIn,
     FactIssueOut,
@@ -76,7 +80,10 @@ from app.schemas import (
     PipelineStatusOut,
     PrefsIn,
     PrefsOut,
+    ProfileDocumentOut,
+    ProfileDraftOut,
     ProfileOut,
+    ProfileSaveIn,
     SourceProgressOut,
     ValidityRunOut,
 )
@@ -90,6 +97,11 @@ router = APIRouter()
 # interleave writes. The lock lives on the tracker because the background
 # refresh path needs to observe it as well as hold it.
 _ingest_lock = tracker.lock
+
+# Upload ceiling for the profile's own files. A résumé .tex is ~7KB and its
+# PDF ~200KB; this is slack, not a real bound, and exists so a mis-picked
+# 40MB file is refused before it is read into memory.
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 
 SortField = Literal["posted_at", "first_seen_at", "last_seen_at", "title", "company"]
 
@@ -568,15 +580,32 @@ def _validity_band_of(score: int | None) -> str:
     return "unchecked" if score is None else validity_band(score)
 
 
+def _template_available() -> bool:
+    try:
+        ResumeDocument.load()
+    except ResumeTemplateError:
+        return False
+    return True
+
+
 @router.get("/profile", response_model=ProfileOut, tags=["matching"])
 async def read_profile() -> ProfileOut:
-    """The profile every job is scored against."""
+    """The profile every job is scored against.
+
+    Answers 200 with `configured: false` when there is no profile yet, rather
+    than 500. A first run legitimately has none, and the dashboard needs to
+    tell "not set up" apart from "the server is broken" in order to show the
+    setup dialog instead of an error.
+    """
     try:
         p = get_profile()
     except ProfileError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        return ProfileOut(
+            configured=False, error=str(exc), has_template=_template_available()
+        )
     return ProfileOut(
         version=p.version,
+        configured=True,
         full_name=p.identity.full_name,
         location=p.identity.location,
         total_years=p.seniority.total_years,
@@ -588,6 +617,172 @@ async def read_profile() -> ProfileOut:
         min_annual_inr=p.compensation.min_annual_inr,
         needs_sponsorship=p.work_authorization.needs_sponsorship,
         resume_files=p.resume_files,
+        has_template=_template_available(),
+    )
+
+
+@router.get("/profile/document", response_model=ProfileDocumentOut, tags=["matching"])
+async def read_profile_document() -> ProfileDocumentOut:
+    """The raw `profile.yaml` mapping, for the editor.
+
+    The editor round-trips this rather than `ProfileOut` so that hand-added
+    keys survive a save — `profile.yaml` stays the source of truth, and an
+    editor that silently drops what it does not understand would make
+    hand-editing second-class.
+    """
+    settings = get_settings()
+    try:
+        data = profile_intake.read_profile_data()
+    except ProfileError as exc:
+        return ProfileDocumentOut(
+            configured=False, error=str(exc), path=str(settings.profile_file)
+        )
+    error: str | None = None
+    version = ""
+    try:
+        version = get_profile().version
+    except ProfileError as exc:
+        error = str(exc)
+    return ProfileDocumentOut(
+        data=data,
+        version=version,
+        configured=bool(data) and error is None,
+        error=error,
+        path=str(settings.profile_file),
+        has_template=_template_available(),
+    )
+
+
+@router.put("/profile", response_model=ProfileOut, tags=["matching"])
+async def write_profile(payload: ProfileSaveIn) -> ProfileOut:
+    """Write `profile.yaml` and return the new version.
+
+    Validated through the same gate `load_profile` applies, so the editor
+    cannot save a file the loader would then refuse — which would leave
+    scoring broken with no visible cause. A rejected save changes nothing on
+    disk.
+
+    Scores keyed to the old `profile_version` are not deleted: they simply stop
+    matching the current version, which is what makes a stale score render as
+    stale instead of as current.
+    """
+    try:
+        profile_intake.save_profile(payload.data)
+    except ProfileError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return await read_profile()
+
+
+@router.post("/profile/upload", response_model=ProfileDraftOut, tags=["matching"])
+async def upload_resume(
+    tex: Annotated[UploadFile, File(description="The résumé's LaTeX source (.tex)")],
+    resume: Annotated[
+        UploadFile | None, File(description="The compiled résumé (.pdf), optional")
+    ] = None,
+    parse: Annotated[
+        bool, Query(description="Read the .tex with the LLM and propose a profile")
+    ] = True,
+) -> ProfileDraftOut:
+    """Store an uploaded résumé and propose a profile from it. Saves no profile.
+
+    Two files, two jobs. The **.tex** becomes the tailoring template — Stage 3
+    only ever re-words regions of it, so without it there is nothing to tailor.
+    The **.pdf** is what Phase 3 uploads to application forms, and is recorded
+    as `resume_files.base`.
+
+    `parse=false` stores the files without spending an LLM call, for replacing
+    a template without re-reading the whole profile.
+
+    The returned draft is *not* written to disk: `gaps:` is the fact-checker's
+    denylist and `evidence.depth` decides whether a capability reads as
+    production experience. Both need a human's eye before anything is generated
+    against them, so the caller reviews the draft and PUTs it back.
+    """
+    warnings: list[str] = []
+    try:
+        raw = await tex.read()
+    finally:
+        await tex.close()
+    if not raw:
+        raise HTTPException(status_code=422, detail="the .tex file is empty")
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413, detail=f"the .tex is larger than {MAX_UPLOAD_BYTES // 1024}KB"
+        )
+    try:
+        tex_source = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        # A .tex is text; a PDF uploaded into this slot is the likely cause, and
+        # saying so beats a decode traceback.
+        raise HTTPException(
+            status_code=422,
+            detail="that file is not UTF-8 text — is it the .tex, rather than the PDF?",
+        ) from None
+    if "\\begin{document}" not in tex_source and "\\documentclass" not in tex_source:
+        warnings.append(
+            "that .tex has no \\documentclass or \\begin{document} — it may not compile"
+        )
+
+    existing = profile_intake.read_profile_data()
+    stored = profile_intake.store_resume_files(
+        tex_source, resume_bytes=None, resume_name=None
+    )
+    if resume is not None and resume.filename:
+        try:
+            pdf = await resume.read()
+        finally:
+            await resume.close()
+        if len(pdf) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"the résumé file is larger than {MAX_UPLOAD_BYTES // 1024}KB",
+            )
+        if pdf:
+            stored.update(
+                profile_intake.store_resume_files(
+                    None, resume_bytes=pdf, resume_name=resume.filename
+                )
+            )
+
+    # Point the profile at what was just stored, so a save wires up Phase 3's
+    # résumé upload and Stage 3's template without the user editing paths.
+    files = dict(existing.get("resume_files") or {})
+    files.update(stored)
+    existing["resume_files"] = files
+
+    if not parse:
+        return ProfileDraftOut(
+            data=existing,
+            resume_text=profile_intake.tex_to_text(tex_source),
+            stored=stored,
+            warnings=warnings,
+        )
+
+    try:
+        data, tokens = await profile_intake.draft_from_tex(tex_source, existing=existing)
+    except ProfileError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LLMNotConfigured as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{exc} — the files are stored; fill the profile in by hand, or set a key.",
+        ) from exc
+    except LLMRateLimited as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
+    except LLMError as exc:
+        raise HTTPException(status_code=502, detail=f"reading the résumé failed: {exc}") from exc
+
+    if not data.get("gaps"):
+        warnings.append(
+            "no gaps were identified — `gaps:` is the denylist that blocks a generated résumé "
+            "from claiming a stack you do not have, so add the ones that matter before saving."
+        )
+    return ProfileDraftOut(
+        data=data,
+        tokens=tokens,
+        resume_text=profile_intake.tex_to_text(tex_source),
+        stored=stored,
+        warnings=warnings,
     )
 
 
@@ -1458,6 +1653,60 @@ async def revert_document(
     return _document_out(document, job)
 
 
+@router.get("/documents/{doc_id}/diff", response_model=DocumentDiffOut, tags=["documents"])
+async def document_diff(
+    doc_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DocumentDiffOut:
+    """This résumé against the untailored template, region by region. Free.
+
+    Résumé-only: a cover letter is prose written from the profile, so there is
+    no original to diff it against — its equivalent review surface is the fact
+    check, which already reports per sentence.
+
+    200 with `available: false` when the template is missing or the document's
+    LaTeX no longer parses. Both are states the review pane should explain, not
+    HTTP errors: a hand edit that breaks the structure is exactly when someone
+    reaches for the diff.
+    """
+    document = await _load_document(session, doc_id)
+    if document.kind == COVER_LETTER:
+        return DocumentDiffOut(
+            document_id=document.id,
+            kind=document.kind,
+            available=False,
+            note=(
+                "A cover letter is written from your profile rather than tailored from a "
+                "template, so there is no base version to compare it against."
+            ),
+        )
+    try:
+        template = ResumeDocument.load()
+    except ResumeTemplateError as exc:
+        return DocumentDiffOut(
+            document_id=document.id, kind=document.kind, available=False, note=str(exc)
+        )
+    try:
+        rows, counts = diff_against_base(document.tex, template)
+    except ResumeTemplateError as exc:
+        return DocumentDiffOut(
+            document_id=document.id,
+            kind=document.kind,
+            available=False,
+            note=f"this résumé's LaTeX no longer parses, so it cannot be compared: {exc}",
+        )
+    return DocumentDiffOut(
+        document_id=document.id,
+        kind=document.kind,
+        rows=[DiffRowOut(**row) for row in rows],
+        reworded=counts["reworded"],
+        dropped=counts["dropped"],
+        moved=counts["moved"],
+        unchanged=counts["unchanged"],
+        added=counts["added"],
+    )
+
+
 @router.post("/documents/{doc_id}/compile", response_model=CompileOut, tags=["documents"])
 async def compile_document_route(
     doc_id: int,
@@ -1544,18 +1793,19 @@ async def document_tex(
 
 
 # --------------------------------------------------------------------------
-# Stage 3 — refining a tailored résumé by chat (`app/resume_chat.py`)
+# Stage 3 — refining a document by chat (`app/resume_chat.py`, `app/cover_chat.py`)
 #
 # A message costs one LLM call; everything else here is free. A reply never
 # edits the document — it carries a fact-checked proposal that the user applies
 # (or dismisses) with a separate request.
+#
+# The two kinds address different things — the résumé's 16 template regions, the
+# letter's body paragraphs — so they are separate modules. They expose the same
+# five functions and build proposals in the same shape, so these handlers pick a
+# module and otherwise do not branch, and one panel in the UI renders both.
 # --------------------------------------------------------------------------
-async def _load_resume(session: AsyncSession, doc_id: int) -> GeneratedDocument:
-    """Chat proposals are keyed by résumé regions; a cover letter has none."""
-    document = await _load_document(session, doc_id)
-    if document.kind != "resume":
-        raise HTTPException(status_code=409, detail="chat is only available for the resume")
-    return document
+def _chat_module(document: GeneratedDocument) -> Any:
+    return cover_chat if document.kind == COVER_LETTER else resume_chat
 
 
 async def _chat_out(session: AsyncSession, document: GeneratedDocument) -> ChatOut:
@@ -1563,7 +1813,7 @@ async def _chat_out(session: AsyncSession, document: GeneratedDocument) -> ChatO
     return ChatOut(
         document_id=document.id,
         messages=messages,
-        suggestions=await resume_chat.suggestions(session, document),
+        suggestions=await _chat_module(document).suggestions(session, document),
         tokens=sum(int(m.get("tokens") or 0) for m in messages),
     )
 
@@ -1573,7 +1823,7 @@ async def read_chat(
     doc_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
-    document = await _load_resume(session, doc_id)
+    document = await _load_document(session, doc_id)
     return await _chat_out(session, document)
 
 
@@ -1583,10 +1833,10 @@ async def send_chat(
     payload: ChatIn,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
-    """Ask for a change or a question about this résumé. One LLM call."""
-    document = await _load_resume(session, doc_id)
+    """Ask for a change or a question about this document. One LLM call."""
+    document = await _load_document(session, doc_id)
     try:
-        await resume_chat.send_message(session, document, payload.message)
+        await _chat_module(document).send_message(session, document, payload.message)
     except DocumentError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ResumeTemplateError as exc:
@@ -1611,10 +1861,10 @@ async def apply_chat(
     payload: ChatApplyIn,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatApplyOut:
-    """Write a reply's accepted edits into the résumé. Free — no LLM call."""
-    document = await _load_resume(session, doc_id)
+    """Write a reply's accepted edits into the document. Free — no LLM call."""
+    document = await _load_document(session, doc_id)
     try:
-        document = await resume_chat.apply_proposal(
+        document = await _chat_module(document).apply_proposal(
             session, document, message_id, payload.accept
         )
     except DocumentError as exc:
@@ -1635,9 +1885,9 @@ async def dismiss_chat(
     message_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
-    document = await _load_resume(session, doc_id)
+    document = await _load_document(session, doc_id)
     try:
-        await resume_chat.dismiss_proposal(session, document, message_id)
+        await _chat_module(document).dismiss_proposal(session, document, message_id)
     except DocumentError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return await _chat_out(session, document)
@@ -1648,7 +1898,7 @@ async def clear_chat(
     doc_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ChatOut:
-    """Start the conversation over. Leaves the résumé as it is."""
-    document = await _load_resume(session, doc_id)
-    await resume_chat.clear_chat(session, document)
+    """Start the conversation over. Leaves the document as it is."""
+    document = await _load_document(session, doc_id)
+    await _chat_module(document).clear_chat(session, document)
     return await _chat_out(session, document)

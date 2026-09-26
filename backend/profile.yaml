@@ -1,84 +1,57 @@
-# My profile — the thing every job is scored against.
+# profile.yaml — who I am. The source of truth for matching and for every
+# generated document.
 #
-# This file is the SOURCE OF TRUTH. The dashboard can edit it, but hand-editing
-# here must stay a first-class path: it is the one file in this repo worth
-# backing up, and the résumé PDF beside it is not machine-readable.
+# Written by the dashboard's profile editor, and safe to hand-edit: the editor
+# reads this file back, so a change made here is not second-class.
 #
-# Extracted from data/Ashish_AI_FullStack_v2.pdf on 2026-09-13 (v1 on
-# 2026-09-08); `evidence` / `unproven` added 2026-09-19. REVIEW IT. Every
-# fit score inherits whatever is wrong here, so a mis-read year count or a missing skill silently biases all 741 rows.
-#
-# Editing this file changes `profile_version` (a hash of the normalized
-# content), which invalidates cached match scores. That is deliberate — a score
-# computed against last week's résumé must never be displayed as current.
+# Three sections carry rules rather than facts, and are worth checking by hand:
+#   gaps:     the fact-checker's DENYLIST. A claim touching one of these keys
+#             is blocked from any generated résumé or cover letter. Removing an
+#             entry stops that protection.
+#   evidence: `depth: production` vs `project` is the distinction the skill
+#             list cannot carry, and the fit prompt reads it.
+#   unproven: capabilities this résumé does NOT show. Prose, read by the LLM.
+# Last written by the dashboard: 2026-09-26T06:03:54+00:00
 
 identity:
   full_name: Ashish Kumar
   email: krashish1350@gmail.com
-  phone: '+91-8789777738'
+  phone: +91-8789777738
   location: Bihar, India
   country: IN
   timezone: Asia/Kolkata
   links:
-    # The résumé displays "linkedin.com/in/ashish-kumar"; this is the full URL.
     linkedin: https://www.linkedin.com/in/ashish-kumar-17417914b/
     github: https://github.com/ashishkumar4066
-
-# Not read by matching (the Profile model ignores it). Kept for Stage 3 document
-# generation, which may only re-word facts stated in this file.
-summary: >-
-  AI engineer who builds AI infrastructure, not just AI features. Built a
-  token-metering and LLM observability platform from scratch; prompt caching
-  cut LLM token costs ~90%. 6 years in production software, the last 2+ on
-  AI/LLM systems: RAG, agentic workflows (LangChain, LangGraph), multimodal document
-  intelligence (YOLOv11 + Vision LLMs), Text-to-SQL, and event-driven
-  architecture, serving 1,000+ users across 10 enterprise tenants on GCP.
-  Leads 5 engineers across Python, FastAPI, Java, Node.js, and React.
-
+summary: 'AI engineer who builds AI infrastructure, not just AI features. Built a token-metering and LLM
+  observability platform from scratch; prompt caching cut LLM token costs ~90%. 6 years in production
+  software, the last 2+ on AI/LLM systems: RAG, agentic workflows (LangChain, LangGraph), multimodal document
+  intelligence (YOLOv11 + Vision LLMs), Text-to-SQL, and event-driven architecture, serving 1,000+ users
+  across 10 enterprise tenants on GCP. Leads 5 engineers across Python, FastAPI, Java, Node.js, and React.'
 work_authorization:
-  # Drives the "will they hire me" half. `needs_sponsorship: true` is why a JD
-  # saying "must be authorized to work in the US without sponsorship" is a hard
-  # mismatch even when the board tags the role `worldwide`.
   citizenship: IN
-  authorized_in: [IN]
+  authorized_in:
+  - IN
   needs_sponsorship: true
   open_to_relocation: false
   remote_only: true
-
 seniority:
-  # Sep 2020 -> present = 6 years, which the v2 résumé now states outright.
-  # `roles.py` bounds a *stated* JD requirement to 2..8, and this is the
-  # candidate side of that comparison. `ai_years` follows the résumé's
-  # "the last 2+ on AI/LLM systems" (v1 of this file said 3).
   total_years: 6
   ai_years: 2
   current_title: Senior Full Stack Developer
   target_titles:
-    - Senior Software Engineer
-    - Senior Full Stack Engineer
-    - Senior Backend Engineer
-    - AI Engineer
-    - Senior AI Engineer
-    - Applied AI Engineer
-    - Staff Software Engineer
-    - Product Engineer
-    - Founding Team
-
+  - Senior Software Engineer
+  - Senior Full Stack Engineer
+  - Senior Backend Engineer
+  - AI Engineer
+  - Senior AI Engineer
+  - Applied AI Engineer
+  - Staff Software Engineer
+  - Product Engineer
+  - Founding Team
 compensation:
-  # Mirrors `min_annual_salary_inr` in config/filters.yaml. Kept here too
-  # because matching reasons should be able to say "below your floor" without
-  # reaching into the eligibility config.
   min_annual_inr: 3000000
   preferred_currency: USD
-
-# Weighted skills. The weight is "how strongly does this represent me", not
-# "how much do I like it" — it scales the fit score when a JD asks for it.
-#   3 = core, shipped repeatedly in production
-#   2 = solid working experience
-#   1 = used, would not headline it
-#
-# Terms match on word boundaries, so a plural is a different term:
-# `websocket` does not match "WebSockets".
 skills:
   ai:
     llm: 3
@@ -115,8 +88,6 @@ skills:
     groq: 1
     llama: 1
     bge-m3: 1
-    # Not on the v2 résumé. Kept at the lowest weight; delete any you would
-    # not want a tailored résumé to claim.
     ollama: 1
     openai: 1
     nlp: 1
@@ -134,7 +105,6 @@ skills:
     oauth: 1
     oidc: 1
     jwt: 1
-    # Not on the v2 résumé — see the note under `ai`.
     microservice: 1
     graphql: 1
   frontend:
@@ -169,10 +139,6 @@ skills:
     jest: 1
     junit: 1
     mockito: 1
-
-# Stacks I have NOT shipped. A JD centred on these is a genuine mismatch, not
-# a gap to paper over. Weight = how strongly its presence should count against
-# a role. Kept separate from `skills` so the reasons can say *why* a job sank.
 gaps:
   aws: 2
   azure: 2
@@ -199,114 +165,112 @@ gaps:
   salesforce: 2
   sap: 2
   kafka: 1
-
-# ---------------------------------------------------------------------------
-# What the LLM reads. `skills` above only says a word appears on the résumé;
-# this says what was actually built with it, and how deep.
-#
-#   depth: production  = shipped at work, used by real users
-#   depth: project     = side project only
-#
-# Keep each `proof` to one dense line with the numbers: every word here is
-# billed on every job the LLM reads. Only facts from the résumé belong here;
-# Stage 3 document generation may re-word them, never add to them.
-# ---------------------------------------------------------------------------
 evidence:
-  - area: LLM infrastructure & cost optimization
-    depth: production
-    proof: Built a token-metering and LLM observability platform from scratch, replacing Langfuse; request-level tracing, audit trails, five-tier request pricing; prompt caching cut LLM token cost ~90%.
-  - area: Agentic AI workflows
-    depth: production
-    proof: LangChain/LangGraph + Gemini agent with human-in-the-loop review, automating inspection creation; research effort -30%.
-  - area: RAG, Text-to-SQL, AI guardrails
-    depth: production
-    proof: Text-to-SQL engine from scratch with schema-grounded RAG and guardrails against destructive SQL and cross-tenant leakage; 75% accuracy across 200+ schemas.
-  - area: Multimodal / vision-LLM document extraction
-    depth: production
-    proof: Architected a Gemini vision-LLM extraction pipeline, 90% field-level accuracy; page images via GCS to a React UI.
-  - area: Model training & deployment (computer vision)
-    depth: production
-    proof: Trained a custom YOLOv11 document-layout model in PyTorch (2,500+ annotated images, 80% mAP@0.5) and deployed it on Google Cloud Run.
-  - area: Event-driven, real-time backend
-    depth: production
-    proof: Notification service on PostgreSQL WAL-based CDC; a Mistral LLM classifies and prioritizes events; alerts to 1,000+ users within 20s over WebSockets.
-  - area: Architecture, multi-tenant SaaS, auth
-    depth: production
-    proof: Re-architected a legacy monolith into a multi-tenant SaaS (Node.js, MongoDB), 10 isolated enterprise tenants; Java/React SSO (enterprise IdP + OTP); +20% throughput, 40% faster login.
-  - area: Full-stack web
-    depth: production
-    proof: React UIs for all of the above; earlier shipped a MERN real-time messaging platform (WebSockets, JWT) for 1,000+ users and a Jest-tested React rich-text editor reused across 7 products.
-  - area: Technical leadership
-    depth: production
-    proof: Lead engineer for the team's AI systems; owns architecture and end-to-end delivery, drives build-vs-buy decisions via RFCs, mentors 5 engineers.
-  - area: Cloud & delivery
-    depth: production
-    proof: GCP (Cloud Run, GCS), Docker, CI/CD, Git. No AWS, Azure or Kubernetes in production.
-  - area: Vector search & embeddings
-    depth: project
-    proof: CryptoLens - RAG agent over 2,000+ YouTube transcripts; BGE-M3 embeddings in Qdrant, hybrid search with temporal reranking, contradiction detection, citation-grounded answers (Groq Llama 3.3 70B + Gemini).
-
-# Capabilities the résumé does NOT show. Listed so the LLM names them as gaps
-# instead of guessing either way. Delete any line you can actually prove —
-# then add the proof to `evidence`.
+- area: LLM infrastructure & cost optimization
+  depth: production
+  proof: Built a token-metering and LLM observability platform from scratch, replacing Langfuse; request-level
+    tracing, audit trails, five-tier request pricing; prompt caching cut LLM token cost ~90%.
+- area: Agentic AI workflows
+  depth: production
+  proof: LangChain/LangGraph + Gemini agent with human-in-the-loop review, automating inspection creation;
+    research effort -30%.
+- area: RAG, Text-to-SQL, AI guardrails
+  depth: production
+  proof: Text-to-SQL engine from scratch with schema-grounded RAG and guardrails against destructive SQL
+    and cross-tenant leakage; 75% accuracy across 200+ schemas.
+- area: Multimodal / vision-LLM document extraction
+  depth: production
+  proof: Architected a Gemini vision-LLM extraction pipeline, 90% field-level accuracy; page images via
+    GCS to a React UI.
+- area: Model training & deployment (computer vision)
+  depth: production
+  proof: Trained a custom YOLOv11 document-layout model in PyTorch (2,500+ annotated images, 80% mAP@0.5)
+    and deployed it on Google Cloud Run.
+- area: Event-driven, real-time backend
+  depth: production
+  proof: Notification service on PostgreSQL WAL-based CDC; a Mistral LLM classifies and prioritizes events;
+    alerts to 1,000+ users within 20s over WebSockets.
+- area: Architecture, multi-tenant SaaS, auth
+  depth: production
+  proof: Re-architected a legacy monolith into a multi-tenant SaaS (Node.js, MongoDB), 10 isolated enterprise
+    tenants; Java/React SSO (enterprise IdP + OTP); +20% throughput, 40% faster login.
+- area: Full-stack web
+  depth: production
+  proof: React UIs for all of the above; earlier shipped a MERN real-time messaging platform (WebSockets,
+    JWT) for 1,000+ users and a Jest-tested React rich-text editor reused across 7 products.
+- area: Technical leadership
+  depth: production
+  proof: Lead engineer for the team's AI systems; owns architecture and end-to-end delivery, drives build-vs-buy
+    decisions via RFCs, mentors 5 engineers.
+- area: Cloud & delivery
+  depth: production
+  proof: GCP (Cloud Run, GCS), Docker, CI/CD, Git. No AWS, Azure or Kubernetes in production.
+- area: Vector search & embeddings
+  depth: project
+  proof: CryptoLens - RAG agent over 2,000+ YouTube transcripts; BGE-M3 embeddings in Qdrant, hybrid search
+    with temporal reranking, contradiction detection, citation-grounded answers (Groq Llama 3.3 70B +
+    Gemini).
 unproven:
-  - LLM fine-tuning (LoRA, RLHF, SFT)
-  - formal LLM evaluation pipelines / eval harnesses
-  - AWS, Azure, Kubernetes, Terraform
-  - high-traffic consumer scale (largest stated scale is 1,000+ users, 10 tenants)
-  - mobile apps
-  - people management (leads and mentors, no direct reports stated)
-
+- LLM fine-tuning (LoRA, RLHF, SFT)
+- formal LLM evaluation pipelines / eval harnesses
+- AWS, Azure, Kubernetes, Terraform
+- high-traffic consumer scale (largest stated scale is 1,000+ users, 10 tenants)
+- mobile apps
+- people management (leads and mentors, no direct reports stated)
 domains:
-  - enterprise B2B SaaS
-  - document intelligence
-  - LLM platform / AI infrastructure
-
+- enterprise B2B SaaS
+- document intelligence
+- LLM platform / AI infrastructure
 experience:
-  - company: AsInt
-    title: Senior Full Stack Developer
-    location: Ahmedabad, India
-    start: 2022-11
-    end: null
-    highlights:
-      - Lead engineer for the team's AI systems, owning architecture and end-to-end delivery; drove build-vs-buy decisions through RFCs and mentored 5 engineers across design, implementation, and production deployment.
-      - Designed an agentic AI workflow (LangChain/LangGraph + Gemini) with human-in-the-loop controls, automating inspection creation and reducing research effort by 30% while maintaining review.
-      - Real-time notification service on PostgreSQL WAL-based CDC; a Mistral LLM classifies and prioritizes events, delivering alerts to 1,000+ users within 20s via WebSockets to a React UI.
-      - Text-to-SQL engine built from scratch with schema-grounded RAG and guardrails against destructive SQL and cross-tenant leakage; 75% accuracy across 200+ schemas.
-      - Trained and deployed a custom YOLOv11 document-layout model (PyTorch) on Google Cloud Run; 80% mAP@0.5 across 2,500+ annotated document images.
-      - Multimodal document extraction pipeline on Gemini vision LLM; 90% field-level accuracy across document workflows, with page images served via GCS URLs to a React UI.
-      - Token-metering and LLM observability platform built from scratch, replacing Langfuse; five-tier request pricing, request-level tracing and audit trails; prompt caching cut LLM token costs ~90%.
-      - Re-architected a legacy monolith into a multi-tenant SaaS platform (Node.js, MongoDB) with Java/React SSO (Enterprise IDP + OTP), isolating 10 tenants; +20% throughput, 40% faster login.
-  - company: Incture Technologies
-    title: Associate Software Developer
-    location: Bengaluru, India
-    start: 2020-09
-    end: 2022-09
-    highlights:
-      - Shipped a MERN real-time messaging platform (WebSockets, JWT, MongoDB) for 1,000+ users.
-      - Reusable Jest-tested React rich-text editor (TinyMCE) adopted across 7 products.
-
+- company: AsInt
+  title: Senior Full Stack Developer
+  location: Ahmedabad, India
+  start: 2022-11
+  end: null
+  highlights:
+  - Lead engineer for the team's AI systems, owning architecture and end-to-end delivery; drove build-vs-buy
+    decisions through RFCs and mentored 5 engineers across design, implementation, and production deployment.
+  - Designed an agentic AI workflow (LangChain/LangGraph + Gemini) with human-in-the-loop controls, automating
+    inspection creation and reducing research effort by 30% while maintaining review.
+  - Real-time notification service on PostgreSQL WAL-based CDC; a Mistral LLM classifies and prioritizes
+    events, delivering alerts to 1,000+ users within 20s via WebSockets to a React UI.
+  - Text-to-SQL engine built from scratch with schema-grounded RAG and guardrails against destructive
+    SQL and cross-tenant leakage; 75% accuracy across 200+ schemas.
+  - Trained and deployed a custom YOLOv11 document-layout model (PyTorch) on Google Cloud Run; 80% mAP@0.5
+    across 2,500+ annotated document images.
+  - Multimodal document extraction pipeline on Gemini vision LLM; 90% field-level accuracy across document
+    workflows, with page images served via GCS URLs to a React UI.
+  - Token-metering and LLM observability platform built from scratch, replacing Langfuse; five-tier request
+    pricing, request-level tracing and audit trails; prompt caching cut LLM token costs ~90%.
+  - Re-architected a legacy monolith into a multi-tenant SaaS platform (Node.js, MongoDB) with Java/React
+    SSO (Enterprise IDP + OTP), isolating 10 tenants; +20% throughput, 40% faster login.
+- company: Incture Technologies
+  title: Associate Software Developer
+  location: Bengaluru, India
+  start: 2020-09
+  end: 2022-09
+  highlights:
+  - Shipped a MERN real-time messaging platform (WebSockets, JWT, MongoDB) for 1,000+ users.
+  - Reusable Jest-tested React rich-text editor (TinyMCE) adopted across 7 products.
 projects:
-  - name: CryptoLens
-    url: https://github.com/ashishkumar4066/ai-youtube-analyser
-    summary: RAG research agent over a crypto analyst's YouTube archive. Scraped 2,000+ transcripts, chunked and embedded them with BGE-M3, indexed in Qdrant. Hybrid search with temporal reranking, cross-time contradiction detection, and citation-grounded answers with video + timestamp references, using Groq (Llama 3.3 70B) + Gemini; Streamlit UI and Telegram.
-
+- name: CryptoLens
+  url: https://github.com/ashishkumar4066/ai-youtube-analyser
+  summary: RAG research agent over a crypto analyst's YouTube archive. Scraped 2,000+ transcripts, chunked
+    and embedded them with BGE-M3, indexed in Qdrant. Hybrid search with temporal reranking, cross-time
+    contradiction detection, and citation-grounded answers with video + timestamp references, using Groq
+    (Llama 3.3 70B) + Gemini; Streamlit UI and Telegram.
 education:
-  - degree: Bachelor of Engineering, Computer Science and Engineering
-    institution: Siddaganga Institute of Technology
-    start: 2016
-    end: 2020
-    score: 8.5/10
-
+- degree: Bachelor of Engineering, Computer Science and Engineering
+  institution: Siddaganga Institute of Technology
+  start: 2016
+  end: 2020
+  score: 8.5/10
 resume_files:
-  # Paths are relative to the backend/ directory.
   base: data/Ashish_AI_FullStack_v2.pdf
-
-# Reusable free-text answers. Not used by matching — Phase 3 autofill consumes
-# these. Left here so there is exactly one profile store, not two.
 answers:
   notice_period: null
   current_ctc: null
   expected_ctc: null
   why_this_company: null
-  visa_status: 'Indian citizen, based in India. Requires sponsorship for US/UK roles; available for remote contracts worldwide.'
+  visa_status: Indian citizen, based in India. Requires sponsorship for US/UK roles; available for remote
+    contracts worldwide.

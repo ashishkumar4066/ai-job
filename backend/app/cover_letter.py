@@ -377,6 +377,22 @@ def body_paragraphs(tex: str) -> list[str] | None:
     return [from_latex(chunk) for chunk in re.split(r"\n\s*\n", body) if chunk.strip()]
 
 
+def replace_body(tex: str, paragraphs: list[str]) -> str:
+    """Swap the body paragraphs, leaving every other byte of the letter alone.
+
+    Chat edits go through here rather than `render_letter` on purpose. Re-render
+    rebuilds the header from the *current* profile and today's date, so
+    accepting a wording change would quietly restamp a letter's date and
+    contact block. Splicing gives the letter the same property the résumé's
+    region editor has: what was not edited cannot change.
+    """
+    start, end = tex.find(BODY_START), tex.find(BODY_END)
+    if start < 0 or end < start:
+        raise ValueError("the letter's body markers are gone, so its paragraphs cannot be addressed")
+    body = "\n\n".join(to_latex(p) for p in paragraphs if p.strip())
+    return tex[: start + len(BODY_START)] + "\n" + body + "\n" + tex[end:]
+
+
 def check_letter(tex: str, corpus: FactCorpus) -> list[str]:
     """Blocking findings over a hand-edited letter. Reported, never enforced."""
     paragraphs = body_paragraphs(tex)

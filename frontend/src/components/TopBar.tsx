@@ -1,5 +1,16 @@
 import { useEffect, useRef } from "react";
-import { Loader2, Menu, Moon, RefreshCw, Search, Sparkles, Sun, X } from "lucide-react";
+import {
+  FileUp,
+  Loader2,
+  Menu,
+  Moon,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Sun,
+  UserRound,
+  X,
+} from "lucide-react";
 import type { SearchScope } from "@/lib/types";
 import { IconButton, Kbd, Segmented, cx } from "./primitives";
 
@@ -15,6 +26,9 @@ export function TopBar({
   newCount,
   onShowNew,
   onOpenNav,
+  onOpenProfile,
+  onReplaceResume,
+  profileName,
   title,
 }: {
   query: string;
@@ -29,6 +43,18 @@ export function TopBar({
   onShowNew: () => void;
   /** Opens the off-canvas nav; only rendered on phones, where the rail is hidden. */
   onOpenNav: () => void;
+  /** Opens the profile editor on the editor itself. */
+  onOpenProfile: () => void;
+  /**
+   * Opens the same dialog on its uploader. Replacing the résumé is a job of
+   * its own — it swaps the tailoring template and the PDF Phase 3 attaches —
+   * so it gets its own button here rather than a link at the foot of the
+   * editor, which was three scrolls down from where the profile opens.
+   */
+  onReplaceResume: () => void;
+  /** Shown as the button's tooltip, so the current profile is identifiable
+   *  without opening the dialog. Empty when none is set up yet. */
+  profileName: string;
   /**
    * Set on surfaces that the search box does not drive, which take its slot
    * rather than offering a box that quietly filters something off screen.
@@ -122,6 +148,24 @@ export function TopBar({
             <Sparkles size={14} />
             {newCount.toLocaleString()} new
           </button>
+        )}
+        <IconButton
+          label={
+            profileName
+              ? `Profile — ${profileName}. Skills, gaps, evidence and preferences.`
+              : "Set up your profile and upload your résumé"
+          }
+          onClick={onOpenProfile}
+        >
+          <UserRound size={16} />
+        </IconButton>
+        {profileName && (
+          <IconButton
+            label="Replace my résumé files — upload a new .tex and PDF"
+            onClick={onReplaceResume}
+          >
+            <FileUp size={16} />
+          </IconButton>
         )}
         <IconButton label="Fetch latest jobs now" onClick={onRefresh} active={refreshing}>
           {refreshing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}

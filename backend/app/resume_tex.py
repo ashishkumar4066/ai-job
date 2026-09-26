@@ -51,7 +51,35 @@ from pydantic import BaseModel, Field
 log = logging.getLogger(__name__)
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
-DEFAULT_TEMPLATE = BACKEND_DIR / "data" / "Ashish_AI_FullStack_v2.tex"
+DATA_DIR = BACKEND_DIR / "data"
+# Where the dashboard's upload lands, and so the first place looked.
+UPLOADED_TEMPLATE = DATA_DIR / "resume.tex"
+# The original hand-placed template. Still honoured, so an existing checkout
+# keeps working without re-uploading anything.
+LEGACY_TEMPLATE = DATA_DIR / "Ashish_AI_FullStack_v2.tex"
+DEFAULT_TEMPLATE = LEGACY_TEMPLATE
+
+
+def resolve_template(path: Path | None = None) -> Path:
+    """Which .tex is the base résumé.
+
+    An explicit path wins, then an upload, then the legacy file, then a lone
+    `.tex` sitting in `data/` under any name — `data/` is gitignored as PII, so
+    a fresh checkout has whatever the user dropped in, named whatever they
+    named it. `resume.cls` is excluded: it is the class, not a résumé.
+
+    Returns the upload path when nothing exists, so the error names the place
+    to put one.
+    """
+    if path is not None:
+        return path
+    for candidate in (UPLOADED_TEMPLATE, LEGACY_TEMPLATE):
+        if candidate.is_file():
+            return candidate
+    found = sorted(p for p in DATA_DIR.glob("*.tex") if p.stem != "resume.cls")
+    if len(found) == 1:
+        return found[0]
+    return UPLOADED_TEMPLATE
 
 
 class ResumeTemplateError(RuntimeError):
@@ -193,11 +221,12 @@ class ResumeDocument:
 
     @classmethod
     def load(cls, path: Path | None = None) -> ResumeDocument:
-        path = path or DEFAULT_TEMPLATE
+        path = resolve_template(path)
         if not path.is_file():
             raise ResumeTemplateError(
-                f"résumé template not found at {path} — `profile.yaml` points at "
-                "the PDF, but tailoring needs the .tex beside it"
+                f"résumé template not found at {path} — upload your résumé's .tex from the "
+                "dashboard, or drop it in beside the PDF. Tailoring re-words regions of the "
+                "real document, so it cannot start from nothing."
             )
         return cls.parse(path.read_text(encoding="utf-8"))
 

@@ -20,14 +20,18 @@
  * doomed builds. Ctrl/Cmd-S saves and compiles, which is the Overleaf muscle
  * memory anyway.
  *
- * The left pane has two tabs: the LaTeX editor, and a chat (`ResumeChat.tsx`)
- * for asking for changes in words. Chat sits in the left pane, not over the
- * PDF, because the preview is what the user checks each suggestion against.
+ * The left pane has three tabs: the LaTeX editor, a chat (`ResumeChat.tsx`) for
+ * asking for changes in words, and a diff (`DiffPane.tsx`) against the
+ * untailored résumé. All three sit in the left pane, not over the PDF, because
+ * the preview is what each change gets checked against.
  *
  * The same modal edits the job's cover letter (`kind="cover_letter"`), with a
- * switch in the header to move between the two. The letter has the editor,
- * the preview and the download, but no chat: chat proposals are keyed by
- * résumé regions, and a letter is prose with none.
+ * switch in the header to move between the two. The letter has the editor, the
+ * chat, the preview and the download, but no **diff**: it is prose written from
+ * the profile rather than a template with slots, so there is no base version to
+ * compare it against. Its chat addresses body paragraphs instead of résumé
+ * regions — a difference the backend handles (`app/cover_chat.py`), which is why
+ * this component does not branch on kind beyond hiding that one tab.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -38,6 +42,7 @@ import {
   Download,
   Code2,
   FileText,
+  GitCompare,
   Loader2,
   Mail,
   MessageSquare,
@@ -60,9 +65,10 @@ import {
 } from "../lib/api";
 import type { CompileResult, DocumentKind, FactIssue, TailoredDocument } from "../lib/types";
 import { cx } from "./primitives";
+import { DiffPane } from "./DiffPane";
 import { ResumeChat } from "./ResumeChat";
 
-type Pane = "editor" | "chat";
+type Pane = "editor" | "chat" | "diff";
 
 const NOUN: Record<DocumentKind, string> = { resume: "résumé", cover_letter: "cover letter" };
 
@@ -271,8 +277,10 @@ export function TailorModal({
           ) : (
             <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
               <section className="flex min-h-0 flex-1 flex-col border-edge lg:max-w-[46%] lg:border-r">
-                <PaneTabs pane={pane} dirty={dirty} chat={kind === "resume"} onChange={setPane} />
-                {pane === "editor" || kind !== "resume" ? (
+                <PaneTabs pane={pane} dirty={dirty} diff={kind === "resume"} onChange={setPane} />
+                {pane === "diff" ? (
+                  <DiffPane docId={doc.id} />
+                ) : pane === "editor" ? (
                   <>
                     <TailoringSummary doc={doc} blocking={blocking} warnings={warnings} />
                     <Editor value={tex} onChange={(next) => setDraft(next)} />
@@ -323,18 +331,20 @@ export function TailorModal({
 function PaneTabs({
   pane,
   dirty,
-  chat,
+  diff,
   onChange,
 }: {
   pane: Pane;
   dirty: boolean;
-  /** Chat is résumé-only; the letter shows the editor tab alone. */
-  chat: boolean;
+  /** The diff is résumé-only: a cover letter is written from the profile rather
+   *  than tailored from a template, so it has no base version to compare to. */
+  diff: boolean;
   onChange: (next: Pane) => void;
 }) {
   const tabs: { id: Pane; label: string; icon: React.ReactNode }[] = [
     { id: "editor", label: "LaTeX", icon: <Code2 size={12} /> },
-    ...(chat ? [{ id: "chat" as const, label: "Chat", icon: <MessageSquare size={12} /> }] : []),
+    { id: "chat", label: "Chat", icon: <MessageSquare size={12} /> },
+    ...(diff ? [{ id: "diff" as const, label: "Diff", icon: <GitCompare size={12} /> }] : []),
   ];
   return (
     <div role="tablist" className="flex shrink-0 gap-1 border-b border-edge px-3 pt-2">

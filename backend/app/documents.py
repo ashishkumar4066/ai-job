@@ -26,6 +26,7 @@ import logging
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -372,6 +373,186 @@ async def compile_document(document: GeneratedDocument, *, use_cache: bool = Tru
     if result.ok and result.pdf is not None:
         cache_pdf(document.id, document.tex, result.pdf)
     return result
+
+
+def _similarity(left: str, right: str) -> float:
+    """Token overlap of two bullets, 0..1. Used to pair a rewrite with its original."""
+    a = set(left.lower().split())
+    b = set(right.lower().split())
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+# Below this, two bullets are different bullets rather than a rewrite of one.
+# A tailored bullet keeps its employer, stack and metrics and re-words the
+# connective tissue, so a genuine rewrite scores far higher than this; 0.25 only
+# has to beat "these two bullets both contain 'and' and 'the'".
+_REWRITE_THRESHOLD = 0.25
+
+
+def diff_against_base(
+    current_tex: str, template: ResumeDocument
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Region-by-region comparison of a tailored résumé against the template.
+
+    CLAUDE.md asks for "a diff against the base résumé so I can see exactly
+    what was changed". Done on **regions rather than lines**, because the
+    tailored file is rendered from the template by splicing: a line diff of the
+    LaTeX reports brace and wrapping noise around every touched bullet, which
+    buries the one thing being looked for — whether a claim changed.
+
+    **Bullets are matched by content, not by region id.** A bullet's id is its
+    *position* (`exp.asint.3`), so dropping one renumbers every bullet after it
+    and reordering a pair swaps their ids outright. Matching on id therefore
+    reported a drop as "the last bullet was deleted plus five rewrites", and
+    reported a reorder as two rewrites. Within each group, identical texts pair
+    up first (giving `unchanged` or `moved`), then the leftovers pair by token
+    overlap (`reworded`), then whatever is still unmatched is `dropped` on the
+    base side and `added` on the current side.
+
+    Non-bullet regions (`summary`, `skills.*`) do have stable ids and are
+    matched on them.
+
+    Pure, so the classification is testable without a database or a compile.
+    """
+    current = ResumeDocument.parse(current_tex)
+    rows: list[dict[str, Any]] = []
+    counts = {"reworded": 0, "dropped": 0, "moved": 0, "unchanged": 0, "added": 0}
+
+    def add(status: str, **row: Any) -> None:
+        counts[status] += 1
+        rows.append({"status": status, **row})
+
+    # --- Stable-id regions ------------------------------------------------
+    base_named = {r.id: r for r in template.regions if r.kind != "bullet"}
+    current_named = {r.id: r for r in current.regions if r.kind != "bullet"}
+    for region_id, base in base_named.items():
+        live = current_named.get(region_id)
+        if live is None:
+            status = "dropped"
+        elif live.text != base.text:
+            status = "reworded"
+        else:
+            status = "unchanged"
+        add(
+            status,
+            region_id=region_id,
+            label=base.label,
+            kind=base.kind,
+            group=base.group,
+            base=base.text,
+            current=live.text if live is not None else "",
+            base_index=None,
+            current_index=None,
+        )
+    for region_id, live in current_named.items():
+        if region_id in base_named:
+            continue
+        add(
+            "added",
+            region_id=region_id,
+            label=live.label,
+            kind=live.kind,
+            group=live.group,
+            base="",
+            current=live.text,
+            base_index=None,
+            current_index=None,
+        )
+
+    # --- Bullets, grouped and aligned by content --------------------------
+    def by_group(doc: ResumeDocument) -> dict[str, list[Any]]:
+        out: dict[str, list[Any]] = {}
+        for region in doc.regions:
+            if region.kind == "bullet":
+                out.setdefault(region.group, []).append(region)
+        return out
+
+    base_groups, current_groups = by_group(template), by_group(current)
+    for group in list(base_groups) + [g for g in current_groups if g not in base_groups]:
+        base_list = base_groups.get(group, [])
+        current_list = current_groups.get(group, [])
+        taken: set[int] = set()
+        pairs: dict[int, int] = {}  # base index -> current index
+
+        # Identical text first, nearest position preferred, so a duplicated
+        # bullet pairs with the copy it most likely came from.
+        for bi, base in enumerate(base_list):
+            candidates = [
+                ci
+                for ci, live in enumerate(current_list)
+                if ci not in taken and live.text == base.text
+            ]
+            if candidates:
+                ci = min(candidates, key=lambda c: abs(c - bi))
+                pairs[bi] = ci
+                taken.add(ci)
+
+        # Then rewrites, best overlap first so the strongest pairing wins even
+        # when two bullets both resemble the same original.
+        scored = sorted(
+            (
+                (_similarity(base.text, current_list[ci].text), bi, ci)
+                for bi, base in enumerate(base_list)
+                if bi not in pairs
+                for ci in range(len(current_list))
+                if ci not in taken
+            ),
+            key=lambda s: (-s[0], s[1], s[2]),
+        )
+        for score, bi, ci in scored:
+            if score < _REWRITE_THRESHOLD or bi in pairs or ci in taken:
+                continue
+            pairs[bi] = ci
+            taken.add(ci)
+
+        for bi, base in enumerate(base_list):
+            ci = pairs.get(bi)
+            if ci is None:
+                status = "dropped"
+            elif current_list[ci].text != base.text:
+                status = "reworded"
+            elif ci != bi:
+                status = "moved"
+            else:
+                status = "unchanged"
+            add(
+                status,
+                region_id=base.id,
+                label=base.label,
+                kind=base.kind,
+                group=base.group,
+                base=base.text,
+                current=current_list[ci].text if ci is not None else "",
+                base_index=bi,
+                current_index=ci,
+            )
+        for ci, live in enumerate(current_list):
+            if ci in taken:
+                continue
+            # Tailoring has no slot to add a bullet, so this is a structural
+            # hand edit. Hiding it would make the diff a partial account.
+            add(
+                "added",
+                region_id=live.id,
+                label=live.label,
+                kind=live.kind,
+                group=live.group,
+                base="",
+                current=live.text,
+                base_index=None,
+                current_index=ci,
+            )
+
+    # Read top to bottom like the document, not grouped by verdict.
+    order = {r.id: i for i, r in enumerate(template.regions)}
+    rows.sort(
+        key=lambda r: (
+            order.get(r["region_id"], len(order) + (r["current_index"] or 0)),
+            r["status"] == "added",
+        )
+    )
+    return rows, counts
 
 
 def check_facts(tex: str, profile: Profile, template: ResumeDocument) -> list[str]:

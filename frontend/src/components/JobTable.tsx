@@ -33,6 +33,7 @@ export function JobTable({
   onSelect,
   lastVisit,
   onReset,
+  onScrollAway,
 }: {
   jobs: Job[];
   total: number;
@@ -44,6 +45,14 @@ export function JobTable({
   onSelect: (id: number) => void;
   lastVisit: string | null;
   onReset: () => void;
+  /**
+   * Reading the list is the one thing this page is for, and the stats, filters
+   * and funnel above it are ~200px of chrome that has nothing to say once you
+   * are 20 rows deep. Called with true on a downward scroll past the first
+   * rows, false on any upward one — so the chrome is always a flick away
+   * rather than gone until you scroll all the way back.
+   */
+  onScrollAway?: (away: boolean) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefetch = usePrefetchJob();
@@ -65,10 +74,56 @@ export function JobTable({
     if (hasMore && !loadingMore && last.index >= jobs.length - 12) onLoadMore();
   }, [items, hasMore, loadingMore, jobs.length, onLoadMore]);
 
+  // Direction state for the fold below. Refs, not locals inside the effect:
+  // the listener is re-attached whenever the scroller mounts — on a first load
+  // this table renders skeletons, so `scrollRef.current` is null until the
+  // first page arrives — and locals would reset the state on every re-attach.
+  const lastY = useRef(0);
+  const away = useRef(false);
+  const settleUntil = useRef(0);
+
   // A new query should start at the top, not wherever the old one was.
   useEffect(() => {
-    if (!loading) scrollRef.current?.scrollTo({ top: 0 });
-  }, [loading]);
+    if (loading) return;
+    scrollRef.current?.scrollTo({ top: 0 });
+    away.current = false;
+    onScrollAway?.(false);
+  }, [loading, onScrollAway]);
+
+  // Scroll direction, off the list's own scroller (the page itself never
+  // scrolls — the table is `flex-1` with the overflow inside it).
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element || !onScrollAway) return;
+    lastY.current = element.scrollTop;
+
+    const onScroll = () => {
+      const y = element.scrollTop;
+      const delta = y - lastY.current;
+      // Folding the chrome away makes this box ~200px taller, and near the end
+      // of the list the browser answers by clamping scrollTop. That arrives as
+      // an upward scroll, which would unfold the chrome, which clamps again —
+      // so nothing is read while the fold is still settling.
+      if (performance.now() < settleUntil.current) {
+        lastY.current = y;
+        return;
+      }
+      // Momentum scrolling fires continuously; ignore anything under a third
+      // of a row so the chrome does not flicker on a trackpad.
+      if (Math.abs(delta) < 24) return;
+      lastY.current = y;
+      const next = delta > 0 && y > ROW_HEIGHT * 2;
+      if (next === away.current) return;
+      away.current = next;
+      settleUntil.current = performance.now() + 400;
+      onScrollAway(next);
+    };
+
+    element.addEventListener("scroll", onScroll, { passive: true });
+    return () => element.removeEventListener("scroll", onScroll);
+    // `loading` and the empty check are what swap the scroller in and out of
+    // the tree; without them this binds once, to nothing, and never again.
+  }, [onScrollAway, loading, jobs.length === 0]);
 
   // Keep the keyboard-selected row visible.
   useEffect(() => {
@@ -307,21 +362,25 @@ const JobRow = memo(function JobRow({
         )}
       </div>
 
-      {/* Department */}
-      <div className="hidden min-w-0 lg:block">
-        <span className="truncate text-[13px] text-subtle" title={job.department ?? undefined}>
-          {job.department ?? "—"}
-        </span>
+      {/* Department. `truncate` has to sit on the cell, not on an inline
+          <span> inside it: an inline box is not clipped by overflow-hidden, so
+          a long department ("Distributed Systems Engineer - Backend") ran
+          straight over the salary column instead of ellipsing. */}
+      <div
+        className="hidden min-w-0 truncate text-[13px] text-subtle lg:block"
+        title={job.department ?? undefined}
+      >
+        {job.department ?? "—"}
       </div>
 
       {/* Salary — "Not stated" is a real answer here, not an empty cell. Most
           postings state no pay, and an unstated salary never disqualifies a
           job, so it has to read as a fact rather than as missing data. */}
-      <div className="hidden min-w-0 lg:block">
+      <div className="hidden min-w-0 truncate lg:block">
         {(() => {
           const pay = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
           return pay ? (
-            <span className="truncate text-[13px] whitespace-nowrap text-muted tabular-nums">
+            <span className="text-[13px] whitespace-nowrap text-muted tabular-nums" title={pay}>
               {pay}
             </span>
           ) : (

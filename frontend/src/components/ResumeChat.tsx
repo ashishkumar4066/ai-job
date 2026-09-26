@@ -1,13 +1,19 @@
 /**
- * Refine a tailored résumé by chatting about it — the "Chat" tab of the
+ * Refine a tailored document by chatting about it — the "Chat" tab of the
  * Tailor modal.
  *
- * A reply never edits the résumé. It carries a proposal: each change shows the
- * bullet before and after, and is either applicable or **blocked** by the
+ * A reply never edits the document. It carries a proposal: each change shows the
+ * text before and after, and is either applicable or **blocked** by the
  * backend's fact check (an invented metric, or a stack the profile lists under
  * gaps). Blocked changes stay on screen with their reason, because "why didn't
  * it add Next.js?" is exactly what the user will ask next. Applying is free;
  * only sending a message costs an LLM call.
+ *
+ * Serves the résumé and the cover letter both. The two address different things
+ * — the résumé's template regions, the letter's body paragraphs — but the
+ * backend builds proposals in one shape (`resume_chat.py`, `cover_chat.py`), so
+ * the only thing that varies here is the wording. A letter can also propose an
+ * **added** paragraph, which a résumé never can: it has no slot to add one to.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -29,6 +35,7 @@ export function ResumeChat({
   onApplied: (next: TailoredDocument) => void;
 }) {
   const queryClient = useQueryClient();
+  const what = doc.kind === "cover_letter" ? "cover letter" : "résumé";
   const key = ["resume-chat", doc.id];
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<string | null>(null);
@@ -94,12 +101,13 @@ export function ResumeChat({
             <Loader2 size={13} className="animate-spin" /> Loading…
           </div>
         ) : messages.length === 0 && !pending ? (
-          <Intro />
+          <Intro what={what} />
         ) : (
           messages.map((message) => (
             <Message
               key={message.id}
               message={message}
+              what={what}
               dirty={dirty}
               applying={apply.isPending && apply.variables?.id === message.id}
               onApply={(accept) => apply.mutate({ id: message.id, accept })}
@@ -113,7 +121,7 @@ export function ResumeChat({
             <UserBubble text={pending} />
             <div className="flex items-center gap-2 text-[12px] text-subtle">
               <Loader2 size={13} className="animate-spin" />
-              Reading the posting and your résumé…
+              Reading the posting and your {what}…
             </div>
           </>
         )}
@@ -188,7 +196,7 @@ export function ResumeChat({
               onClick={() => clear.mutate()}
               disabled={clear.isPending || send.isPending}
               className="ml-auto flex items-center gap-1 hover:text-ink"
-              title="Start the conversation over. Your résumé is not changed."
+              title={`Start the conversation over. Your ${what} is not changed.`}
             >
               <Trash2 size={11} />
               clear chat
@@ -200,12 +208,12 @@ export function ResumeChat({
   );
 }
 
-function Intro() {
+function Intro({ what }: { what: string }) {
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
       <MessageSquare size={20} className="text-accent" />
       <p className="max-w-sm text-[12.5px] text-muted">
-        Ask for changes to this résumé, or ask what it should do about this posting. Each reply
+        Ask for changes to this {what}, or ask what it should do about this posting. Each reply
         suggests edits you can apply or dismiss. Nothing changes until you apply it.
       </p>
       <p className="max-w-sm text-[11px] text-subtle">
@@ -228,12 +236,14 @@ function UserBubble({ text }: { text: string }) {
 
 function Message({
   message,
+  what,
   dirty,
   applying,
   onApply,
   onDismiss,
 }: {
   message: ChatMessage;
+  what: string;
   dirty: boolean;
   applying: boolean;
   onApply: (accept: string[]) => void;
@@ -248,6 +258,7 @@ function Message({
       {message.proposal && message.proposal.status !== "none" && (
         <Proposal
           proposal={message.proposal}
+          what={what}
           dirty={dirty}
           applying={applying}
           onApply={onApply}
@@ -258,14 +269,24 @@ function Message({
   );
 }
 
+/** `add` is cover-letter only — the résumé has no slot to add a bullet to. */
+const ACTION_LABELS: Record<string, string> = {
+  rewrite: "reword",
+  drop: "remove",
+  add: "new",
+};
+
 function Proposal({
   proposal,
+  what,
   dirty,
   applying,
   onApply,
   onDismiss,
 }: {
   proposal: ChatProposal;
+  /** "résumé" or "cover letter", for the apply button's tooltip. */
+  what: string;
   dirty: boolean;
   applying: boolean;
   onApply: (accept: string[]) => void;
@@ -325,16 +346,22 @@ function Proposal({
                           ? "bg-rose-500/15 text-rose-200"
                           : change.action === "drop"
                             ? "bg-amber-500/15 text-amber-200"
-                            : "bg-accent/15 text-accent",
+                            : change.action === "add"
+                              ? "bg-emerald-500/15 text-emerald-200"
+                              : "bg-accent/15 text-accent",
                       )}
                     >
-                      {blocked ? "blocked" : change.action === "drop" ? "remove" : "reword"}
+                      {blocked ? "blocked" : ACTION_LABELS[change.action]}
                     </span>
                   </div>
-                  <p className="text-subtle line-through decoration-rose-400/40">
-                    <Marked text={change.before} />
-                  </p>
-                  {change.action === "rewrite" && (
+                  {/* An added paragraph has no "before", so the strikethrough
+                      line is omitted rather than rendered empty. */}
+                  {change.before && (
+                    <p className="text-subtle line-through decoration-rose-400/40">
+                      <Marked text={change.before} />
+                    </p>
+                  )}
+                  {change.action !== "drop" && (
                     <p className={blocked ? "text-muted" : "text-ink"}>
                       <Marked text={change.after} />
                     </p>
@@ -393,7 +420,7 @@ function Proposal({
               <button
                 onClick={() => onApply([...selected])}
                 disabled={applying || dirty || selected.size === 0}
-                title={dirty ? "Save your LaTeX edits first" : "Apply to the résumé and recompile"}
+                title={dirty ? "Save your LaTeX edits first" : `Apply to the ${what} and recompile`}
                 className="flex items-center gap-1.5 rounded-lg bg-accent px-2.5 py-1 text-[11.5px] font-semibold text-black disabled:opacity-40"
               >
                 {applying ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
@@ -422,7 +449,7 @@ function Proposal({
   );
 }
 
-/** The résumé's `**bold**` marker dialect, rendered. */
+/** The documents' `**bold**` marker dialect, rendered. */
 function Marked({ text }: { text: string }) {
   const parts = text.split(/\*\*(.+?)\*\*/g);
   return (
