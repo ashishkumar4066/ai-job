@@ -44,3 +44,5 @@ backend/applications/logs/
 
 # LaTeX toolchain: a ~50MB binary fetched by scripts/install_tectonic.py
 backend/.tools/
+
+docs
