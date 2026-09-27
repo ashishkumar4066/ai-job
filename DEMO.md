@@ -36,7 +36,10 @@ keeps working here for free.
 | `frontend/src/demo/snapshot.ts`  | Loads the JSON, lazily for the big parts               |
 | `frontend/src/demo/query.ts`     | Port of `app/job_filters.py` — filters, sorts, funnels |
 | `frontend/src/demo/router.ts`    | Answers all ~34 endpoints                              |
-| `frontend/src/demo/state.ts`     | Applications, prefs, hand edits (localStorage)         |
+| `frontend/src/demo/fake/`        | Stands in for the four LLM surfaces (below)            |
+| `frontend/src/demo/pdf.ts`       | Lays generated documents out as a PDF, by hand         |
+| `frontend/public/demo-sw.js`     | Serves those PDFs to the preview iframe                |
+| `frontend/src/demo/state.ts`     | Applications, prefs, hand edits, verdicts, documents   |
 | `frontend/src/demo/overlay.tsx`  | Demo bar + waitlist, in its own React root             |
 | `frontend/vercel.json`           | SPA rewrite + the PDF rewrite                          |
 
@@ -193,25 +196,74 @@ Check it works by submitting once and looking at the Sheet.
 
 ---
 
-## What the demo refuses, and why
+## What the demo does instead of calling an LLM
 
-Reads are answered from the snapshot. Writes split in two: mutations that are
-genuinely local are applied, and anything that would cost an LLM call is
-refused with a message saying so. A demo whose Apply button does nothing reads
-as broken; a demo that pretends a deep read ran is claiming something false.
+Reads are answered from the snapshot. Writes split three ways: mutations that
+are genuinely local are applied, the four surfaces that would cost an LLM call
+are **stood in for** (`src/demo/fake/`), and what is left is refused with a
+message saying what it would cost.
 
-| Action                                  | Demo behaviour                                          |
-| --------------------------------------- | ------------------------------------------------------- |
-| Browse, filter, sort, funnels, facets   | Real, recomputed from the snapshot                      |
-| Apply / change stage / delete           | Applied, in `localStorage`, idempotent                  |
-| Edit preferences, Send to Matches       | Applied, in `localStorage`                              |
-| Open a stored résumé or cover letter    | Real — 10 of them ship, with diffs and chat             |
-| Revert a document                       | Real: replays the stored tailoring                      |
-| Recompile an **unedited** document      | Succeeds — the exported PDF _is_ that compile           |
-| Recompile a **hand-edited** document    | Refused: no Tectonic in a browser                       |
-| Tailor / generate a new document        | Refused, points at the 10 that exist                    |
-| Deep read, chat message, profile upload | Refused, names the cost                                 |
-| Refresh (`r`)                           | Replays a fabricated sweep through the real sync screen |
+| Action                                | Demo behaviour                                           |
+| ------------------------------------- | -------------------------------------------------------- |
+| Browse, filter, sort, funnels, facets | Real, recomputed from the snapshot                       |
+| Apply / change stage / delete         | Applied, in `localStorage`, idempotent                   |
+| Edit preferences, Send to Matches     | Applied, in `localStorage`                               |
+| Open a stored résumé or cover letter  | Real — 10 of them ship, with diffs and chat              |
+| Revert a document                     | Real: replays the stored tailoring                       |
+| Recompile an **unedited** document    | Succeeds — the exported PDF _is_ that compile            |
+| **Deep read** (15/50 jobs, or one)    | Stand-in: paced pass, composed verdicts, `localStorage`  |
+| **Tailor a résumé**                   | Stand-in: the base template re-ordered against the JD    |
+| **Cover letter**                      | Stand-in: assembled from profile-true sentences          |
+| **Document chat**                     | Stand-in: re-order / drop proposals, fact check intact   |
+| Recompile a **hand-edited** document  | Laid out in the browser — not LaTeX, so it looks plainer |
+| Profile upload                        | Refused, names the cost                                  |
+| Refresh (`r`)                         | Replays a fabricated sweep through the real sync screen  |
+
+### What "stand-in" means here
+
+Each one composes an answer out of data the real pipeline already produced,
+rather than writing new claims. None of them calls a model, and none reports
+that one was called — a composed verdict carries `model: "demo-stand-in"`, and a
+generated document is stored with `llm_used: false`.
+
+- **The deep read** (`fake/screen.ts`) takes the rows the shortlist really
+  selected, best score first, and builds each verdict from that row's own
+  `matched_skills`, `missing_stacks`, `years_required` and blockers, with the
+  strengths phrased from `profile.yaml`'s `evidence:` lines. The band starts at
+  the deterministic band and steps down when the posting names stacks the
+  profile cannot show, which is the disagreement the real model produces most
+  often. It commits a row at a time, so closing the panel mid-pass keeps the
+  reads that had already happened, and the Dashboard's token band moves with it.
+- **The résumé** (`fake/documents.ts`) is the base template with its bullets
+  re-ordered against the posting's keywords and the least relevant one dropped,
+  plus the skills rows re-sorted. **Nothing is rewritten** — CLAUDE.md's rule
+  that the generator may only select, re-order and re-word is easy to keep when
+  the stand-in cannot write a sentence at all. The diff against base is computed
+  from that same re-ordering, so `moved` / `dropped` are exact.
+- **The cover letter** picks from a fixed bank of sentences the profile already
+  states, gated on what the posting names; the header, date, addressee and
+  sign-off are rendered from `profile.yaml` exactly as `app/cover_letter.py`
+  does.
+- **Chat** proposes re-orders, drops and sentence trims — never new prose — and
+  **keeps the fact check**, which is the point of the panel: ask it for AWS or
+  Kubernetes and it refuses and names the `gaps:` entry, because the denylist it
+  reads is the real one out of the snapshot's profile.
+
+### The preview, and why there is a service worker
+
+A generated document has no exported PDF, and nothing in a browser runs LaTeX.
+`src/demo/pdf.ts` is a ~400-line PDF writer (base-14 Helvetica, WinAnsi, no
+compression, no dependency) that lays the document out from its own structure.
+It is not a LaTeX renderer and does not try to look like Tectonic's output.
+
+Getting those bytes into the preview needs one more piece: the preview is an
+`<iframe src="/api/documents/3/pdf">`, and an iframe is a navigation, so the
+fetch shim never sees it. `public/demo-sw.js` is a service worker that answers
+exactly that path from a Cache Storage entry the page fills, and falls through
+to the network for everything else — so the ten exported PDFs keep coming from
+`vercel.json`'s rewrite untouched. Where a service worker cannot run (a private
+window, blocked site data), a generated document's compile answers `ok: false`
+and says so rather than showing an empty pane.
 
 ---
 
@@ -230,6 +282,23 @@ Driven in a real browser (Playwright) against the production build:
 
 Re-run with `scratchpad/verify_all.py` against `npm run preview:demo`.
 
+The stand-ins were driven through `router.handle` directly, in Node with
+`localStorage`, `caches` and `navigator.serviceWorker` stubbed — the wiring is
+what breaks, not the composition:
+
+- a 5-job deep read walks `running → done`, commits a verdict per tick, and the
+  rows come back `llm_read` with a band; the estimate re-prices from 23 cached
+  to 28 and the Dashboard's `tokens_today` moves by the same 9,815
+- `POST /matches/{id}/document` generates a 7,039-char résumé (from a
+  7,252-char template), its diff reports 9 moved / 1 dropped / 3 unchanged, and
+  compiling puts 14,463 real PDF bytes in the cache the worker reads
+- the cover letter addresses the right company, and `% --- BODY` survives every
+  chat edit
+- chat proposes a re-order, applying it marks the document hand-edited, Revert
+  restores it byte-for-byte, and "Add Kubernetes and AWS" comes back blocked
+  naming both `gaps:` entries
+- a stored document still compiles to its exported PDF and caches nothing
+
 ---
 
 ## Known limits
@@ -245,3 +314,17 @@ Re-run with `scratchpad/verify_all.py` against `npm run preview:demo`.
   looks the match up in the currently loaded page.
 - **Headless Chromium renders no PDF**, so the preview pane looks blank under
   Playwright. The bytes are served correctly; check it in a real browser.
+- **A generated document's PDF is laid out, not compiled.** It is a real PDF
+  and it carries the document's real content, but base-14 Helvetica next to
+  Tectonic's Computer Modern is a visible difference if you open a generated
+  résumé straight after one of the ten exported ones. The same applies the
+  first time you hand-edit a *stored* document and recompile: the preview
+  switches from the exported file to the browser's rendering, and Revert
+  switches it back.
+- **The stand-ins do not write prose.** They select, re-order and drop. So chat
+  will not reword a bullet for you, and a second deep read of the same job
+  returns the same verdict — both are honest about what a browser can do, and
+  both are less than the real feature.
+- **Generated documents are capped at 12** per browser (`MAX_GENERATED` in
+  `state.ts`), oldest evicted, so a long session cannot fill the
+  `localStorage` quota with LaTeX.

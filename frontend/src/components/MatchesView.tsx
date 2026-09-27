@@ -45,6 +45,7 @@ import type {
   MatchSort,
 } from "@/lib/types";
 import { CompanyAvatar, EmptyState, SkeletonRow, cx, useSpotlight } from "./primitives";
+import { SelectMenu } from "./SelectMenu";
 
 /**
  * The Matches panel — every eligible posting ranked against `profile.yaml`.
@@ -375,23 +376,15 @@ export function MatchesView({
               counts={bandCounts}
             />
 
-            <div className="relative">
-              <ArrowUpDown
-                size={13}
-                className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-subtle"
-              />
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as MatchSort)}
-                className="appearance-none rounded-lg border border-edge bg-panel py-1.5 pr-7 pl-7 text-[12px] text-ink transition-colors hover:border-edge-strong focus:outline-none"
-              >
-                {SORTS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SelectMenu
+              value={sort}
+              options={SORTS.map((s) => ({ value: s.id, label: s.label }))}
+              onChange={setSort}
+              label="Sort matches"
+              leading={<ArrowUpDown size={13} className="shrink-0 text-subtle" />}
+              chevronSize={12}
+              className="rounded-lg border border-edge bg-panel py-1.5 pr-2 pl-2.5 text-[12px] text-ink transition-colors hover:border-edge-strong"
+            />
 
             <button
               onClick={() => setShowPrefs(true)}

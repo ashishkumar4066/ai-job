@@ -12,19 +12,37 @@
  *   captured documents and their diffs) — served back verbatim. These were
  *   recorded from the real API, so they are right by construction.
  *
- *   **Write** — either applied to `state.ts` when the mutation is genuinely
- *   local (applying to a job, editing preferences, hand-editing LaTeX), or
- *   refused with a message that says what it would cost. A demo that silently
- *   pretended to run a deep read would be claiming an LLM call happened; a demo
- *   whose Apply button does nothing reads as broken. The line between those two
- *   is the whole design of this file.
+ *   **Write** — applied to `state.ts` when the mutation is genuinely local
+ *   (applying to a job, editing preferences, hand-editing LaTeX), stood in for
+ *   by `fake/` when it would have cost an LLM call, or refused with a message
+ *   that says what it would cost.
+ *
+ * The line between those last two is the whole design of this file. A demo
+ * whose Apply button does nothing reads as broken, and a demo whose headline
+ * feature answers "not available" is not showing the feature — so the deep
+ * read, tailoring, the cover letter and chat all *do* something. What none of
+ * them does is claim a model was called: a composed verdict carries
+ * `model: "demo-stand-in"`, a generated document is stored `llm_used: false`,
+ * and `fake/` only ever re-orders or selects from material the real pipeline
+ * already produced. See DEMO.md for what each one composes from.
  */
 
-import type { Dashboard, IngestStatus, SortField, SortOrder } from "@/lib/types";
+import type {
+  ChatMessage,
+  Dashboard,
+  DocumentKind,
+  IngestStatus,
+  LlmEstimate,
+  LlmStatus,
+  SortField,
+  SortOrder,
+  TailoredDocument,
+} from "@/lib/types";
 import {
   loadDescriptions,
   loadSnapshot,
   type JdEntry,
+  type MatchRow,
   type Snapshot,
 } from "./snapshot";
 import * as state from "./state";
@@ -36,6 +54,24 @@ import {
   parseMatchQuery,
   sortJobs,
 } from "./query";
+import { deepReadTargets, synthesizeVerdict, verdictTokens } from "./fake/screen";
+import {
+  asDiff,
+  asDocument,
+  coverLetter,
+  keywordsFor,
+  tailorResume,
+} from "./fake/documents";
+import {
+  applyProposal,
+  emptyChat,
+  reply as chatReply,
+  suggestionsFor,
+  userMessage,
+} from "./fake/chat";
+import { texToBlocks } from "./fake/latex";
+import { LETTER_STYLE, RESUME_STYLE, renderPdf } from "./pdf";
+import { dropPdf, storePdf } from "./pdfstore";
 
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
@@ -206,6 +242,158 @@ function pipelineStatus(snapshot: Snapshot): unknown {
   };
 }
 
+/* ------------------------------------------------------------ the deep read */
+
+/**
+ * The deep read, composed rather than called.
+ *
+ * `fake/screen.ts` explains what a composed verdict is and is not. This part is
+ * only the *pass*: which rows it would have read, in what order, and how long
+ * it pretends to take — so the panel's progress line, its finished summary and
+ * the rows that light up afterwards all describe the same set.
+ *
+ * A row's verdict is committed as its turn passes rather than all at the end,
+ * so a visitor who closes the panel mid-pass keeps the reads that had already
+ * "happened", exactly as a real interrupted pass would.
+ */
+const READ_MS = 700;
+
+interface DeepRead {
+  startedAt: number;
+  finishedAt: string | null;
+  targets: { jobId: number; title: string; company: string; tokens: number }[];
+  committed: number;
+  tokens: number;
+}
+
+let deepRead: DeepRead | null = null;
+
+function commitReads(snapshot: Snapshot, upTo: number): void {
+  if (!deepRead || upTo <= deepRead.committed) return;
+  const byId = new Map(snapshot.matches.map((row) => [row.job.id, row]));
+  const entries = deepRead.targets.slice(deepRead.committed, upTo).flatMap((target) => {
+    const row = byId.get(target.jobId);
+    return row ? [{ jobId: target.jobId, verdict: synthesizeVerdict(row), tokens: target.tokens }] : [];
+  });
+  state.recordVerdicts(entries);
+  deepRead.tokens += entries.reduce((total, entry) => total + entry.tokens, 0);
+  deepRead.committed = upTo;
+}
+
+function llmStatusNow(snapshot: Snapshot): LlmStatus {
+  if (!deepRead) return snapshot.meta.llm_status ?? { ...IDLE_LLM };
+
+  const total = deepRead.targets.length;
+  const elapsed = Date.now() - deepRead.startedAt;
+  const done = Math.min(total, Math.floor(elapsed / READ_MS));
+  commitReads(snapshot, done);
+
+  const running = done < total;
+  if (!running && !deepRead.finishedAt) deepRead.finishedAt = new Date().toISOString();
+
+  const bands: Record<string, number> = {};
+  let blocked = 0;
+  for (const target of deepRead.targets.slice(0, deepRead.committed)) {
+    const verdict = state.getVerdicts()[String(target.jobId)];
+    const band = verdict?.fit_band ?? "moderate";
+    bands[band] = (bands[band] ?? 0) + 1;
+    if (verdict?.blocked) blocked += 1;
+  }
+
+  return {
+    state: running ? "running" : "done",
+    total,
+    done: deepRead.committed,
+    cached: 0,
+    failed: 0,
+    tokens: deepRead.tokens,
+    current: running ? `${deepRead.targets[done]?.title} — ${deepRead.targets[done]?.company}` : null,
+    started_at: new Date(deepRead.startedAt).toISOString(),
+    finished_at: deepRead.finishedAt,
+    error: null,
+    result: running
+      ? null
+      : {
+          profile_version: snapshot.meta.profile?.version ?? "",
+          routed: total,
+          cached: 0,
+          screened: deepRead.committed,
+          failed: 0,
+          skipped_budget: 0,
+          requests: total,
+          tokens: deepRead.tokens,
+          bands,
+          statuses: {},
+          blocked,
+          duration_ms: total * READ_MS,
+          error: null,
+        },
+  };
+}
+
+const IDLE_LLM: LlmStatus = {
+  state: "idle",
+  total: 0,
+  done: 0,
+  cached: 0,
+  failed: 0,
+  tokens: 0,
+  current: null,
+  started_at: null,
+  finished_at: null,
+  error: null,
+  result: null,
+};
+
+function startDeepRead(snapshot: Snapshot, limit: number): LlmStatus {
+  const read = new Set(Object.keys(state.getVerdicts()).map(Number));
+  const targets = deepReadTargets(snapshot.matches, limit, read).map((row) => ({
+    jobId: row.job.id,
+    title: row.job.title,
+    company: row.job.company,
+    tokens: verdictTokens(row.job.id),
+  }));
+  deepRead = { startedAt: Date.now(), finishedAt: null, targets, committed: 0, tokens: 0 };
+  // Nothing left to read is a finished pass, not a stuck one: with no targets
+  // the poll would report `running` with 0 of 0 and never settle.
+  if (targets.length === 0) deepRead.finishedAt = new Date().toISOString();
+  return llmStatusNow(snapshot);
+}
+
+/**
+ * Re-price the captured estimate against what this browser has already read.
+ *
+ * The snapshot's estimate was true when it was taken. Left alone it would keep
+ * offering the same 15 unread jobs after a pass had just read them, and the
+ * confirm dialog would contradict the summary directly above it.
+ */
+function estimateNow(snapshot: Snapshot, limit: number): LlmEstimate | null {
+  const captured =
+    snapshot.meta.llm_estimate[String(limit)] ?? Object.values(snapshot.meta.llm_estimate)[0];
+  if (!captured) return null;
+
+  const read = new Set(Object.keys(state.getVerdicts()).map(Number));
+  const shortlisted = snapshot.matches.filter((row) => row.shortlisted);
+  const cached = shortlisted.filter((row) => row.llm_read || read.has(row.job.id)).length;
+  const unread = shortlisted.length - cached;
+  const pending = Math.min(limit, unread);
+  const perRow = captured.pending > 0 ? captured.est_tokens / captured.pending : 1800;
+
+  return {
+    ...captured,
+    cap: limit,
+    routed: shortlisted.length,
+    cached,
+    pending,
+    over_cap: Math.max(0, unread - pending),
+    requests: pending,
+    est_tokens: Math.round(pending * perRow),
+    est_minutes: Math.max(0.1, Math.round((pending * READ_MS) / 6000) / 10),
+    tokens_used: captured.tokens_used + state.llmTokensSpent(),
+    fits_in_cap: pending,
+  };
+}
+
 /* ------------------------------------------------------------- decoration */
 
 /**
@@ -216,19 +404,38 @@ function pipelineStatus(snapshot: Snapshot): unknown {
  * just clicked — and the Dashboard's counts would disagree with the table's
  * badges.
  */
-type Decoratable = { id: number; application_status: string | null };
+type Decoratable = { id: number; application_status: string | null; llm_read?: boolean };
 
 function decorateOne<T extends Decoratable>(row: T): T {
   const stage = state.applicationIndex().get(row.id);
-  return stage ? { ...row, application_status: stage } : row;
+  const read = state.hasVerdict(row.id);
+  if (!stage && !read) return row;
+  return {
+    ...row,
+    ...(stage ? { application_status: stage } : {}),
+    // The row's own "LLM read" marker, so the check badges agree with Matches.
+    ...(read ? { llm_read: true } : {}),
+  };
 }
 
 function decorate<T extends Decoratable>(rows: T[]): T[] {
   const index = state.applicationIndex();
-  if (index.size === 0) return rows;
+  const verdicts = state.getVerdicts();
+  if (index.size === 0 && Object.keys(verdicts).length === 0) return rows;
   return rows.map((row) =>
-    index.has(row.id) ? { ...row, application_status: index.get(row.id)! } : row,
+    index.has(row.id) || verdicts[String(row.id)] ? decorateOne(row) : row,
   );
+}
+
+/** Match rows carrying whatever this browser's deep read produced for them. */
+function withVerdicts(rows: MatchRow[]): MatchRow[] {
+  const verdicts = state.getVerdicts();
+  if (Object.keys(verdicts).length === 0) return rows;
+  return rows.map((row) => {
+    const verdict = verdicts[String(row.job.id)];
+    if (!verdict || row.llm_read) return row;
+    return { ...row, llm_used: true, llm_read: true, llm_verdict: verdict };
+  });
 }
 
 /* ----------------------------------------------------------------- reads */
@@ -314,7 +521,7 @@ async function funnelRoute(snapshot: Snapshot, params: URLSearchParams): Promise
 async function matchesRoute(snapshot: Snapshot, params: URLSearchParams): Promise<Response> {
   const query = parseMatchQuery(params);
   const jd = query.q && query.q_scope === "all" ? await loadDescriptions() : snapshot.jd;
-  const result = buildMatchList(snapshot.matches, query, {
+  const result = buildMatchList(withVerdicts(snapshot.matches), query, {
     now: Date.now(),
     jd,
     appliedJobs: state.applicationIndex(),
@@ -346,8 +553,15 @@ async function matchesRoute(snapshot: Snapshot, params: URLSearchParams): Promis
  * opens the Dashboard must not be told they have no applications.
  */
 function dashboardRoute(snapshot: Snapshot): Response {
-  const captured = snapshot.meta.dashboard;
-  if (!captured) return refuse("No dashboard payload in this snapshot", 404);
+  const stored = snapshot.meta.dashboard;
+  if (!stored) return refuse("No dashboard payload in this snapshot", 404);
+
+  // The budget band has to move with the reads this browser ran, or the panel
+  // would report yesterday's spend beside a deep read that just happened.
+  const captured: Dashboard = {
+    ...stored,
+    tokens_today: stored.tokens_today + state.llmTokensSpent(),
+  };
 
   const applications = state.listApplications();
   if (applications.length === 0) return json(captured);
@@ -379,9 +593,159 @@ function dashboardRoute(snapshot: Snapshot): Response {
 }
 
 function documentFor(snapshot: Snapshot, jobId: number, kind: string): Response {
-  const found = snapshot.documents.byKey[`${jobId}:${kind}`];
+  const found = snapshot.documents.byKey[`${jobId}:${kind}`] ?? state.getDocument(jobId, kind);
   if (!found) return refuse("No document stored for this job", 404);
   return json(state.withEdits(found));
+}
+
+/** A stored document, or one this browser generated. */
+function anyDocument(snapshot: Snapshot, id: number): TailoredDocument | null {
+  return snapshot.documents.byId[String(id)] ?? state.documentById(id);
+}
+
+/* --------------------------------------------------- generated documents */
+
+/** The contact line, read off the base résumé so the letter cannot drift from it. */
+function contactLines(snapshot: Snapshot): string[] {
+  const tex = snapshot.meta.base_resume?.tex ?? "";
+  const start = tex.indexOf("\\address{");
+  if (start === -1) return [];
+  const end = tex.indexOf("\n}", start);
+  return tex
+    .slice(start + "\\address{".length, end === -1 ? undefined : end)
+    .split(/\\\\/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Lay a generated document out and put the PDF where the preview can find it.
+ *
+ * The iframe is a navigation, so `pdfstore` hands the bytes to a service
+ * worker; see `public/demo-sw.js`. If that worker cannot run, the caller says
+ * so rather than showing an empty pane.
+ */
+async function publishPdf(document: TailoredDocument, tex: string): Promise<boolean> {
+  const style = document.kind === "cover_letter" ? LETTER_STYLE : RESUME_STYLE;
+  return storePdf(document.id, renderPdf(texToBlocks(tex), style));
+}
+
+/**
+ * Generate a résumé or a cover letter for one posting.
+ *
+ * `fake/documents.ts` holds the part worth reading: the résumé is the base
+ * template re-ordered against this posting's keywords, and the letter is
+ * assembled from sentences the profile already states. Nothing is written by a
+ * model, and `llm_used` stays false so no surface claims otherwise.
+ */
+async function generateDocument(
+  snapshot: Snapshot,
+  jobId: number,
+  kind: DocumentKind,
+): Promise<Response> {
+  const existing = state.getDocument(jobId, kind);
+  if (existing) return json(state.withEdits(existing));
+
+  const row = matchRowFor(snapshot, jobId);
+  if (!row) return refuse("Job not found", 404);
+
+  const base = snapshot.meta.base_resume;
+  if (kind === "resume" && !base?.tex) {
+    return refuse("No base résumé in this snapshot", 404);
+  }
+
+  const jd = await loadDescriptions();
+  const keywords = keywordsFor(row, jd[String(jobId)]?.description_text ?? null);
+  const profileVersion = snapshot.meta.profile?.version ?? "";
+  const id = state.nextDocumentId();
+
+  const built =
+    kind === "resume"
+      ? tailorResume(base!.tex, keywords)
+      : coverLetter(row, keywords, contactLines(snapshot));
+
+  const document = asDocument(
+    id,
+    row,
+    kind,
+    profileVersion,
+    built.tex,
+    built.notes,
+    keywords,
+    "dropped" in built ? built.dropped : [],
+  );
+
+  const gaps = Object.keys(snapshot.meta.profile?.gaps ?? {});
+  state.saveDocument(
+    document,
+    "diff" in built ? asDiff(id, built.diff) : null,
+    emptyChat(id, suggestionsFor(document, gaps)),
+  );
+  await publishPdf(document, document.tex);
+  return json(document);
+}
+
+/** The scored row for a posting, or a bare stand-in when it was never scored. */
+function matchRowFor(snapshot: Snapshot, jobId: number): MatchRow | null {
+  const scored = snapshot.matches.find((row) => row.job.id === jobId);
+  if (scored) return scored;
+  const job = snapshot.jobs.find((row) => row.id === jobId);
+  if (!job) return null;
+  // Everything downstream reads only these fields, and an unscored posting
+  // genuinely has nothing to say for the rest.
+  return {
+    job,
+    score: 0,
+    band: "moderate",
+    subscores: {},
+    match_reasons: [],
+    confident: false,
+    matched_skills: [],
+    missing_stacks: [],
+    years_required: null,
+    shortlisted: false,
+    shortlist_reasons: [],
+    blockers: [],
+    llm_used: false,
+    llm_read: false,
+    llm_verdict: null,
+    profile_version: snapshot.meta.profile?.version ?? "",
+    prefs_pass: false,
+    prefs_reasons: [],
+    prefs_version: "",
+    usd_pay: null,
+    usd_pay_source: null,
+    scored_at: new Date().toISOString(),
+  };
+}
+
+/* ------------------------------------------------------------------- chat */
+
+function chatFor(snapshot: Snapshot, document: TailoredDocument): ReturnType<typeof emptyChat> {
+  const stored = state.getChat(document.id);
+  if (stored) return stored;
+  const captured = snapshot.documents.chats[String(document.id)];
+  if (captured) return captured;
+  return emptyChat(document.id, suggestionsFor(document, Object.keys(snapshot.meta.profile?.gaps ?? {})));
+}
+
+/** Append a turn and its reply. The reply never edits the document. */
+function sendChat(snapshot: Snapshot, document: TailoredDocument, text: string): Response {
+  const current = state.withEdits(document);
+  const chat = chatFor(snapshot, document);
+  const answer = chatReply({
+    document: current,
+    message: text,
+    gaps: Object.keys(snapshot.meta.profile?.gaps ?? {}),
+  });
+  const messages: ChatMessage[] = [...chat.messages, userMessage(text), answer];
+  return json(
+    state.setChat(document.id, {
+      ...chat,
+      messages,
+      tokens: chat.tokens + answer.tokens,
+    }),
+  );
 }
 
 /* ----------------------------------------------------------------- writes */
@@ -457,10 +821,9 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
             ? json(meta.matches_funnel)
             : refuse("No matches funnel in this snapshot", 404);
         }
-        if (second === "llm" && third === "status") return json(meta.llm_status ?? {});
+        if (second === "llm" && third === "status") return json(llmStatusNow(snapshot));
         if (second === "llm" && third === "estimate") {
-          const limit = params.get("limit") ?? "15";
-          const estimate = meta.llm_estimate[limit] ?? Object.values(meta.llm_estimate)[0];
+          const estimate = estimateNow(snapshot, Number(params.get("limit")) || 15);
           return estimate ? json(estimate) : refuse("No estimate in this snapshot", 404);
         }
         if (second === "run" && third === "status") return json(pipelineStatus(snapshot));
@@ -476,7 +839,7 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
         }
         const docId = Number(second);
         if (third === "diff") {
-          const diff = snapshot.documents.diffs[String(docId)];
+          const diff = snapshot.documents.diffs[String(docId)] ?? state.getDiff(docId);
           return json(
             diff ?? {
               document_id: docId,
@@ -493,17 +856,13 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
           );
         }
         if (third === "chat") {
-          return json(
-            snapshot.documents.chats[String(docId)] ?? {
-              document_id: docId,
-              messages: [],
-              suggestions: [],
-              tokens: 0,
-            },
-          );
+          const document = anyDocument(snapshot, docId);
+          return document
+            ? json(chatFor(snapshot, document))
+            : json({ document_id: docId, messages: [], suggestions: [], tokens: 0 });
         }
         if (third === "tex") {
-          const document = snapshot.documents.byId[String(docId)];
+          const document = anyDocument(snapshot, docId);
           if (!document) return refuse("Document not found", 404);
           return new Response(state.withEdits(document).tex, {
             headers: { "Content-Type": "application/x-tex" },
@@ -563,45 +922,58 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
           return json(pipelineStatus(snapshot));
         }
         if (second === "llm") {
-          return refuse(
-            `Running a deep read costs real LLM tokens. ${NEEDS_BACKEND} ` +
-              `${snapshot.matches.filter((row) => row.llm_read).length} rows in this snapshot were read for real — filter by "LLM read" to see them.`,
-          );
+          return json(startDeepRead(snapshot, Number(params.get("limit")) || 15));
         }
         if (second && third === "llm") {
-          return refuse(`Reading one job costs an LLM call. ${NEEDS_BACKEND}`);
+          // The drawer's one-row read. Instant rather than paced: it is a
+          // single call, and the panel that shows progress is not on screen.
+          const jobId = Number(second);
+          const row = snapshot.matches.find((match) => match.job.id === jobId);
+          if (!row) return refuse("Job not found", 404);
+          if (!state.hasVerdict(jobId) && !row.llm_read) {
+            state.recordVerdicts([
+              { jobId, verdict: synthesizeVerdict(row), tokens: verdictTokens(jobId) },
+            ]);
+          }
+          return json({
+            ...IDLE_LLM,
+            state: "done",
+            total: 1,
+            done: 1,
+            tokens: verdictTokens(jobId),
+            finished_at: new Date().toISOString(),
+          });
         }
         if (second && third === "document") {
-          const kind = params.get("kind") ?? "resume";
+          const kind = (params.get("kind") ?? "resume") as DocumentKind;
           const existing = snapshot.documents.byKey[`${second}:${kind}`];
           if (existing) return json(state.withEdits(existing));
-          const available = Object.keys(snapshot.documents.byKey).length;
-          return refuse(
-            `Tailoring a document costs an LLM call. ${NEEDS_BACKEND} ` +
-              `${available} documents were generated for real and ship with the demo — open one from a row that shows the Tailor badge.`,
-          );
+          return generateDocument(snapshot, Number(second), kind);
         }
         break;
       case "documents": {
         const docId = Number(second);
-        const document = snapshot.documents.byId[String(docId)];
+        const document = anyDocument(snapshot, docId);
         if (!document) return refuse("Document not found", 404);
         if (third === "revert") {
           // Genuinely free, and genuinely correct: reverting replays the stored
-          // tailoring, which is exactly what the snapshot holds.
+          // tailoring, which is exactly what the snapshot holds. Dropping the
+          // rendered PDF with it is what lets a snapshot document go back to
+          // its exported Tectonic file rather than the browser's rendering.
           state.clearTex(docId);
+          await dropPdf(docId);
+          if (state.getDocument(document.job_id, document.kind)) {
+            await publishPdf(document, document.tex);
+          }
           return json(document);
         }
         if (third === "compile") {
-          // The PDF in `/demo/pdf/` IS the compile of this document's stored
-          // LaTeX, done by the exporter with the real Tectonic. So an unedited
-          // document compiles successfully here — saying otherwise would put an
-          // error pane over a PDF the demo is already serving.
-          //
-          // A hand edit is the honest failure: the stored PDF no longer matches
-          // the text on screen, and nothing in the browser can rebuild it.
+          // An unedited snapshot document needs no work: the file in
+          // `/demo/pdf/` IS the compile of this LaTeX, done by the exporter
+          // with the real Tectonic.
           const edited = state.getTex(docId);
-          if (!edited || edited === document.tex) {
+          const generated = state.documentById(docId) !== null;
+          if (!edited && !generated) {
             return json({
               ok: true,
               errors: [],
@@ -613,23 +985,84 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
               fact_warnings: [],
             });
           }
+
+          // Anything else is laid out here. `src/demo/pdf.ts` is not LaTeX and
+          // does not pretend to be — it renders the document's structure, so a
+          // hand-edited page looks a little different from a Tectonic one.
+          const tex = edited ?? document.tex;
+          const ok = await publishPdf(document, tex);
           return json({
-            ok: false,
-            errors: [
-              "Recompiling runs Tectonic on the server, and a static demo has none.",
-              "Revert to see the exported PDF again — that one is a real compile of the stored LaTeX.",
-            ],
-            log: "",
+            ok,
+            errors: ok
+              ? []
+              : [
+                  "The demo lays generated documents out in the browser, and this one needs a service worker to serve the result.",
+                  "That worker could not start here — a private window or blocked site data will do it.",
+                ],
+            log: ok ? "Rendered in the browser by src/demo/pdf.ts — not a LaTeX compile." : "",
             duration_s: 0,
-            pdf_hash: texHash(document.tex),
+            pdf_hash: texHash(tex),
             fact_warnings: [],
           });
         }
         if (third === "chat" && !fourth) {
-          return refuse(`Each chat message costs an LLM call. ${NEEDS_BACKEND}`);
+          const text = ((body ?? {}) as { message?: string }).message ?? "";
+          if (!text.trim()) return refuse("No message in the request", 422);
+          return sendChat(snapshot, document, text);
         }
         if (third === "chat" && fourth) {
-          return refuse(`Applying a chat proposal needs the backend's fact-checker. ${NEEDS_BACKEND}`);
+          const chat = chatFor(snapshot, document);
+          const target = chat.messages.find((message) => message.id === fourth);
+          if (!target?.proposal) return refuse("No such proposal", 404);
+
+          const action = segments[4];
+          if (action === "dismiss") {
+            return json(
+              state.setChat(docId, {
+                ...chat,
+                messages: chat.messages.map((message) =>
+                  message.id === fourth
+                    ? { ...message, proposal: { ...target.proposal!, status: "dismissed" } }
+                    : message,
+                ),
+              }),
+            );
+          }
+
+          // Applying: blocked changes can never be accepted, whatever was
+          // ticked — that is the fact check, and it is the point of the panel.
+          const asked = ((body ?? {}) as { accept?: string[] | null }).accept;
+          const allowed = target.proposal.changes
+            .filter((change) => change.status !== "blocked")
+            .map((change) => change.region_id);
+          const accepted = new Set(asked ? asked.filter((id) => allowed.includes(id)) : allowed);
+          const wantsOrder = !asked || asked.includes("order");
+
+          const current = state.withEdits(document);
+          const next = applyProposal(
+            current,
+            { ...target.proposal, order: wantsOrder ? target.proposal.order : [] },
+            accepted,
+          );
+          state.setTex(docId, next);
+          await publishPdf(document, next);
+
+          const updated = state.setChat(docId, {
+            ...chat,
+            messages: chat.messages.map((message) =>
+              message.id === fourth
+                ? {
+                    ...message,
+                    proposal: {
+                      ...target.proposal!,
+                      status: "applied",
+                      applied: [...accepted, ...(wantsOrder && target.proposal!.order.length ? ["order"] : [])],
+                    },
+                  }
+                : message,
+            ),
+          });
+          return json({ document: state.withEdits(document), chat: updated });
         }
         break;
       }
@@ -654,7 +1087,7 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
         if (second === "transfer") return transferRoute(snapshot, body);
         break;
       case "documents": {
-        const document = snapshot.documents.byId[String(Number(second))];
+        const document = anyDocument(snapshot, Number(second));
         if (!document) return refuse("Document not found", 404);
         const tex = ((body ?? {}) as { tex?: string }).tex;
         if (!tex) return refuse("No LaTeX in the request", 422);
@@ -678,7 +1111,12 @@ async function route(snapshot: Snapshot, request: Parsed): Promise<Response> {
       return json(prefs ?? meta.prefs ?? {});
     }
     if (head === "documents" && third === "chat") {
-      return json({ document_id: Number(second), messages: [], suggestions: [], tokens: 0 });
+      const docId = Number(second);
+      const document = anyDocument(snapshot, docId);
+      const suggestions = document
+        ? chatFor(snapshot, document).suggestions
+        : [];
+      return json(state.setChat(docId, { document_id: docId, messages: [], suggestions, tokens: 0 }));
     }
   }
 

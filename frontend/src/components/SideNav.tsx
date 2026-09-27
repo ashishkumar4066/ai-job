@@ -124,14 +124,20 @@ export function SideNav({
         <div
           onClick={onClose}
           aria-hidden
-          className="animate-fade-in fixed inset-0 z-40 bg-black/55 backdrop-blur-[4px] md:hidden"
+          className="animate-fade-in scrim fixed inset-0 z-40 md:hidden"
         />
       )}
 
       <aside
         aria-label="Primary"
         className={cx(
-          "glass-strong glass-sheen z-50 flex shrink-0 flex-col overflow-hidden rounded-2xl p-2.5",
+          // `nav-sheet` turns this opaque under md, where the rail is an
+          // overlay across the job list rather than a column beside it. It is
+          // a media query in index.css and not `md:glass-strong` here: variants
+          // on `@utility`-defined classes emit nothing in this Tailwind build
+          // (probed — neither `md:glass-strong` nor `sm:glass-popover` appear
+          // in the output), so the variant would silently do nothing.
+          "glass-strong glass-sheen nav-sheet z-50 flex shrink-0 flex-col overflow-hidden rounded-2xl p-2.5",
           "transition-[transform,width] duration-300 ease-out",
           // Phone: an overlay pinned inside the same gutter as the app.
           "fixed inset-y-3 left-3 w-[264px]",

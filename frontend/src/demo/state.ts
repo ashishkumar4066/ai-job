@@ -12,9 +12,26 @@
  * the snapshot's seed, which is a perfectly good state to be in.
  */
 
-import type { Application, ApplicationStatus, Job, Prefs, TailoredDocument } from "@/lib/types";
+import type {
+  Application,
+  ApplicationStatus,
+  DocumentDiff,
+  Job,
+  LlmFitVerdict,
+  Prefs,
+  ResumeChat,
+  TailoredDocument,
+} from "@/lib/types";
 
 const KEY = "demo.state.v1";
+
+/** Generated documents kept in `localStorage`, newest first.
+ *
+ *  A tailored résumé is ~7KB of LaTeX. A dozen is comfortably inside the 5MB
+ *  budget while being far more than anyone browsing a demo will produce, and
+ *  the cap means a long session cannot quietly fill the quota and start
+ *  throwing on every write. */
+const MAX_GENERATED = 12;
 
 /** Mirrors the backend's own silence threshold (`applications.SILENT_AFTER_DAYS`). */
 const SILENT_AFTER_DAYS = 30;
@@ -25,9 +42,31 @@ interface Persisted {
   /** Hand-edited LaTeX, by document id. */
   tex: Record<string, string>;
   waitlisted: boolean;
+  /** Composed deep-read verdicts, by job id — see `fake/screen.ts`. */
+  verdicts: Record<string, LlmFitVerdict>;
+  /** What those reads would have cost, so the Dashboard's budget band moves. */
+  llmTokens: number;
+  /** Documents generated in this browser, keyed `"{jobId}:{kind}"`. */
+  docs: Record<string, TailoredDocument>;
+  /** By document id. */
+  diffs: Record<string, DocumentDiff>;
+  chats: Record<string, ResumeChat>;
+  /** Well clear of the ten ids the snapshot ships. */
+  nextDocId: number;
 }
 
-const empty: Persisted = { applications: {}, prefs: null, tex: {}, waitlisted: false };
+const empty: Persisted = {
+  applications: {},
+  prefs: null,
+  tex: {},
+  waitlisted: false,
+  verdicts: {},
+  llmTokens: 0,
+  docs: {},
+  diffs: {},
+  chats: {},
+  nextDocId: 1001,
+};
 
 let state: Persisted = { ...empty };
 let seeded = false;
@@ -226,6 +265,88 @@ export function withEdits(document: TailoredDocument): TailoredDocument {
   const edited = getTex(document.id);
   if (!edited || edited === document.tex) return document;
   return { ...document, tex: edited, hand_edited: true };
+}
+
+/* ------------------------------------------------------------- deep read */
+
+export function getVerdicts(): Record<string, LlmFitVerdict> {
+  return state.verdicts;
+}
+
+export function hasVerdict(jobId: number): boolean {
+  return state.verdicts[String(jobId)] !== undefined;
+}
+
+export function recordVerdicts(
+  entries: { jobId: number; verdict: LlmFitVerdict; tokens: number }[],
+): void {
+  for (const entry of entries) {
+    state.verdicts[String(entry.jobId)] = entry.verdict;
+    state.llmTokens += entry.tokens;
+  }
+  write();
+}
+
+export function llmTokensSpent(): number {
+  return state.llmTokens;
+}
+
+/* --------------------------------------------------- generated documents */
+
+export function getDocument(jobId: number, kind: string): TailoredDocument | null {
+  return state.docs[`${jobId}:${kind}`] ?? null;
+}
+
+export function documentById(id: number): TailoredDocument | null {
+  return Object.values(state.docs).find((document) => document.id === id) ?? null;
+}
+
+export function nextDocumentId(): number {
+  return state.nextDocId;
+}
+
+/**
+ * Store a generated document and its diff, evicting the oldest past the cap.
+ *
+ * Eviction takes the chat and the hand edit with it, because leaving those
+ * behind would let a later document inherit a previous one's transcript at the
+ * same id.
+ */
+export function saveDocument(
+  document: TailoredDocument,
+  diff: DocumentDiff | null,
+  chat: ResumeChat,
+): TailoredDocument {
+  state.docs[`${document.job_id}:${document.kind}`] = document;
+  if (diff) state.diffs[String(document.id)] = diff;
+  state.chats[String(document.id)] = chat;
+  state.nextDocId = Math.max(state.nextDocId, document.id + 1);
+
+  const ordered = Object.entries(state.docs).sort(
+    (a, b) => Date.parse(b[1].created_at) - Date.parse(a[1].created_at),
+  );
+  for (const [key, stale] of ordered.slice(MAX_GENERATED)) {
+    delete state.docs[key];
+    delete state.diffs[String(stale.id)];
+    delete state.chats[String(stale.id)];
+    delete state.tex[String(stale.id)];
+  }
+  write();
+  return document;
+}
+
+export function getDiff(docId: number): DocumentDiff | null {
+  return state.diffs[String(docId)] ?? null;
+}
+
+export function getChat(docId: number): ResumeChat | null {
+  return state.chats[String(docId)] ?? null;
+}
+
+export function setChat(docId: number, chat: ResumeChat): ResumeChat {
+  state.chats[String(docId)] = chat;
+  write();
+  return chat;
 }
 
 /* ------------------------------------------------------------- waitlist */

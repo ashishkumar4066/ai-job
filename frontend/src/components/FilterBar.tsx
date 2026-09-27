@@ -3,7 +3,6 @@ import {
   Building2,
   CalendarClock,
   ShieldCheck,
-  ChevronDown,
   Layers,
   Server,
   Sparkles,
@@ -12,6 +11,7 @@ import {
 import { MAX_POSTING_AGE_DAYS, type Facets, type Filters, type SortField } from "@/lib/types";
 import { sourceLabel } from "@/lib/format";
 import { MultiSelect } from "./MultiSelect";
+import { SelectMenu } from "./SelectMenu";
 import { Segmented, VDivider, cx } from "./primitives";
 
 const VALIDITY_OPTIONS: { label: string; value: number | null; title: string }[] = [
@@ -190,31 +190,21 @@ export function FilterBar({
 
         <span className="ml-auto flex items-center gap-2">
           {/* Sort */}
-          <label className="relative flex h-9 items-center gap-1.5 rounded-xl border border-edge bg-panel px-2.5 text-[13px] text-muted transition-colors hover:border-edge-strong hover:bg-panel-hover">
-            <ArrowDownWideNarrow size={14} className="shrink-0 opacity-70" />
-            <select
-              value={filters.sort}
-              onChange={(event) => {
-                const sort = event.target.value as SortField;
-                // Alphabetical sorts read better ascending; dates newest-first.
-                onPatch({
-                  sort,
-                  order: sort === "title" || sort === "company" ? "asc" : "desc",
-                });
-              }}
-              className="cursor-pointer appearance-none bg-transparent pr-4 font-medium text-ink outline-none"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              size={13}
-              className="pointer-events-none absolute right-2.5 shrink-0 opacity-50"
-            />
-          </label>
+          <SelectMenu
+            value={filters.sort}
+            options={SORT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+            label="Sort jobs"
+            align="end"
+            leading={<ArrowDownWideNarrow size={14} className="shrink-0 opacity-70" />}
+            className="h-9 rounded-xl border border-edge bg-panel px-2.5 text-[13px] font-medium text-ink transition-colors hover:border-edge-strong hover:bg-panel-hover"
+            onChange={(sort) =>
+              // Alphabetical sorts read better ascending; dates newest-first.
+              onPatch({
+                sort,
+                order: sort === "title" || sort === "company" ? "asc" : "desc",
+              })
+            }
+          />
 
           {activeCount > 0 && (
             <button

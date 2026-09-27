@@ -98,7 +98,7 @@ export function JobDrawer({
     <>
       <div
         onClick={onClose}
-        className="animate-fade-in fixed inset-0 z-40 bg-black/55 backdrop-blur-[4px]"
+        className="animate-fade-in scrim fixed inset-0 z-40"
         aria-hidden
       />
 
@@ -106,7 +106,7 @@ export function JobDrawer({
         role="dialog"
         aria-modal="true"
         aria-label={job?.title ?? "Job details"}
-        className="glass-strong animate-slide-in fixed top-0 right-0 z-50 flex h-full w-full max-w-[660px] flex-col rounded-l-3xl border-l border-edge-strong"
+        className="glass-modal animate-slide-in fixed top-0 right-0 z-50 flex h-full w-full max-w-[660px] flex-col rounded-l-3xl border-l border-edge-strong"
       >
         {/* Violet bloom at the top of the panel — the drawer's own light source. */}
         <span

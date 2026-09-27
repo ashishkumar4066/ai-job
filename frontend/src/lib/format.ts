@@ -162,3 +162,28 @@ export function workModeLabel(job: {
   if (mode === null) return null;
   return { remote: "Remote", hybrid: "Hybrid", onsite: "On-site" }[mode];
 }
+
+/**
+ * `Ashish_Kumar_Pulsora_AI_Engineer_Cover_Letter.tex`.
+ *
+ * Mirrors `_document_filename` in `api.py`, because the .tex is now saved from
+ * the browser rather than fetched: these land in a downloads folder among a
+ * dozen others, where `resume.tex` is unrecoverable. The cover letter gets
+ * `_Cover_Letter` on the end so the pair sorts together.
+ */
+export function documentFilename(
+  who: string,
+  company: string,
+  title: string,
+  kind: "resume" | "cover_letter",
+  extension: string,
+): string {
+  const parts = [who || "resume", company, title];
+  if (kind === "cover_letter") parts.push("Cover Letter");
+  const stem = parts
+    .filter(Boolean)
+    .map((part) => part.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, ""))
+    .filter(Boolean)
+    .join("_");
+  return `${stem.slice(0, 120)}.${extension}`;
+}

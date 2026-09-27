@@ -17,6 +17,7 @@ import {
 import { ApiError, fetchProfileDocument, saveProfile, uploadResume } from "@/lib/api";
 import type { ProfileData, ProfileForm } from "@/lib/types";
 import { cx } from "./primitives";
+import { SelectMenu } from "./SelectMenu";
 
 /**
  * The profile editor — Phase 2C Stage 1's "editable from the dashboard".
@@ -362,7 +363,7 @@ export function ProfilePanel({
     <div>
       <div
         onClick={blocking ? undefined : onClose}
-        className="animate-fade-in fixed inset-0 z-40 bg-black/60 backdrop-blur-[4px]"
+        className="animate-fade-in scrim fixed inset-0 z-40"
         aria-hidden
       />
       <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-3 md:p-5">
@@ -370,7 +371,7 @@ export function ProfilePanel({
           role="dialog"
           aria-modal="true"
           aria-labelledby="profile-title"
-          className="glass-strong animate-fade-up pointer-events-auto flex max-h-[min(92vh,900px)] w-full max-w-[860px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
+          className="glass-modal animate-fade-up pointer-events-auto flex max-h-[min(92vh,900px)] w-full max-w-[860px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
         >
           <header className="flex shrink-0 items-center gap-3 border-b border-edge px-5 py-3.5">
             <span className="grid size-8 place-items-center rounded-xl bg-accent/15 text-accent">
@@ -840,18 +841,18 @@ function EvidenceRows({
               placeholder="Capability"
               className="min-w-0 flex-1 rounded-lg border border-edge bg-panel px-2.5 py-1.5 text-[12px] text-ink outline-none focus:border-accent"
             />
-            <select
+            <SelectMenu
               value={row.depth}
-              onChange={(e) =>
-                update(index, {
-                  depth: e.target.value as "production" | "project",
-                })
-              }
-              className="rounded-lg border border-edge bg-panel px-2 py-1.5 text-[11.5px] text-ink outline-none focus:border-accent"
-            >
-              <option value="production">production</option>
-              <option value="project">project</option>
-            </select>
+              options={[
+                { value: "production", label: "production" },
+                { value: "project", label: "project" },
+              ]}
+              onChange={(depth) => update(index, { depth })}
+              label="Evidence depth"
+              align="end"
+              chevronSize={12}
+              className="shrink-0 rounded-lg border border-edge bg-panel px-2 py-1.5 text-[11.5px] text-ink transition-colors hover:border-edge-strong"
+            />
             <button
               type="button"
               onClick={() => onChange(rows.filter((_, i) => i !== index))}

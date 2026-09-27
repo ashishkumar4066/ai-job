@@ -357,6 +357,12 @@ export function runValidity(force = false): Promise<ValidityRun> {
 // The PDF is not fetched as JSON: `documentPdfUrl` is handed straight to an
 // <iframe> and to the download link, so the browser's own PDF viewer renders
 // the same bytes the download writes to disk.
+//
+// There is deliberately no `documentTexUrl` twin. `GET /documents/{id}/tex`
+// still exists server-side, but the modal already holds the LaTeX, so it saves
+// it with a Blob instead (`saveTextFile` in TailorModal). A link to the route
+// is a navigation rather than a fetch, which leaves the app — and on the demo
+// build, whose API is a `window.fetch` shim, there is nothing there to answer.
 // ---------------------------------------------------------------------------
 
 /** The stored résumé (or cover letter) for this job at the current profile version, or null. */
@@ -413,10 +419,6 @@ export function documentPdfUrl(docId: number, version: string, download = false)
   const p = new URLSearchParams({ v: version });
   if (download) p.set("download", "true");
   return `${BASE}/documents/${docId}/pdf?${p}`;
-}
-
-export function documentTexUrl(docId: number): string {
-  return `${BASE}/documents/${docId}/tex`;
 }
 
 /** The untailored résumé — the left side of the diff. */

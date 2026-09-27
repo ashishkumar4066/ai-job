@@ -1,7 +1,8 @@
-import { ArrowUpRight, BriefcaseBusiness, ChevronDown, Ghost, Loader2, MessageSquare, Send, Trophy, X, XCircle, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Ghost, Loader2, MessageSquare, Send, Trophy, X, XCircle, type LucideIcon } from "lucide-react";
 
 import { APPLICATION_STATUSES, STATUS_LABELS, type ApplicationStatus } from "@/lib/types";
 import { cx } from "./primitives";
+import { SelectMenu } from "./SelectMenu";
 
 /**
  * The stage control for one application, shared by every surface that shows an
@@ -88,38 +89,35 @@ export function ApplicationControl({
     >
       <Icon size={size} className="shrink-0" />
 
-      {/* The label IS the select. A separate chevron button would be a second
-          hit target for one action, and this column has ~90px to spend. */}
-      <span className="relative flex min-w-0 items-center">
-        <select
-          value={status}
-          disabled={statusPending}
-          onChange={(event) => onStatus(event.target.value as ApplicationStatus)}
-          aria-label={`Application stage for ${jobTitle}`}
-          title="Where this application stands. Nothing moves it for you — set it when you hear back."
-          className={cx(
-            "peer min-w-0 cursor-pointer appearance-none bg-transparent py-1 pr-4 pl-1 font-semibold outline-none",
-            "focus-visible:underline disabled:opacity-60",
-          )}
-        >
-          {APPLICATION_STATUSES.map((value) => (
-            <option key={value} value={value}>
-              {STATUS_LABELS[value]}
-            </option>
-          ))}
-        </select>
-        {statusPending ? (
-          <Loader2
-            size={size - 1}
-            className="pointer-events-none absolute right-0 animate-spin opacity-70"
-          />
-        ) : (
-          <ChevronDown
-            size={size - 1}
-            className="pointer-events-none absolute right-0 opacity-60 peer-hover:opacity-100"
-          />
-        )}
-      </span>
+      {/* The label IS the trigger. A separate chevron button would be a second
+          hit target for one action, and this column has ~90px to spend.
+
+          Each stage carries its own icon in the list, because the colour that
+          makes a column of these scannable is only on the closed control — the
+          open menu is one surface, so the row needs another way to say which
+          stage it is. */}
+      <SelectMenu
+        value={status}
+        disabled={statusPending}
+        onChange={onStatus}
+        label={`Application stage for ${jobTitle}`}
+        title="Where this application stands. Nothing moves it for you — set it when you hear back."
+        className="py-1 pr-0.5 pl-1 font-semibold hover:opacity-90 focus-visible:underline"
+        chevronSize={size - 1}
+        trailing={
+          statusPending ? (
+            <Loader2 size={size - 1} className="shrink-0 animate-spin opacity-70" />
+          ) : undefined
+        }
+        options={APPLICATION_STATUSES.map((value) => {
+          const StageIcon = STATUS_META[value].icon;
+          return {
+            value,
+            label: STATUS_LABELS[value],
+            icon: <StageIcon size={13} className={STATUS_META[value].tone} />,
+          };
+        })}
+      />
 
       <a
         href={applyUrl}

@@ -497,7 +497,7 @@ function Modal({
     <div hidden={!open}>
       <div
         onClick={onClose}
-        className="animate-fade-in fixed inset-0 z-40 bg-black/55 backdrop-blur-[4px]"
+        className="animate-fade-in scrim fixed inset-0 z-40"
         aria-hidden
       />
       <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -505,7 +505,7 @@ function Modal({
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
-          className="glass-strong animate-fade-up pointer-events-auto flex max-h-[min(88vh,780px)] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
+          className="glass-modal animate-fade-up pointer-events-auto flex max-h-[min(88vh,780px)] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
         >
           {children}
         </div>

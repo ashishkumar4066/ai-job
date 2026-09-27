@@ -14,6 +14,7 @@
 import { handle } from './router';
 import { realFetch } from './snapshot';
 import { mountOverlay } from './overlay';
+import { installPdfWorker } from './pdfstore';
 
 /** Matches the `BASE` in `lib/api.ts`. */
 const API_BASE =
@@ -119,11 +120,24 @@ export function installDemo(): void {
     // branch only catches code that fetches the PDF directly.
     if (/^\/documents\/\d+\/pdf$/.test(path)) {
       const id = path.split('/')[2];
-      return realFetch(`${import.meta.env.BASE_URL ?? '/'}demo/pdf/${id}.pdf`);
+      const exported = await realFetch(
+        `${import.meta.env.BASE_URL ?? '/'}demo/pdf/${id}.pdf`,
+      );
+      if (exported.ok) return exported;
+      // No exported file means a document generated in this browser, whose PDF
+      // the service worker holds. Going back through the real fetch lets that
+      // worker answer, the same way the preview iframe reaches it.
+      return realFetch(input as RequestInfo, init);
     }
 
     return handle(method, path, url.searchParams, await readBody(input, init));
   };
+
+  // Started here rather than on first need, because it has to be in control of
+  // the page before a preview iframe asks for a generated PDF, and activating
+  // takes a moment. Nothing waits on it; a browser that refuses one just means
+  // generated documents say their preview is unavailable.
+  void installPdfWorker();
 
   mountOverlay();
   // eslint-disable-next-line no-console

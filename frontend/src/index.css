@@ -64,6 +64,16 @@
      overflows — so the rows below show through sharp and unfiltered. The glass
      read here comes from the border, the sheen and the shadow instead. */
   --popover: oklch(99.5% 0.004 var(--brand-hue));
+  /* Dialogs, the job drawer, and the nav rail while it is an off-canvas sheet.
+     Opaque for the same reason popovers are, only more so: these cover the job list, and a translucent sheet over
+     a dense table is a legibility bug wearing a design. The glass read here
+     comes from the tint, the sheen, the border and the shadow — everything
+     except letting the rows behind show through. */
+  --surface-modal: oklch(99.8% 0.003 var(--brand-hue));
+  /* What a dialog dims the page with. Tokenised because it is not the same
+     colour in both themes: 70% black is right over a black board and reads as
+     a power cut over a white one. */
+  --scrim: oklch(28% 0.045 var(--brand-hue) / 0.42);
 
   /* The tint painted over glass: light pooling at the top-left, falling off. */
   --glass-tint: linear-gradient(
@@ -138,10 +148,12 @@
   --bg: oklch(0% 0 0);
   --bg-deep: oklch(0% 0 0);
   --bg-elevated: oklch(11% 0.028 var(--brand-hue));
-  --panel: oklch(100% 0 0 / 0.032);
-  --panel-strong: oklch(100% 0 0 / 0.055);
-  --panel-hover: oklch(100% 0 0 / 0.085);
+  --panel: oklch(100% 0 0 / 0.045);
+  --panel-strong: oklch(100% 0 0 / 0.075);
+  --panel-hover: oklch(100% 0 0 / 0.11);
   --popover: oklch(9% 0.024 var(--brand-hue));
+  --surface-modal: oklch(10.5% 0.026 var(--brand-hue));
+  --scrim: oklch(0% 0 0 / 0.72);
 
   /* Violet light raking across black glass, rather than a white gloss. Kept
      deliberately faint: the panels have to stay black. Push these alphas up and
@@ -318,8 +330,15 @@
 @utility glass {
   background-color: var(--panel);
   background-image: var(--glass-tint);
+  /* Unprefixed only. Writing the `-webkit-` twin by hand is what broke this:
+     Lightning CSS (Tailwind v4's own pass) treats the pair as duplicates and
+     keeps the LAST one, so the build shipped `-webkit-backdrop-filter` alone —
+     and current Chrome/Edge do not support that alias at all
+     (`CSS.supports('-webkit-backdrop-filter', 'blur(5px)')` is false). Every
+     glass surface was a flat translucent tint with no blur behind it, which is
+     exactly why the job list read straight through them. Lightning CSS adds
+     whatever prefixes the targets need; it does not need help. */
   backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid var(--border);
   box-shadow:
     inset 0 1px 0 var(--edge-light),
@@ -333,7 +352,6 @@
      scrolling job list, so it is re-applied over every scrolled frame. At the
      panel's opacity the difference is not visible; the frame time is. */
   backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--border-strong);
   box-shadow:
     inset 0 1px 0 var(--edge-light),
@@ -351,6 +369,33 @@
     var(--shadow-float);
 }
 
+/* The overlay tier: dialogs and the job drawer.
+ *
+ * Opaque on purpose, and the one place the glass metaphor is deliberately
+ * dropped. `glass-strong` is 7.5% white over whatever is behind it — fine over
+ * the aurora, which carries no text, and unreadable over the job list, which is
+ * nothing but text. A sheet you can read the table through is not depth, it is
+ * two documents fighting. The tint, sheen, violet border and float shadow all
+ * stay, so it still reads as a lit pane; only the transparency goes.
+ *
+ * No backdrop-filter either: there is nothing left to see through, so the blur
+ * would be paid for on every open and composite onto an opaque surface. */
+@utility glass-modal {
+  background-color: var(--surface-modal);
+  background-image: var(--glass-tint);
+  border: 1px solid var(--border-strong);
+  box-shadow:
+    inset 0 1px 0 var(--edge-light),
+    var(--shadow-float);
+}
+
+@utility scrim {
+  background-color: var(--scrim);
+  /* Small on purpose: the sheet above is opaque, so this blur is only there to
+     stop the job list reading as a second document behind the dialog. */
+  backdrop-filter: blur(6px);
+}
+
 /* backdrop-filter is what sells the glass; without it these panels are merely
    washed out over the aurora. Fall back to opaque surfaces. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -358,6 +403,22 @@
   .glass-strong {
     background-color: var(--bg-elevated);
     background-image: none;
+  }
+}
+
+/* The side rail is one element in two roles. From md up it is a column beside
+   the content, over the aurora, where glass is exactly right. Below md it is an
+   off-canvas sheet across the job list, where it is exactly wrong — so it takes
+   the opaque tier there, the same trade the modals make.
+
+   Unlayered on purpose: `@layer utilities` holds `.glass-strong`, and an
+   unlayered rule beats any layered one regardless of source order. */
+@media (width < 48rem) {
+  .nav-sheet {
+    background-color: var(--surface-modal);
+    box-shadow:
+      inset 0 1px 0 var(--edge-light),
+      var(--shadow-float);
   }
 }
 

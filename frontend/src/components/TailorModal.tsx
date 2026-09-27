@@ -56,14 +56,15 @@ import {
   ApiError,
   compileDocument,
   documentPdfUrl,
-  documentTexUrl,
   fetchBaseResume,
   fetchDocument,
+  fetchProfile,
   generateDocument,
   revertDocument,
   saveDocument,
 } from "../lib/api";
 import type { CompileResult, DocumentKind, FactIssue, TailoredDocument } from "../lib/types";
+import { documentFilename } from "../lib/format";
 import { cx } from "./primitives";
 import { DiffPane } from "./DiffPane";
 import { ResumeChat } from "./ResumeChat";
@@ -113,6 +114,16 @@ export function TailorModal({
     queryFn: fetchBaseResume,
     enabled: open,
     staleTime: Infinity,
+  });
+
+  // Only for the download's filename, and it is free: App.tsx already holds
+  // this key, so this resolves from the cache rather than issuing a request.
+  const profile = useQuery({
+    queryKey: ["profile"],
+    queryFn: fetchProfile,
+    enabled: open,
+    staleTime: 60_000,
+    retry: false,
   });
 
   const doc = document_.data ?? null;
@@ -219,7 +230,7 @@ export function TailorModal({
     <>
       <div
         onClick={onClose}
-        className="animate-fade-in fixed inset-0 z-40 bg-black/60 backdrop-blur-[4px]"
+        className="animate-fade-in scrim fixed inset-0 z-40"
         aria-hidden
       />
       <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-3 md:p-5">
@@ -227,7 +238,7 @@ export function TailorModal({
           role="dialog"
           aria-modal="true"
           aria-label={`Tailor ${NOUN[kind]} for ${jobTitle}`}
-          className="glass-strong animate-fade-up pointer-events-auto flex h-full max-h-[94vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
+          className="glass-modal animate-fade-up pointer-events-auto flex h-full max-h-[94vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-edge-strong"
         >
           <Header
             kind={kind}
@@ -240,6 +251,8 @@ export function TailorModal({
             jobTitle={jobTitle}
             company={company}
             doc={doc}
+            tex={tex}
+            fullName={profile.data?.full_name ?? ""}
             dirty={dirty}
             busy={generate.isPending || save.isPending || recompile.isPending}
             compiling={recompile.isPending}
@@ -378,6 +391,8 @@ function Header({
   jobTitle,
   company,
   doc,
+  tex,
+  fullName,
   dirty,
   busy,
   compiling,
@@ -392,6 +407,10 @@ function Header({
   jobTitle: string;
   company: string;
   doc: TailoredDocument | null;
+  /** The editor's current text — what the .tex download writes. */
+  tex: string;
+  /** For the filename only; empty until the profile query resolves. */
+  fullName: string;
   dirty: boolean;
   busy: boolean;
   compiling: boolean;
@@ -454,13 +473,23 @@ function Header({
               <Download size={13} />
               PDF
             </a>
-            <a
-              href={documentTexUrl(doc.id)}
+            <button
+              type="button"
+              onClick={() =>
+                saveTextFile(
+                  tex,
+                  documentFilename(fullName, company, jobTitle, doc.kind, "tex"),
+                )
+              }
               className="rounded-lg border border-edge px-2.5 py-1.5 text-[12px] text-muted hover:text-ink"
-              title="Download the LaTeX source"
+              title={
+                dirty
+                  ? "Download the LaTeX in the editor, including your unsaved edits"
+                  : "Download the LaTeX source"
+              }
             >
               .tex
-            </a>
+            </button>
           </>
         )}
         <ToolButton onClick={onGenerate} busy={busy} title="Runs one LLM call">
@@ -705,6 +734,36 @@ function TailoringSummary({
       )}
     </div>
   );
+}
+
+/**
+ * Save the LaTeX from the page, with no request at all.
+ *
+ * It used to be an `<a href="/api/documents/{id}/tex">`, which is a *navigation*
+ * and not a `fetch` — so it left the app entirely. On the deployed demo, whose
+ * whole backend is a `window.fetch` shim, nothing was there to answer it: the
+ * route fell through to the SPA catch-all and the click errored. (The PDF
+ * survives only because it has a rewrite of its own in `vercel.json`.)
+ *
+ * The text was already in this component either way, so fetching it back was
+ * never buying anything — and it was buying a wrong answer while the editor is
+ * dirty, since the server holds the last *saved* text, not what is on screen.
+ * This writes exactly what the editor shows, which is the same promise the PDF
+ * download already makes about the preview.
+ */
+function saveTextFile(text: string, filename: string): void {
+  // A BOM would ride into the .tex and break `\documentclass` on the first
+  // line for some engines, so the blob is written as plain UTF-8.
+  const url = URL.createObjectURL(new Blob([text], { type: "application/x-tex" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Revoked on the next tick: Firefox cancels an in-flight download if the
+  // object URL is released in the same task as the click.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 /** Monospace LaTeX with a gutter, so a "resume.tex:24" error can be found. */
